@@ -1,0 +1,33 @@
+
+Game Rules:
+
+
+Deck of shuffled cards is distributed among players. If can't be distributed equally, some randomly selected players will have an additional card. Number of players can't be less than 2.
+
+In first round there is no sequence of turns. Player having ace of spade must play it and will be the player having first turn in next round. Each player has to play a card. If a palyer has spade, then spade must be played. These cards will be flushed.
+
+Now every player will play on their turn. Player who plays first sets the suit for the round by playing the card of that suit. Every player has to play the card of the same suit. Players are free to play any of the suit, if they have more than one card.
+
+    If any subsequent player does not have the card of that suit, then that player can play any card and subsequent players won't play in that round. Round will be terminated by flushing that card with other zero or more cards on the table to the player who played the highest card. Player who had the highest card will play first in next round.
+
+    If all players played card of the suit, then this collection will be flushed at the the end of the round. Player who had the highest card will play first in next round.
+
+Game terminates when second last player finishes his cards.
+
+Player who does not finishes the cards looses the Game.
+
+
+
+GamePlay Notes:
+
+Server listens for connections on port 3000. These players must be verified to establish the tls stream. Default username and password are:ddaf,sdsadfa. These settings can be changed before establishing the server. Server can kick out some players.
+
+Players are added in the Lobby. Where they mark themselves ready. Game begins when all players are ready. Players are then moved to room and informed about their cards. Each player has one minute for the turn. This setting can be changed by the server before commencing the game.
+
+If player does not perform it's turn, then it will be shifted to auto and will remain auto for the rest of the game. Others players will see if turn was made by the player or by the auto setting.
+
+When only one move is possible, it will be automatically performed on player's behalf and respective player will be informed.
+
+Player will remain in the room even after finishing his cards. Players will be moved to Lobby when game ends.
+
+
