@@ -9,6 +9,7 @@ set( CMAKE_VERBOSE_MAKEFILE CACHE BOOL FORCE)
 #cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON
 
 
+
 option(USE_CLANG "build application with clang" ON) # OFF is the default
 option(USE_GCC "build application with gcc" OFF) # OFF is the default
 
@@ -22,10 +23,10 @@ if(USE_CLANG)
     set(CMAKE_CXX_COMPILER "/usr/bin/clang++-10")
 endif()
 
-file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/Source/src/*.cpp" )
+file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")
-add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/Source/main.cpp" ${src_files})
-target_include_directories(GetAway PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/Source/header/")
+add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files})
+target_include_directories(GetAway PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/header/")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)
 endif()
@@ -45,4 +46,6 @@ target_include_directories(GetAway PUBLIC ${Boost_INCLUDE_DIRS})
     find_package(Threads REQUIRED)
     target_link_libraries(GetAway Threads::Threads)
 
+add_subdirectory(Test)
 
+    
