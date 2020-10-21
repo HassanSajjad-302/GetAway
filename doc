@@ -12,7 +12,7 @@ Now every player will play on their turn. Player who plays first sets the suit f
 
     If all players played card of the suit, then this collection will be flushed at the the end of the round. Player who had the highest card will play first in next round.
 
-Game terminates when second last player finishes his cards.
+Game terminates when second last player finishes her cards.
 
 Player who does not finishes the cards looses the Game.
 
@@ -20,7 +20,7 @@ Player who does not finishes the cards looses the Game.
 
 GamePlay Notes:
 
-Server listens for connections on port 3000. These players must be verified to establish the tls stream. Default username and password are:ddaf,sdsadfa. These settings can be changed before establishing the server. Server can kick out some players.
+Server listens for connections on port 3000. These players must be verified to establish the tls stream. Default username and password are:ddaf,sdsadfa. These settings can be changed before establishing the server. Server player can kick out a player.
 
 Players are added in the Lobby. Where they mark themselves ready. Game begins when all players are ready. Players are then moved to room and informed about their cards. Each player has one minute for the turn. This setting can be changed by the server before commencing the game.
 
@@ -28,6 +28,6 @@ If player does not perform it's turn, then it will be shifted to auto and will r
 
 When only one move is possible, it will be automatically performed on player's behalf and respective player will be informed.
 
-Player will remain in the room even after finishing his cards. Players will be moved to Lobby when game ends.
+Player will remain in the room even after finishing her cards. Players will be moved to Lobby when game ends.
 
-
+If a player disconnects during the game, then she can not rejoin until the start of the next game and her turns are performed by the auto.

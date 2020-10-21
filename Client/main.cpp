@@ -9,8 +9,8 @@
 #endif
 
 
-#include "serverListener.hpp"
-#include "serverState.hpp"
+#include "clientConnector.hpp"
+#include "clientState.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
@@ -58,9 +58,9 @@ main(int argc, char* argv[])
      if (argc != 3)
      {
          std::cerr <<
-             "Usage: websocket-chat-server <address> <port> <doc_root>\n" <<
+             "Usage: websocket-chat-client <address> <port> <doc_root>\n" <<
              "Example:\n" <<
-             "    websocket-chat-server 0.0.0.0 8080 .\n";
+             "    websocket-chat-client 0.0.0.0 8080 .\n";
          return EXIT_FAILURE;
      }
 
@@ -75,10 +75,10 @@ main(int argc, char* argv[])
     net::io_context ioc;
 
     // Create and launch a listening port
-    std::make_shared<serverListener>(
+    std::make_shared<clientConnector>(
         ioc,
                 tcp::endpoint{tcp::v4(), port},
-        std::make_shared<serverState>())->run();
+        std::make_shared<clientState>())->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     net::signal_set signals(ioc, SIGINT, SIGTERM);

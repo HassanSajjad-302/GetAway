@@ -5,6 +5,7 @@ project(GetAway LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 set( CMAKE_VERBOSE_MAKEFILE CACHE BOOL FORCE)
 #cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON
 
@@ -18,6 +19,7 @@ if(USE_GCC)
     set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 endif()
 
+
 if(USE_CLANG)
     set(CMAKE_C_COMPILER "/usr/bin/clang-10")
     set(CMAKE_CXX_COMPILER "/usr/bin/clang++-10")
@@ -25,11 +27,17 @@ endif()
 
 file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")
-add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files})
+add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files} GetAway/header/Log_Macro.hpp GetAway/header/messageProcessing.hpp)
 target_include_directories(GetAway PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/header/")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)
 endif()
+if(USE_GCC)
+    target_compile_options(GetAway "-Wunused")
+endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(GetAway PRIVATE Threads::Threads)
 
 set(Boost_NO_SYSTEM_PATHS TRUE)
 if (Boost_NO_SYSTEM_PATHS)
@@ -43,9 +51,14 @@ message(${Boost_INCLUDE_DIRS})
 target_include_directories(GetAway PUBLIC ${Boost_INCLUDE_DIRS})
 
 
-    find_package(Threads REQUIRED)
-    target_link_libraries(GetAway Threads::Threads)
+
+
+find_package(spdlog REQUIRED
+        PATHS "/home/hassan/Music/spdlog_Installed/lib/cmake/spdlog"
+        NO_DEFAULT_PATH)
+
+target_link_libraries(GetAway PRIVATE spdlog::spdlog)
 
 add_subdirectory(Test)
+add_subdirectory(Client)
 
-    
