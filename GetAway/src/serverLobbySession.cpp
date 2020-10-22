@@ -15,7 +15,7 @@ serverLobbySession::
     serverLobbySession(
             const std::string& playerName,
         tcp::socket socket,
-        std::shared_ptr<serverState>  state)
+        std::shared_ptr<serverTcpSessionState>  state)
     : socket_(std::move(socket))
     , state(std::move(state))
 {

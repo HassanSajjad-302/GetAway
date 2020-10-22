@@ -16,9 +16,9 @@ serverListener::
 serverListener(
     net::io_context& ioc,
     const tcp::endpoint& endpoint,
-    std::shared_ptr<serverState>  state)
+    std::shared_ptr<serverTcpSessionState>  state)
     : acceptor(ioc, endpoint)
-    , socket_(ioc)
+    , sock(ioc)
     , state(std::move(state))
 {
 }
@@ -29,8 +29,8 @@ run()
 {
     // Start accepting a connection
     acceptor.async_accept(
-        socket_,
-        [self = shared_from_this()](errorCode ec)
+            sock,
+            [self = shared_from_this()](errorCode ec)
         {
             self->onAccept(ec);
         });
@@ -57,13 +57,13 @@ onAccept(errorCode ec)
     else
         // Launch a new session for this connection
         std::make_shared<serverTcpSession>(
-                std::move(socket_),
+                std::move(sock),
                 state)->run();
 
     // Accept another connection
     acceptor.async_accept(
-        socket_,
-        [self = shared_from_this()](errorCode ec)
+            sock,
+            [self = shared_from_this()](errorCode ec)
         {
             self->onAccept(ec);
         });

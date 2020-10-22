@@ -10,7 +10,7 @@
 class serverLobbySession;
 
 // Represents the shared server state
-class serverState
+class serverLobbySessionState
 {
     // This simple method of tracking sessions only works with an implicit strand (i.e. a single-threaded server)
     std::unordered_set<serverLobbySession*> sessions;
@@ -19,7 +19,7 @@ class serverState
 
     int classSendSize =0;
 
-    friend std::ostream& operator<<(std::ostream& out, serverState& state){
+    friend std::ostream& operator<<(std::ostream& out, serverLobbySessionState& state){
         out << state.gamePlayers.size() << std::endl;
         for(auto & gamePlayer : state.gamePlayers){
             out << gamePlayer << std::endl;
@@ -28,7 +28,7 @@ class serverState
         return out;
     }
 
-    friend std::istream& operator>>(std::istream& in, serverState& state){
+    friend std::istream& operator>>(std::istream& in, serverLobbySessionState& state){
         int size;
         in >> size;
         in.ignore();
@@ -44,7 +44,7 @@ class serverState
 
 public:
     explicit
-    serverState();
+    serverLobbySessionState();
 
     int getClassSendSize() const;
     void setClassSendSize(int size);

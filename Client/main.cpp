@@ -1,31 +1,20 @@
+//Client
 
-//#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-
-
-
-
-#ifdef CATCH_CONFIG_MAIN
-#include "catch.hpp"
-#endif
-
-
-#include "clientConnector.hpp"
-#include "clientState.hpp"
+#include "clientTcpSession.hpp"
+#include "clientTcpSessionState.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include "clientState.hpp"
 #include <boost/asio/signal_set.hpp>
 #include <iostream>
-#include <boost/config.hpp>
 #include <memory>
 
-std::string get_compile_version()
+std::string getCompileVersion()
 {
      char buffer[sizeof(BOOST_PLATFORM) + sizeof(BOOST_COMPILER) +sizeof(__DATE__ )+ 5];
      sprintf(buffer, "[%s/%s](%s)", BOOST_PLATFORM, BOOST_COMPILER, __DATE__);
-     std::string compileinfo(buffer);
-     return compileinfo;
+     std::string compileInfo(buffer);
+     return compileInfo;
 }
 
 //TODO
@@ -48,51 +37,29 @@ main(int argc, char* argv[])
     spdlog::set_default_logger(logger);
     logger->flush_on(spdlog::level::info);
 
-    std::cout<<get_compile_version();
-    std::cout<<std::endl;
+
+    net::io_context io;
+    tcp::endpoint endpoint(tcp::v4(),3000);
+    tcp::socket sock(io);
+    sock.connect(endpoint);
+    std::make_shared<clientTcpSession>(std::move(sock),
+        std::make_shared<clientTcpSessionState>("Hassan Sajjad", "password"))->run();
 
 
-#ifdef Utility
-
-    // Check command line arguments.
-     if (argc != 3)
-     {
-         std::cerr <<
-             "Usage: websocket-chat-client <address> <port> <doc_root>\n" <<
-             "Example:\n" <<
-             "    websocket-chat-client 0.0.0.0 8080 .\n";
-         return EXIT_FAILURE;
-     }
-
-    auto address = net::ip::make_address(argv[1]);
-    auto port = static_cast<unsigned short>(std::atoi(argv[2]));
-
-#else
-    auto address = net::ip::make_address("127.0.0.1");
-    auto port = static_cast<unsigned short>(std::atoi("3000"));
-#endif
-    // The io_context is required for all I/O
-    net::io_context ioc;
-
-    // Create and launch a listening port
-    std::make_shared<clientConnector>(
-        ioc,
-                tcp::endpoint{tcp::v4(), port},
-        std::make_shared<clientState>())->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
-    net::signal_set signals(ioc, SIGINT, SIGTERM);
+    net::signal_set signals(io, SIGINT, SIGTERM);
     signals.async_wait(
-        [&ioc](boost::system::error_code const&, int)
+        [&io](boost::system::error_code const&, int)
         {
             // Stop the io_context. This will cause run()
             // to return immediately, eventually destroying the
             // io_context and any remaining handlers in it.
-            ioc.stop();
+            io.stop();
         });
 
     // Run the I/O service on the main thread
-    ioc.run();
+    io.run();
 
     // (If we get here, it means we got a SIGINT or SIGTERM)
 

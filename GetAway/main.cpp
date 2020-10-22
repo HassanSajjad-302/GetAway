@@ -1,26 +1,17 @@
-
-//#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
-
-
-
-
-#ifdef CATCH_CONFIG_MAIN
-#include "catch.hpp"
-#endif
-
+//Main
 
 #include "serverListener.hpp"
-#include "serverState.hpp"
+#include "serverTcpSessionState.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include "clientState.hpp"
+#include "clientTcpSessionState.hpp"
 #include <boost/asio/signal_set.hpp>
 #include <iostream>
 #include <boost/config.hpp>
 #include <memory>
 
-std::string get_compile_version()
+std::string getCompileVersion()
 {
      char buffer[sizeof(BOOST_PLATFORM) + sizeof(BOOST_COMPILER) +sizeof(__DATE__ )+ 5];
      sprintf(buffer, "[%s/%s](%s)", BOOST_PLATFORM, BOOST_COMPILER, __DATE__);
@@ -48,7 +39,7 @@ main(int argc, char* argv[])
     spdlog::set_default_logger(logger);
     logger->flush_on(spdlog::level::info);
 
-    std::cout<<get_compile_version();
+    std::cout << getCompileVersion();
     std::cout<<std::endl;
 
 
@@ -78,7 +69,7 @@ main(int argc, char* argv[])
     std::make_shared<serverListener>(
         ioc,
                 tcp::endpoint{tcp::v4(), port},
-        std::make_shared<serverState>())->run();
+        std::make_shared<serverTcpSessionState>("password"))->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     net::signal_set signals(ioc, SIGINT, SIGTERM);

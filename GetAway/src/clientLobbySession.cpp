@@ -5,6 +5,7 @@
 #include <boost/asio.hpp>
 #include <regex>
 #include <utility>
+#include <clientLobbySessionState.hpp>
 
 namespace net = boost::asio;
 using namespace net::ip;
@@ -13,10 +14,9 @@ using errorCode = boost::system::error_code;
 
 clientLobbySession::
     clientLobbySession(
-            const std::string& playerName,
         tcp::socket socket,
-        std::shared_ptr<clientState>  state)
-    : socket_(std::move(socket))
+        std::shared_ptr<clientLobbySessionState>  state)
+    : sock(std::move(socket))
     , state(std::move(state))
 {
     state->join(*this, playerName);
@@ -31,7 +31,7 @@ clientLobbySession::
 {
 
     // Read a request
-    net::async_read_until(socket_, lobbySessionStreamBuff, '\n',
+    net::async_read_until(sock, lobbySessionStreamBuff, '\n',
                           [self = shared_from_this()]
                           (errorCode ec, std::size_t bytes)
                           {
@@ -81,7 +81,7 @@ clientLobbySession::onRead(errorCode ec, std::size_t numbOfBytes)
                 std::string name(nameChar);
                 std::make_shared<clientLobbySession>(
                         name,
-                        std::move(socket_),
+                        std::move(sock),
                         state)->run();
 #ifdef LOG
                 spdlog::info("Connection Promoted To Lobby-Session");
@@ -107,7 +107,7 @@ clientLobbySession::onRead(errorCode ec, std::size_t numbOfBytes)
         lobbySessionStreamBuff.consume(numbOfBytes);
     }
     // Read another request
-    net::async_read_until(socket_, lobbySessionStreamBuff, '\n',
+    net::async_read_until(sock, lobbySessionStreamBuff, '\n',
                           [self = shared_from_this()]
                           (errorCode ec, std::size_t bytes)
                           {
@@ -120,10 +120,10 @@ clientLobbySession::
     sessionSend(std::shared_ptr<std::string const> const& ss)
 {
     net::async_write(
-        socket_,
+            sock,
         //net::buffer(*queue_.front()),
         net::buffer(*ss),
-        [sp = shared_from_this()](
+            [sp = shared_from_this()](
                 errorCode ec, std::size_t bytes)
         {
             sp->onWrite(ec, bytes);
