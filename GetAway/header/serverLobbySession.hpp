@@ -1,13 +1,14 @@
-#ifndef LOBBY_HPP
-#define LOBBY_HPP
+#ifndef GETAWAY_SERVERLOBBYSESSION_HPP
+#define GETAWAY_SERVERLOBBYSESSION_HPP
 
 
 
-#include "serverTcpSessionState.hpp"
+#include "serverLobbySessionState.hpp"
 #include <cstdlib>
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 #include <boost/asio.hpp>
 
 
@@ -20,10 +21,11 @@ using errorCode = boost::system::error_code;
 */
 class serverLobbySession : public std::enable_shared_from_this<serverLobbySession>
 {
-    tcp::socket socket_;
-    std::shared_ptr<serverTcpSessionState> state;
-    boost::asio::streambuf lobbySessionStreamBuff;
-    std::string player;
+    tcp::socket sock;
+    std::shared_ptr<serverLobbySessionState> state;
+    net::streambuf lobbySessionStreamBuff;
+    std::ostream out{&lobbySessionStreamBuff};
+    std::istream is{&lobbySessionStreamBuff};
     static void fail(errorCode ec, char const* what);
     void onRead(errorCode ec, std::size_t);
     static void onWrite(errorCode ec, std::size_t);
@@ -38,4 +40,4 @@ public:
 
 
 
-#endif // LOBBY
+#endif // GETAWAY_SERVERLOBBYSESSION_HPP

@@ -1,5 +1,5 @@
-#ifndef CPPCON2018_SHARED_STATE_HPP
-#define CPPCON2018_SHARED_STATE_HPP
+#ifndef GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#define GETAWAY_SERVERTCPSESSIONSTATE_HPP
 
 #include <memory>
 #include <string>
@@ -7,8 +7,22 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
+#include "serverLobbySessionState.hpp"
 class serverLobbySession;
 
+
+
+
+
+
+
+
+
+
+
+
+
+class serverLobbySessionState;
 // Represents the shared server state
 class serverTcpSessionState
 {
@@ -16,6 +30,7 @@ class serverTcpSessionState
     std::string playerName;
     int classSendSize =0;
     bool passwordMatched = false;
+
 //TODO
 //Following constant should be supplied from somewhere else.
     const int nameLength = 60; //Maximum chars for name
@@ -40,6 +55,7 @@ class serverTcpSessionState
 
 
 public:
+
     explicit
     serverTcpSessionState(std::string password);
 
@@ -51,4 +67,4 @@ public:
 
 };
 
-#endif
+#endif //GETAWAY_SERVERLOBBYSESSIONSTATE_HPP

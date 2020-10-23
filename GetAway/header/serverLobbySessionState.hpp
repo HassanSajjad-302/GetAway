@@ -1,6 +1,7 @@
-#ifndef CPPCON2018_SHARED_STATE_HPP
-#define CPPCON2018_SHARED_STATE_HPP
+#ifndef GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#define GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
 
+#include <memory>
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -9,6 +10,12 @@
 #include <iostream>
 class serverLobbySession;
 
+//TODO
+//All of these state classes should just have one instance of them.
+//I will implement that later. It's constructor should be private.
+//It should follow the singleton principle. So, it makes sure that
+//it's instance is created when first serverLobbySession is created
+//and destroyed when last serverLobbySession is destroyed.
 // Represents the shared server state
 class serverLobbySessionState
 {
@@ -55,4 +62,66 @@ public:
 
 };
 
-#endif
+
+
+
+
+
+
+In 2008 I provided a C++98 implementation of the Singleton design pattern that is lazy-evaluated, guaranteed-destruction, not-technically-thread-safe:
+Can any one provide me a sample of Singleton in c++?
+
+Here is an updated C++11 implementation of the Singleton design pattern that is lazy-evaluated, correctly-destroyed, and thread-safe.
+
+class S
+{
+public:
+    static S& getInstance()
+    {
+        static S    instance; // Guaranteed to be destroyed.
+        // Instantiated on first use.
+        return instance;
+    }
+private:
+    S() {}                    // Constructor? (the {} brackets) are needed here.
+
+    // C++ 03
+    // ========
+    // Don't forget to declare these two. You want to make sure they
+    // are inaccessible(especially from outside), otherwise, you may accidentally get copies of
+    // your singleton appearing.
+    S(S const&);              // Don't Implement
+    void operator=(S const&); // Don't implement
+
+    // C++ 11
+    // =======
+    // We can use the better technique of deleting the methods
+    // we don't want.
+public:
+    S(S const&)               = delete;
+    void operator=(S const&)  = delete;
+
+    // Note: Scott Meyers mentions in his Effective Modern
+    //       C++ book, that deleted functions should generally
+    //       be public as it results in better error messages
+    //       due to the compilers behavior to check accessibility
+    //       before deleted status
+};
+
+
+
+class Demo {
+    static std::shared_ptr<Demo> d;
+    Demo(){}
+public:
+    static std::shared_ptr<Demo> getInstance(){
+        if(!d)
+            d.reset(new Demo);
+        return d;
+    }
+    ~Demo(){
+        std::cout << "Object Destroyed " << std::endl;
+    }
+
+};
+#endif //GETAWAY_SERVERLOBBYSESSIONSTATE_HPP

@@ -1,5 +1,5 @@
-#ifndef CPPCON2018_LISTENER_HPP
-#define CPPCON2018_LISTENER_HPP
+#ifndef GETAWAY_SERVERLISTENER_HPP
+#define GETAWAY_SERVERLISTENER_HPP
 
 #include <memory>
 #include <string>
@@ -31,4 +31,4 @@ public:
     void run();
 };
 
-#endif
+#endif //GETAWAY_SERVERLISTENER_HPP

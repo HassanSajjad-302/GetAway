@@ -1,5 +1,5 @@
-#ifndef CPPCON2018_TCP_SESSION_HPP
-#define CPPCON2018_TCP_SESSION_HPP
+#ifndef GETAWAY_CLIENTTCPSESSION_HPP
+#define GETAWAY_CLIENTTCPSESSION_HPP
 
 #include "serverTcpSessionState.hpp"
 #include <cstdlib>
@@ -35,4 +35,4 @@ public:
 
 };
 
-#endif
+#endif //GETAWAY_CLIENTTCPSESSION_HPP

@@ -1,5 +1,5 @@
-#ifndef CPPCON2018_SHARED_STATE_HPP
-#define CPPCON2018_SHARED_STATE_HPP
+#ifndef GETAWAY_CLIENTTCPSESSIONSTATE_HPP
+#define GETAWAY_CLIENTTCPSESSIONSTATE_HPP
 
 #include <memory>
 #include <string>
@@ -30,4 +30,4 @@ public:
     void setClassSendSize(int size);
 };
 
-#endif
+#endif //GETAWAY_CLIENTTCPSESSIONSTATE_HPP
