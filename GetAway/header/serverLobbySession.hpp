@@ -26,12 +26,14 @@ class serverLobbySession : public std::enable_shared_from_this<serverLobbySessio
     net::streambuf lobbySessionStreamBuff;
     std::ostream out{&lobbySessionStreamBuff};
     std::istream is{&lobbySessionStreamBuff};
+    int id;
     static void fail(errorCode ec, char const* what);
     void onRead(errorCode ec, std::size_t);
     static void onWrite(errorCode ec, std::size_t);
 
 public:
-    serverLobbySession(const std::string& playerName, tcp::socket socket, std::shared_ptr<serverTcpSessionState> state);
+    int getid() const;
+    serverLobbySession(const std::string& playerName, tcp::socket socket, std::shared_ptr<serverLobbySessionState> state);
     ~serverLobbySession();
     void run();
     void sessionSend(std::shared_ptr<std::string const> const& ss);

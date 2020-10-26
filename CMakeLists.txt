@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-
 set( CMAKE_VERBOSE_MAKEFILE CACHE BOOL FORCE)
 #cmake .. -DCMAKE_VERBOSE_MAKEFILE=ON
 
@@ -28,7 +27,7 @@ endif()
 
 file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")
-add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files} GetAway/header/Log_Macro.hpp GetAway/header/messageProcessing.hpp GetAway/header/adfadfadf.hpp GetAway/header/clinetMeetingProtocol.hpp)
+add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files})
 target_include_directories(GetAway PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/header/")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)

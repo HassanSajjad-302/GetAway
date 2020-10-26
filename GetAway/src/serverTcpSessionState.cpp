@@ -5,7 +5,7 @@
 serverTcpSessionState::
 serverTcpSessionState(std::string password){
     this->password = std::move(password);
-    classSendSize = 10; //gamePlayers.size() + \n + time_per_turn + \n
+    classSendSize = 10; //gamePlayers.size() + \n + timePerTurn + \n
 }
 
 int serverTcpSessionState::getClassSendSize() const {
@@ -26,4 +26,8 @@ int serverTcpSessionState::getMinimumReceivedBytes() const {
 
 bool serverTcpSessionState::getPasswordMatched() const {
     return passwordMatched;
+}
+
+std::string serverTcpSessionState::getPlayerName() const {
+    return playerName;
 }

@@ -9,20 +9,6 @@
 #include <iostream>
 #include "serverLobbySessionState.hpp"
 class serverLobbySession;
-
-
-
-
-
-
-
-
-
-
-
-
-
-class serverLobbySessionState;
 // Represents the shared server state
 class serverTcpSessionState
 {
@@ -55,7 +41,7 @@ class serverTcpSessionState
 
 
 public:
-
+    std::shared_ptr<serverLobbySessionState> nextState{std::make_shared<serverLobbySessionState>()};
     explicit
     serverTcpSessionState(std::string password);
 
@@ -63,6 +49,7 @@ public:
     [[nodiscard]] int getClassSendSize() const;
     [[nodiscard]] int getMinimumReceivedBytes() const;
     [[nodiscard]] bool getPasswordMatched() const;
+    [[nodiscard]] std::string getPlayerName() const;
     void setClassSendSize(int size);
 
 };

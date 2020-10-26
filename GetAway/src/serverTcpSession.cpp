@@ -77,9 +77,9 @@ onRead(errorCode ec, std::size_t numbOfBytes)
             //If password does not match, connection will be closed.
             if(state->getPasswordMatched()){
                 std::make_shared<serverLobbySession>(
-                        name,
+                        state->getPlayerName(),
                         std::move(sock),
-                        state)->run();
+                        state->nextState)->run();
             }
         }
         serverTcpSessionStreamBuff.consume(numbOfBytes);

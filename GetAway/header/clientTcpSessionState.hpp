@@ -14,7 +14,6 @@ class clientTcpSessionState
 {
     std::string password;
     std::string playerName;
-    int classSendSize =0;
 
     friend std::ostream& operator<<(std::ostream& out, clientTcpSessionState& state){
         out << state.password << std::endl;
@@ -26,8 +25,7 @@ public:
     explicit
     clientTcpSessionState(std::string playerName, std::string password);
 
-    int getClassSendSize() const;
-    void setClassSendSize(int size);
+    [[nodiscard]] int getClassWriteSize() const;
 };
 
 #endif //GETAWAY_CLIENTTCPSESSIONSTATE_HPP

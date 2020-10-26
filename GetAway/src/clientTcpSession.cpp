@@ -22,21 +22,17 @@ clientTcpSession(
 }
 clientTcpSession::~clientTcpSession()= default;
 
-void func(errorCode& ec, std::size_t bytes){
-
-}
-
 void
 clientTcpSession::
 run()
 {
-    int size = tcpSessionStreamBuff.size();
+    out << state->getClassWriteSize();
     out << state;
-    size -= tcpSessionStreamBuff.size();
-    sock.async_send(tcpSessionStreamBuff.data(), [](errorCode ec, std::size_t bytes_sent){
-        std::make_shared<clientLobbySession>()
+    net::async_write(sock, tcpSessionStreamBuff.data(),
+                    [self = shared_from_this()](errorCode ec, std::size_t bytes_sent){
+        self->tcpSessionStreamBuff.consume(bytes_sent);
+        std::make_shared<clientLobbySession>
     });
-    sock.write_some(tcpSessionStreamBuff.data());
 }
 
 // Report a failure

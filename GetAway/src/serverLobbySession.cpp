@@ -12,31 +12,33 @@ using errorCode = boost::system::error_code;
 //------------------------------------------------------------------------------
 
 serverLobbySession::
-    serverLobbySession(
-            const std::string& playerName,
+    serverLobbySession(const std::string& playerName,
         tcp::socket socket,
         std::shared_ptr<serverLobbySessionState>  state)
     : sock(std::move(socket))
     , state(std::move(state))
 {
-    state->join(*this, playerName);
+    this->id = state->join(*this, playerName);
+
 }
 serverLobbySession::~serverLobbySession(){
-    state->leave(*this);
+    state->leave(id);
 }
 
 void
 serverLobbySession::
     run()
 {
-
-    // Read a request
-    net::async_read_until(sock, lobbySessionStreamBuff, '\n',
-                          [self = shared_from_this()]
-                          (errorCode ec, std::size_t bytes)
-                          {
-          self->onRead(ec, bytes);
-                          });
+    //TODO
+    //Whenever some player joins, I send state to all the players. However,
+    //here I am sending the state only to the joined player for time being.
+    out << state->getClassWriteSize();
+    out << state;
+    net::async_write(sock, lobbySessionStreamBuff.data(),
+                     [self = shared_from_this()](errorCode ec, std::size_t bytes_sent){
+                         self->lobbySessionStreamBuff.consume(bytes_sent);
+                         std::make_shared<clientLobbySession>
+                     });
 }
 
 // Report a failure
@@ -138,4 +140,8 @@ serverLobbySession::
     if(ec)
         return fail(ec, "write");
 
+}
+
+int serverLobbySession::getid() const {
+    return id;
 }

@@ -9,11 +9,7 @@ this->playerName = std::move(playerName);
 this->password = std::move(password);
 }
 
-int clientTcpSessionState::getClassSendSize() const {
-    return classSendSize;
-}
-
-void clientTcpSessionState::setClassSendSize(int size) {
-    classSendSize = size;
+int clientTcpSessionState::getClassWriteSize() const {
+    return password.size() + playerName.size() + 2;
 }
 
