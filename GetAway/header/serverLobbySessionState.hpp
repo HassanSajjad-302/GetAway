@@ -1,5 +1,5 @@
-#ifndef GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
-#define GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#ifndef GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
+#define GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
 
 
 //TODO
@@ -29,7 +29,7 @@ class serverLobbySessionState
     //not doing this, as huge overall design change is expected.
     std::chrono::seconds timePerTurn = std::chrono::seconds(60);
     std::map<int, std::tuple<std::reference_wrapper<const std::string>,
-    std::reference_wrapper<const serverLobbySession>>> gameData;
+    std::reference_wrapper<serverLobbySession>>> gameData;
 
     friend std::ostream& operator<<(std::ostream& out, serverLobbySessionState& state);
     //friend std::istream& operator>>(std::istream& in, serverLobbySessionState& state);
@@ -43,7 +43,6 @@ public:
     int join  (serverLobbySession& session, const std::string& playerName);
     void leave (int id);
 
-    void stateSend  (std::string message, serverLobbySession* session);
-
+    void broadcastState();
 };
-#endif //GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#endif //GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP

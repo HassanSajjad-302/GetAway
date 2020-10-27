@@ -8,7 +8,7 @@ int
 serverLobbySessionState::
 join(serverLobbySession& session, const std::string& playerName)
 {
-    auto tup = std::tuple(std::cref(playerName),std::cref(session));
+    auto tup = std::tuple(std::cref(playerName),std::ref(session));
     int id;
     if(gameData.empty())
     {
@@ -35,19 +35,7 @@ leave(int id)
 //then this broadcast should also be handled by the serverLobbySession
 //but it is being handled by the serverLobbySessionState. So, basically
 //state and session classes need a merger.
-void
-serverLobbySessionState::
-stateSend(std::string message, serverLobbySession* session)
-{
-    auto const ss = std::make_shared<std::string const>(std::move(message));
 
-    for(auto& sess: sessions)
-    {
-        if( sess == session){
-            sess->sessionSend(ss);
-        }
-    }
-}
 
 std::ostream &operator<<(std::ostream &out, serverLobbySessionState &state) {
     out << state.gameData.size() << std::endl;
@@ -67,6 +55,12 @@ int serverLobbySessionState::getClassWriteSize() {
     }
     size += (numbOfPlayers * 5); //4 for int id and one for \n.
     return size;
+}
+
+void serverLobbySessionState::broadcastState() {
+    for(auto& player: gameData){
+        std::get<1>(player.second).get().writeState();
+    }
 }
 //Don't need this class as client won't exactly read this data structure.
 //I don't have to provide all the clientLobbySessions to the client.

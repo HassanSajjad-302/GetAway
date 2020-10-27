@@ -1,0 +1,10 @@
+Every integer read, write will be using binary protocol while
+string read, write will be using stream insertion and getline operators.
+
+Number of bytes of packet for receive will surely be read in other
+function instead of operator overload <<. While for writing the number
+of bytes I am unsure whether to write them in other function or
+operator overload >>.
+
+packetsize int at the start of every message does not include
+itself in the size of message.

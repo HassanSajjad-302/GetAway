@@ -29,16 +29,7 @@ void
 serverLobbySession::
     run()
 {
-    //TODO
-    //Whenever some player joins, I send state to all the players. However,
-    //here I am sending the state only to the joined player for time being.
-    out << state->getClassWriteSize();
-    out << state;
-    net::async_write(sock, lobbySessionStreamBuff.data(),
-                     [self = shared_from_this()](errorCode ec, std::size_t bytes_sent){
-                         self->lobbySessionStreamBuff.consume(bytes_sent);
-                         std::make_shared<clientLobbySession>
-                     });
+    state->broadcastState();
 }
 
 // Report a failure
@@ -144,4 +135,13 @@ serverLobbySession::
 
 int serverLobbySession::getid() const {
     return id;
+}
+
+void serverLobbySession::writeState(){
+    out << state->getClassWriteSize();
+    out << state;
+    net::async_write(sock, lobbySessionStreamBuff.data(),
+                     [self = shared_from_this()](errorCode ec, std::size_t bytes_sent){
+                         self->lobbySessionStreamBuff.consume(bytes_sent);
+                     });
 }

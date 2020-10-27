@@ -1,4 +1,4 @@
-#ifndef GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#ifndef GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
 #define GETAWAY_SERVERTCPSESSIONSTATE_HPP
 
 #include <memory>
@@ -22,6 +22,7 @@ class serverTcpSessionState
     const int nameLength = 60; //Maximum chars for name
 
     friend std::istream& operator>>(std::istream& in, serverTcpSessionState& state){
+        //TODO
         char arr[61]; //This constant will be fed from somewhere else but one is added.
         in.getline(arr,61);
         std::string str(arr);
@@ -54,4 +55,4 @@ public:
 
 };
 
-#endif //GETAWAY_SERVERLOBBYSESSIONSTATE_HPP
+#endif //GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP

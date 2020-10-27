@@ -46,4 +46,3 @@ fail(errorCode ec, char const* what)
 
     std::cerr << what << ": " << ec.message() << "\n";
 }
-

@@ -30,7 +30,8 @@ class serverLobbySession : public std::enable_shared_from_this<serverLobbySessio
     static void fail(errorCode ec, char const* what);
     void onRead(errorCode ec, std::size_t);
     static void onWrite(errorCode ec, std::size_t);
-
+    void writeState();
+    friend class serverLobbySessionState;
 public:
     int getid() const;
     serverLobbySession(const std::string& playerName, tcp::socket socket, std::shared_ptr<serverLobbySessionState> state);

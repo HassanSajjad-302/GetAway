@@ -3,7 +3,6 @@
 #include "spdlog/spdlog.h"
 #include <iostream>
 #include <boost/asio.hpp>
-#include <regex>
 #include <utility>
 #include <clientLobbySessionState.hpp>
 
@@ -19,17 +18,12 @@ clientLobbySession::
     : sock(std::move(socket))
     , state(std::move(state))
 {
-    state->join(*this, playerName);
-}
-clientLobbySession::~clientLobbySession(){
-    state->leave(*this);
 }
 
 void
 clientLobbySession::
     run()
 {
-
     // Read a request
     net::async_read_until(sock, lobbySessionStreamBuff, '\n',
                           [self = shared_from_this()]
@@ -52,70 +46,6 @@ clientLobbySession::
 }
 
 void
-clientLobbySession::onRead(errorCode ec, std::size_t numbOfBytes)
-{
-    // Handle the error, if any
-    if(ec)
-        return fail(ec, "read");
-    if (!ec)
-    {
-#ifdef LOG
-        spdlog::info("Number Of bytes read {}", numbOfBytes);
-#endif
-
-        lobbySessionStreamBuff.commit(numbOfBytes);
-        std::istream is(&lobbySessionStreamBuff);
-
-        if (numbOfBytes > password.size() + 2) // 2 is added to compensate for 2 \n
-        {
-            char passChar[this->password.size() + 1]; //1 is added to null-terminate string
-            extract(is, passChar, password.size() + 1);
-            std::string pass(passChar);
-            if (pass == password) {
-#ifdef LOG
-                spdlog::info("Password Received Matched");
-#endif
-                int bytesLeft = numbOfBytes - (password.size() + 1);
-                char nameChar[bytesLeft];
-                extract(is, nameChar, bytesLeft);
-                std::string name(nameChar);
-                std::make_shared<clientLobbySession>(
-                        name,
-                        std::move(sock),
-                        state)->run();
-#ifdef LOG
-                spdlog::info("Connection Promoted To Lobby-Session");
-                spdlog::info("Name of the Player {}", name);
-#endif
-            }
-#ifdef LOG
-            else {
-                spdlog::info("Connection Could not be promoted because of password mismatch");
-                spdlog::info("Password Expected {}", password);
-                spdlog::info("Password Received {}", pass);
-            }
-#endif
-        }
-#ifdef LOG
-        else
-        {
-            spdlog::info("TCP connection not promoted and closed because of less number of bytes received");
-            spdlog::info("Number of bytes should had been greater than", password.size() + 2);
-            spdlog::info("Number of bytes received", numbOfBytes);
-        }
-#endif
-        lobbySessionStreamBuff.consume(numbOfBytes);
-    }
-    // Read another request
-    net::async_read_until(sock, lobbySessionStreamBuff, '\n',
-                          [self = shared_from_this()]
-                          (errorCode ec, std::size_t bytes)
-                          {
-          self->onRead(ec, bytes);
-                          });
-}
-
-void
 clientLobbySession::
     sessionSend(std::shared_ptr<std::string const> const& ss)
 {
@@ -130,12 +60,84 @@ clientLobbySession::
         });
 }
 
-void
-clientLobbySession::
-    onWrite(errorCode ec, std::size_t)
-{
-    // Handle the error, if any
+void clientLobbySession::receiveMessage() {
+    sock.async_receive(lobbySessionStreamBuff.prepare(32222), [self = shared_from_this()](
+            errorCode ec, std::size_t bytes)
+    {
+        self->readMore(ec, bytes);
+    });
+
+}
+
+void clientLobbySession::readMore(errorCode ec, int bytesRead) {
     if(ec)
         return fail(ec, "write");
 
+    lobbySessionStreamBuff.commit(bytesRead);
+    int packetSize = 0;
+    is.read(reinterpret_cast<char*>(packetSize),sizeof(packetSize));
+    if(packetSize == bytesRead - 4){
+        packetReceived(bytesRead);
+    }
+    else if(packetSize > bytesRead-4){
+        //Start Composite Asynchronous Operation Before Reporting
+        //The Received data.
+        int remainingBytes = packetSize - (bytesRead - 4);
+        net::async_read(sock, lobbySessionStreamBuff.prepare(remainingBytes),
+                        [self = shared_from_this(), bytesRead, remainingBytes](
+                                errorCode ec, std::size_t bytes)
+                        {
+                            int consumingBytes = bytesRead + remainingBytes;
+                            self->packetReceivedComposite(ec, bytes, consumingBytes);
+                        });
+    }
+    else
+        {
+        //Why it read extra bytes
+        std::cout<<"All guarantees are fucked up" <<std::endl;
+        exit(-1);
+    }
 }
+
+void clientLobbySession::packetReceived(int consumeBytes) {
+//Whole packet Received in One Call
+    messageType type;
+    is.read(reinterpret_cast<char*>(type),sizeof(type));
+    if(messageRequired){
+        if(type != messageRequiredType){
+            std::cout<<"Error. Unexpected Message Received"<<std::endl;
+            exit(-1);
+        }
+    }
+    if(type == messageType::STATE){
+        is >> *state;
+    }
+    else if(type == messageType::CHAT_MESSAGE){
+
+    }
+    else if(type == messageType::UPDATE){
+
+    }
+    else{
+        std::cout <<"Rethink Your Life Decisions" <<std::endl;
+        exit(-1);
+    }
+    lobbySessionStreamBuff.consume(consumeBytes);
+}
+
+void clientLobbySession::packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes) {
+    if(ec)
+        return fail(ec, "write");
+
+    packetReceived(consumingBytes);
+}
+
+//TODO
+//This is a bug because if we are writing more than one message than
+//
+void clientLobbySession::sendMessage(messageType type){
+    if(type == messageType::STATE){
+
+    }
+}
+clientLobbySession::~clientLobbySession() = default;
