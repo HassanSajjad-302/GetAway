@@ -1,10 +1,9 @@
 #include "clientLobbySession.hpp"
 #include "Log_Macro.hpp"
-#include "spdlog/spdlog.h"
 #include <iostream>
 #include <boost/asio.hpp>
 #include <utility>
-#include <clientLobbySessionState.hpp>
+#include <clientLobbyManager.hpp>
 
 namespace net = boost::asio;
 using namespace net::ip;
@@ -14,7 +13,7 @@ using errorCode = boost::system::error_code;
 clientLobbySession::
     clientLobbySession(
         tcp::socket socket,
-        std::shared_ptr<clientLobbySessionState>  state)
+        std::shared_ptr<clientLobbyManager>  state)
     : sock(std::move(socket))
     , state(std::move(state))
 {

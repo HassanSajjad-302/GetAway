@@ -1,12 +1,12 @@
-#include "clientLobbySessionState.hpp"
+#include "clientLobbyManager.hpp"
 
-int clientLobbySessionState::getClassSendSize() const {
+int clientLobbyManager::getClassSendSize() const {
     return 0;
 }
 
-clientLobbySessionState::clientLobbySessionState() = default;
+clientLobbyManager::clientLobbyManager() = default;
 
-std::istream &operator>>(std::istream &in, clientLobbySessionState &state) {
+std::istream &operator>>(std::istream &in, clientLobbyManager &state) {
     in.read(reinterpret_cast<char*>(state.id),sizeof(state.id));
     //TODO
     char arr[61]; //This constant will be fed from somewhere else but one is added.

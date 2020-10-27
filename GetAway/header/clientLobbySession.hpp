@@ -2,7 +2,7 @@
 #define LOBBY_HPP
 
 
-#include "clientLobbySessionState.hpp"
+#include "clientLobbyManager.hpp"
 #include "clientTcpSessionState.hpp"
 #include <cstdlib>
 #include <memory>
@@ -28,7 +28,7 @@ enum class messageType{
 class clientLobbySession : public std::enable_shared_from_this<clientLobbySession>
 {
     tcp::socket sock;
-    std::shared_ptr<clientLobbySessionState> state;
+    std::shared_ptr<clientLobbyManager> state;
     boost::asio::streambuf lobbySessionStreamBuff;
     std::ostream out{&lobbySessionStreamBuff};
     std::istream is{&lobbySessionStreamBuff};
@@ -40,7 +40,7 @@ class clientLobbySession : public std::enable_shared_from_this<clientLobbySessio
 public:
     bool messageRequired = false;
     messageType messageRequiredType;
-    clientLobbySession(tcp::socket socket, std::shared_ptr<clientLobbySessionState> state);
+    clientLobbySession(tcp::socket socket, std::shared_ptr<clientLobbyManager> state);
     void readMore(errorCode ec, int bytesRead);
     void packetReceived(int consumeBytes);
     ~clientLobbySession();

@@ -1,5 +1,5 @@
-#ifndef GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
-#define GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
+#ifndef GETAWAY_CLIENTLOBBYMANAGER_HPP
+#define GETAWAY_CLIENTLOBBYMANAGER_HPP
 
 #include <map>
 #include <memory>
@@ -10,21 +10,22 @@
 #include <iostream>
 class clientLobbySession;
 
+
 // Represents the shared server state
-class clientLobbySessionState
+class clientLobbyManager
 {
     std::string playerName;
     int id = 0;
     std::map<int, std::string> gamePlayers;
     int classSendSize =0;
 
-    friend std::istream& operator>>(std::istream& in, clientLobbySessionState& state);
+    friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
 
-
+    friend class ClientLobbyState;
 public:
     explicit
-    clientLobbySessionState();
+    clientLobbyManager();
     [[nodiscard]] int getClassSendSize() const;
 };
 
-#endif //GETAWAY_CLIENTLOBBYSESSIONSTATE_HPP
+#endif //GETAWAY_CLIENTLOBBYMANAGER_HPP
