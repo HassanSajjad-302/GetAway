@@ -16,10 +16,12 @@ using errorCode = boost::system::error_code;
 
 /** Represents an established TCP connection
 */
-class clientTcpSession : public std::enable_shared_from_this<clientTcpSession>
+
+template <typename T>
+class clientTcpSession : public std::enable_shared_from_this<clientTcpSession<T>>
 {
     tcp::socket sock;
-    std::shared_ptr<clientTcpSessionState> state;
+    std::shared_ptr<T> state;
     boost::asio::streambuf tcpSessionStreamBuff;
     std::ostream out{&tcpSessionStreamBuff};
     static void fail(errorCode ec, char const* what);
@@ -27,7 +29,7 @@ class clientTcpSession : public std::enable_shared_from_this<clientTcpSession>
 public:
     clientTcpSession(
         tcp::socket socket,
-        std::shared_ptr<clientTcpSessionState>  state);
+        std::shared_ptr<T>  state);
     ~clientTcpSession();
     void run();
 };

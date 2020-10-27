@@ -12,32 +12,35 @@ using namespace net::ip;
 using errorCode = boost::system::error_code;
 //------------------------------------------------------------------------------
 
-clientTcpSession::
-clientTcpSession(
-    tcp::socket socket,
-    std::shared_ptr<clientTcpSessionState>  state)
-    : sock(std::move(socket))
-    , state(std::move(state))
-{
-}
-clientTcpSession::~clientTcpSession()= default;
 
+template<typename T>
+clientTcpSession<T>::clientTcpSession(tcp::socket socket, std::shared_ptr<T> state) :
+sock(std::move(socket)), state(std::move(state))
+{
+
+}
+
+template <typename T>
+clientTcpSession<T>::~clientTcpSession()= default;
+
+template <typename T>
 void
-clientTcpSession::
+clientTcpSession<T>::
 run()
 {
     out << state->getClassWriteSize();
     out << state;
     net::async_write(sock, tcpSessionStreamBuff.data(),
-                    [self = shared_from_this()](errorCode ec, std::size_t bytes_sent){
+                    [self = shared_from_this<T>()](errorCode ec, std::size_t bytes_sent){
         self->tcpSessionStreamBuff.consume(bytes_sent);
         std::make_shared<clientLobbySession>
     });
 }
 
 // Report a failure
+template <typename T>
 void
-clientTcpSession::
+clientTcpSession<T>::
 fail(errorCode ec, char const* what)
 {
     // Don't report on canceled operations
@@ -46,3 +49,5 @@ fail(errorCode ec, char const* what)
 
     std::cerr << what << ": " << ec.message() << "\n";
 }
+
+

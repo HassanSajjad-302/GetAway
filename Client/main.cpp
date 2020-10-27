@@ -42,9 +42,8 @@ main(int argc, char* argv[])
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
-    std::make_shared<clientTcpSession>(std::move(sock),
+    std::make_shared<clientTcpSession<clientTcpSessionState>>(std::move(sock),
         std::make_shared<clientTcpSessionState>("Hassan Sajjad", "password"))->run();
-
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

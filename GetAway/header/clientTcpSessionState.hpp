@@ -7,13 +7,18 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
-class clientLobbySession;
 
+template <typename T>
+class Session{};
 // Represents the shared server state
+
+
 class clientTcpSessionState
 {
     std::string password;
     std::string playerName;
+
+
 
     friend std::ostream& operator<<(std::ostream& out, clientTcpSessionState& state){
         out << state.password << std::endl;
@@ -24,7 +29,6 @@ class clientTcpSessionState
 public:
     explicit
     clientTcpSessionState(std::string playerName, std::string password);
-
     [[nodiscard]] int getClassWriteSize() const;
 };
 

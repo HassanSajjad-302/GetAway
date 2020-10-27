@@ -12,4 +12,3 @@ this->password = std::move(password);
 int clientTcpSessionState::getClassWriteSize() const {
     return password.size() + playerName.size() + 2;
 }
-
