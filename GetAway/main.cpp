@@ -1,11 +1,11 @@
-//Main
+//Server
 
 #include "serverListener.hpp"
-#include "serverTcpSessionState.hpp"
+#include "serverAuthenticationManager.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include "clientTcpSessionState.hpp"
+#include "clientAuthenticationManager.hpp"
 #include <boost/asio/signal_set.hpp>
 #include <iostream>
 #include <boost/config.hpp>
@@ -68,8 +68,8 @@ main(int argc, char* argv[])
     // Create and launch a listening port
     std::make_shared<serverListener>(
         ioc,
-                tcp::endpoint{tcp::v4(), port},
-        std::make_shared<serverTcpSessionState>("password"))->run();
+        tcp::endpoint{tcp::v4(), port},
+        "password")->run();
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
     net::signal_set signals(ioc, SIGINT, SIGTERM);

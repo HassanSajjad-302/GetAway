@@ -1,12 +1,14 @@
-#include "serverLobbySessionState.hpp"
+
+#include <serverLobbyManager.hpp>
+
 #include "serverLobbySession.hpp"
 
 
-serverLobbySessionState::
-serverLobbySessionState()= default;
+serverLobbyManager::
+serverLobbyManager()= default;
 int
-serverLobbySessionState::
-join(serverLobbySession& session, const std::string& playerName)
+serverLobbyManager::
+join(sessionID<serverLobbyManager>& session, const std::string& playerName)
 {
     auto tup = std::tuple(std::cref(playerName),std::ref(session));
     int id;
@@ -24,7 +26,7 @@ join(serverLobbySession& session, const std::string& playerName)
 }
 
 void
-serverLobbySessionState::
+serverLobbyManager::
 leave(int id)
 {
     gameData.erase(gameData.find(id));
@@ -37,7 +39,7 @@ leave(int id)
 //state and session classes need a merger.
 
 
-std::ostream &operator<<(std::ostream &out, serverLobbySessionState &state) {
+std::ostream &operator<<(std::ostream &out, serverLobbyManager &state) {
     out << state.gameData.size() << std::endl;
     for(auto & gamePlayer : state.gameData){
         out << gamePlayer.first << std::endl;
@@ -47,7 +49,7 @@ std::ostream &operator<<(std::ostream &out, serverLobbySessionState &state) {
     return out;
 }
 
-int serverLobbySessionState::getClassWriteSize() {
+int serverLobbyManager::getClassWriteSize() {
     int numbOfPlayers = gameData.size();
     int size = 0;
     for(auto& player: gameData){
@@ -57,10 +59,14 @@ int serverLobbySessionState::getClassWriteSize() {
     return size;
 }
 
-void serverLobbySessionState::broadcastState() {
+void serverLobbyManager::broadcastState() {
     for(auto& player: gameData){
-        std::get<1>(player.second).get().writeState();
+       // std::get<1>(player.second).get().writeState();
     }
+}
+
+void serverLobbyManager::customer() {
+
 }
 //Don't need this class as client won't exactly read this data structure.
 //I don't have to provide all the clientLobbySessions to the client.
@@ -82,3 +88,6 @@ void serverLobbySessionState::broadcastState() {
     }
     return in;
 }*/
+void serverLobbyManager::customer(int id) {
+
+}

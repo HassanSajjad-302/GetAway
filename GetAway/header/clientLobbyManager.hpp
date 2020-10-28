@@ -21,7 +21,6 @@ class clientLobbyManager
 
     friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
 
-    friend class ClientLobbyState;
 public:
     explicit
     clientLobbyManager();

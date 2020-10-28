@@ -10,6 +10,7 @@ if(USE_GCC)
     target_compile_options(Client "-Wunused")
 endif()
 
+
 find_package(Threads REQUIRED)
 target_link_libraries(Client PRIVATE Threads::Threads)
 
@@ -23,8 +24,6 @@ find_package(Boost 1.74.0 REQUIRED)
 
 message(${Boost_INCLUDE_DIRS})
 target_include_directories(Client PRIVATE ${Boost_INCLUDE_DIRS})
-
-
 
 
 find_package(spdlog REQUIRED

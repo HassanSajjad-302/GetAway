@@ -1,12 +1,10 @@
 #include<iostream>
 #include<memory>
 #include<system_error>
-#include<boost/asio.hpp>
 #include <utility>
 #include "serverListener.hpp"
-#include "serverTcpSession.hpp"
-
-
+#include "session.hpp"
+#include "serverAuthenticationManager.hpp"
 namespace net = boost::asio;
 using namespace net::ip;
 using errorCode = boost::system::error_code;
@@ -16,10 +14,10 @@ serverListener::
 serverListener(
     net::io_context& ioc,
     const tcp::endpoint& endpoint,
-    std::shared_ptr<serverTcpSessionState>  state)
+    std::string password_)
     : acceptor(ioc, endpoint)
     , sock(ioc)
-    , state(std::move(state))
+    , password(std::move(password_))
 {
 }
 
@@ -27,6 +25,8 @@ void
 serverListener::
 run()
 {
+
+    nextState = std::make_shared<serverAuthenticationManager>(std::move(password), shared_from_this());
     // Start accepting a connection
     acceptor.async_accept(
             sock,
@@ -56,9 +56,9 @@ onAccept(errorCode ec)
         return fail(ec, "accept");
     else
         // Launch a new session for this connection
-        std::make_shared<serverTcpSession>(
+        std::make_shared<session<serverAuthenticationManager>>(
                 std::move(sock),
-                state)->run();
+                nextState)->receiveMessage(&serverAuthenticationManager::authentication);
 
     // Accept another connection
     acceptor.async_accept(

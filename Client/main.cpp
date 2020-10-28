@@ -1,11 +1,11 @@
 //Client
 
-#include "clientTcpSession.hpp"
-#include "clientTcpSessionState.hpp"
+#include "session.hpp"
+#include "clientAuthenticationManager.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include <boost/asio/signal_set.hpp>
+#include <boost/asio.hpp>
 #include <iostream>
 #include <memory>
 
@@ -26,7 +26,8 @@ std::string getCompileVersion()
 //Following link can be helpful
 //https://www.tutorialspoint.com/Read-a-character-from-standard-input-without-waiting-for-a-newline-in-Cplusplus
 
-
+namespace net = boost::asio;
+using namespace net::ip;
 
 int
 main(int argc, char* argv[])
@@ -42,8 +43,8 @@ main(int argc, char* argv[])
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
-    std::make_shared<clientTcpSession<clientTcpSessionState>>(std::move(sock),
-        std::make_shared<clientTcpSessionState>("Hassan Sajjad", "password"))->run();
+    std::make_shared<session<clientAuthenticationManager>>(
+            std::move(sock), std::make_shared<clientAuthenticationManager>("Hassan Sajjad", "password"))->sendMessage();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown
