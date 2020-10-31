@@ -8,8 +8,8 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
-class clientLobbySession;
-
+#include "session.hpp"
+#include "messageTypeEnums.hpp"
 
 // Represents the shared server state
 class clientLobbyManager
@@ -18,13 +18,18 @@ class clientLobbyManager
     int id = 0;
     std::map<int, std::string> gamePlayers;
     int classSendSize =0;
-
+    std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
+    std::vector<lobbyMessageType> messageTypeExpected;
+    bool messageExpected{};
     friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
+    friend std::ostream& operator<<(std::ostream& out, clientLobbyManager& state);
 
 public:
     explicit
     clientLobbyManager();
-    [[nodiscard]] int getClassSendSize() const;
+    void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
+
+    void emptyFunc();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

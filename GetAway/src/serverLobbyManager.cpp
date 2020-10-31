@@ -1,16 +1,13 @@
 
 #include <serverLobbyManager.hpp>
 
-#include "serverLobbySession.hpp"
-
-
 serverLobbyManager::
 serverLobbyManager()= default;
 int
 serverLobbyManager::
-join(sessionID<serverLobbyManager>& session, const std::string& playerName)
+join(std::shared_ptr<session<serverLobbyManager>> lobbySession, const std::string& playerName)
 {
-    auto tup = std::tuple(std::cref(playerName),std::ref(session));
+    auto tup = std::tuple(std::cref(playerName),lobbySession);
     int id;
     if(gameData.empty())
     {
@@ -65,9 +62,9 @@ void serverLobbyManager::broadcastState() {
     }
 }
 
-void serverLobbyManager::customer() {
 
-}
+
+
 //Don't need this class as client won't exactly read this data structure.
 //I don't have to provide all the clientLobbySessions to the client.
 //Only their id's matter.
@@ -88,6 +85,3 @@ void serverLobbyManager::customer() {
     }
     return in;
 }*/
-void serverLobbyManager::customer(int id) {
-
-}

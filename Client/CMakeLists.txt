@@ -1,8 +1,11 @@
 
 file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/../GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")
-add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" ${src_files})
-target_include_directories(Client PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/../GetAway/header/")
+#add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" ${src_files})
+add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" "../GetAway/src/clientAuthenticationManager.cpp"
+        "../GetAway/src/clientLobbyManager.cpp")
+
+target_include_directories(Client PRIVATE  "${CMAKE_CURRENT_SOURCE_DIR}/../GetAway/header/")
 if (USE_GCC)
 target_compile_options(Client PRIVATE -fcoroutines)
 endif()

@@ -44,7 +44,8 @@ main(int argc, char* argv[])
     tcp::socket sock(io);
     sock.connect(endpoint);
     std::make_shared<session<clientAuthenticationManager>>(
-            std::move(sock), std::make_shared<clientAuthenticationManager>("Hassan Sajjad", "password"))->sendMessage();
+            std::move(sock),
+            std::make_shared<clientAuthenticationManager>("Hassan Sajjad", "password"))->registerSessionToManager();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

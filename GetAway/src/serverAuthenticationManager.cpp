@@ -8,24 +8,8 @@ password(std::move(password_)), serverlistener(std::move(listener))
 {
 }
 
-int serverAuthenticationManager::getClassSendSize() const {
-    return classSendSize;
-}
+void serverAuthenticationManager::join(std::shared_ptr<session<serverLobbyManager>>) {
 
-void serverAuthenticationManager::setClassSendSize(int size) {
-    classSendSize = size;
-}
-
-int serverAuthenticationManager::getClassReceiveSize() const {
-    return password.size() + nameLength + 2;
-}
-
-int serverAuthenticationManager::getMinimumReceivedBytes() const {
-    return password.size() + 2;
-}
-
-std::string serverAuthenticationManager::getPlayerName() const {
-    return playerName;
 }
 
 std::istream &operator>>(std::istream &in, serverAuthenticationManager &state) {
@@ -49,6 +33,6 @@ std::istream &operator>>(std::istream &in, serverAuthenticationManager &state) {
 
 void serverAuthenticationManager::authentication(tcp::socket sok) {
     if(passwordMatched){
-        std::make_shared<sessionID<serverLobbyManager>>(std::move(sok), nextState)->sendMessage(&serverLobbyManager::customer);
+        std::make_shared<sessionID<serverLobbyManager>>(std::move(sok), nextManager)->sendMessage(&serverLobbyManager::customer);
     }
 }

@@ -26,7 +26,7 @@ serverListener::
 run()
 {
 
-    nextState = std::make_shared<serverAuthenticationManager>(std::move(password), shared_from_this());
+    nextManager = std::make_shared<serverAuthenticationManager>(std::move(password), shared_from_this());
     // Start accepting a connection
     acceptor.async_accept(
             sock,
@@ -56,9 +56,9 @@ onAccept(errorCode ec)
         return fail(ec, "accept");
     else
         // Launch a new session for this connection
-        std::make_shared<session<serverAuthenticationManager>>(
+        std::make_shared<session<serverAuthenticationManager,true>>(
                 std::move(sock),
-                nextState)->receiveMessage(&serverAuthenticationManager::authentication);
+                nextManager)->receiveMessage(&serverAuthenticationManager::authentication);
 
     // Accept another connection
     acceptor.async_accept(
