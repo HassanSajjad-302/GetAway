@@ -1,7 +1,7 @@
 //Client
 
 #include "session.hpp"
-#include "clientAuthenticationManager.hpp"
+#include "clientAuthManager.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
@@ -43,9 +43,9 @@ main(int argc, char* argv[])
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
-    std::make_shared<session<clientAuthenticationManager>>(
+    std::make_shared<session<clientAuthManager>>(
             std::move(sock),
-            std::make_shared<clientAuthenticationManager>("Hassan Sajjad", "password"))->registerSessionToManager();
+            std::make_shared<clientAuthManager>("Hassan Sajjad", "password"))->registerSessionToManager();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

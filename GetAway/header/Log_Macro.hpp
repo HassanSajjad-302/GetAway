@@ -7,3 +7,8 @@
 
 #define LOG
 #endif //GETAWAY_LOG_MACRO_HPP
+
+#ifdef LOG
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#endif

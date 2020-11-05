@@ -4,7 +4,8 @@
 #include <utility>
 #include "serverListener.hpp"
 #include "session.hpp"
-#include "serverAuthenticationManager.hpp"
+#include "serverAuthManager.hpp"
+#include "Log_Macro.hpp"
 namespace net = boost::asio;
 using namespace net::ip;
 using errorCode = boost::system::error_code;
@@ -25,8 +26,10 @@ void
 serverListener::
 run()
 {
-
-    nextManager = std::make_shared<serverAuthenticationManager>(std::move(password), shared_from_this());
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
+    nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this());
     // Start accepting a connection
     acceptor.async_accept(
             sock,
@@ -34,6 +37,9 @@ run()
         {
             self->onAccept(ec);
         });
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
 }
 
 // Report a failure
@@ -41,10 +47,16 @@ void
 serverListener::
 fail(errorCode ec, char const* what)
 {
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
     // Don't report on canceled operations
     if(ec == net::error::operation_aborted)
         return;
     std::cerr << what << ": " << ec.message() << "\n";
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
 }
 
 // Handle a connection
@@ -52,13 +64,16 @@ void
 serverListener::
 onAccept(errorCode ec)
 {
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
     if(ec)
         return fail(ec, "accept");
     else
         // Launch a new session for this connection
-        std::make_shared<session<serverAuthenticationManager,true>>(
+        std::make_shared<session<serverAuthManager,true>>(
                 std::move(sock),
-                nextManager)->receiveMessage(&serverAuthenticationManager::authentication);
+                nextManager)->registerSessionToManager();
 
     // Accept another connection
     acceptor.async_accept(
@@ -67,4 +82,7 @@ onAccept(errorCode ec)
         {
             self->onAccept(ec);
         });
+#ifdef LOG
+    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
+#endif
 }

@@ -11,26 +11,43 @@
 #include <map>
 #include <tuple>
 #include "session.hpp"
-
-
+#include "serverListener.hpp"
+#include "serverGameManager.hpp"
+#include "messageTypeEnums.hpp"
 class serverLobbyManager
 {
     //TODO
     //Should be supplied from somewhere else
     std::chrono::seconds timePerTurn = std::chrono::seconds(60);
-    std::map<int, std::tuple<std::reference_wrapper<const std::string>,
-    std::shared_ptr<session<serverLobbyManager>>>> gameData;
+    std::map<int, std::tuple<const std::string,
+    std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
 
     friend std::ostream& operator<<(std::ostream& out, serverLobbyManager& state);
-    //friend std::istream& operator>>(std::istream& in, serverLobbySessionState& state);
+    friend std::istream& operator>>(std::istream& in, serverLobbyManager& state);
 
+    std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
+    std::shared_ptr<serverGameManager> nextManager;
 
+    std::string chatMessageReceived;
+    std::string playerNameAdvanced;
+    std::string playerNameFinal;
+    lobbyMessageType messageSendingType;
+public:
+    void setPlayerNameAdvanced(std::string advancedPlayerName_);
 
 public:
     explicit
-    serverLobbyManager();
-
-    int join  (std::shared_ptr<session<serverLobbyManager>> lobbySession, const std::string& playerName);
+    serverLobbyManager(std::shared_ptr<serverListener> serverlistener_);
+    void uselessWriteFunction(int id);
     void leave (int id);
+
+    //Used-By-Session
+    int join  (std::shared_ptr<session<serverLobbyManager, true>> lobbySession);
+    int excitedSessionId;
+    int receivedPacketSize;
+
+    void sendSelfAndStateToOneAndUpdateToRemaining();
+
+    void sendChatMessageToAllExceptSenderItself();
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

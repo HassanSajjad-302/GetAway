@@ -1,11 +1,11 @@
 //Server
 
 #include "serverListener.hpp"
-#include "serverAuthenticationManager.hpp"
+#include "serverAuthManager.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include "clientAuthenticationManager.hpp"
+#include "clientAuthManager.hpp"
 #include <boost/asio/signal_set.hpp>
 #include <iostream>
 #include <boost/config.hpp>
@@ -33,7 +33,6 @@ std::string getCompileVersion()
 int
 main(int argc, char* argv[])
 {
-
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
     spdlog::set_default_logger(logger);

@@ -27,8 +27,10 @@ endif()
 
 file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")
-add_executable(GetAway "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/main.cpp" ${src_files})
-target_include_directories(GetAway PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/GetAway/header/")
+add_executable(GetAway "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
+        "GetAway/src/serverAuthManager.cpp" "GetAway/src/serverLobbyManager.cpp"
+        "GetAway/src/serverGameManager.cpp" "GetAway/src/messageTypeEnums.cpp")
+target_include_directories(GetAway PRIVATE "GetAway/header")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)
 endif()

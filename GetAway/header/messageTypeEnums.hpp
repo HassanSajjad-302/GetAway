@@ -5,8 +5,19 @@
 #ifndef GETAWAY_MESSAGETYPEENUMS_HPP
 #define GETAWAY_MESSAGETYPEENUMS_HPP
 #include <string>
-enum class lobbyMessageType{
-    STATE, UPDATE, MESSAGE
+
+struct messageTypes{
+public:
+    static const int STATE = 0;
+    static const int UPDATE = 1;
+    static const int MESSAGE = 2;
+    static inline std::string messageTypeStrings[4] = {"STATE", "UPDATE", "CHAT_MESSAGE"};
 };
-std::string lobbyMessageTypeStrings[3] = {"STATE", "UPDATE", "MESSAGE"};
+
+enum class lobbyMessageType{
+    SELFANDSTATE = messageTypes::STATE,
+    UPDATE = messageTypes::UPDATE,
+    CHATMESSAGE = messageTypes::MESSAGE,
+    ENUMSIZE = 3
+};
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

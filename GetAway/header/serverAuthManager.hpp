@@ -9,25 +9,24 @@
 #include <iostream>
 #include "serverLobbyManager.hpp"
 #include "serverListener.hpp"
-class serverLobbySession;
 // Represents the shared server state
-class serverAuthenticationManager
+class serverAuthManager
 {
     std::string password;
-    std::string playerName;
     int classSendSize =0;
-    bool passwordMatched = false;
-
+    std::map<int, std::shared_ptr<session<serverAuthManager, true>>> serverAuthSessions;
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
-    std::shared_ptr<serverLobbyManager> nextManager{std::make_shared<serverLobbyManager>(serverlistener)};
+    std::shared_ptr<serverLobbyManager> nextManager;
 
-
+    friend std::istream &operator>>(std::istream &in, serverAuthManager &state);
 public:
+    int excitedSessionId = 0;
+    int receivedPacketSize = 0;
+
     //connections before starting game.
     explicit
-    serverAuthenticationManager(std::string password, std::shared_ptr<serverListener> serverlistener_);
-    void join(std::shared_ptr<session<serverLobbyManager>>);
-    void authentication(tcp::socket sok);
+    serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_);
+    int join(std::shared_ptr<session<serverAuthManager, true>> authSession);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

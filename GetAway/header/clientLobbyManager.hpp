@@ -20,16 +20,17 @@ class clientLobbyManager
     int classSendSize =0;
     std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
     std::vector<lobbyMessageType> messageTypeExpected;
-    bool messageExpected{};
     friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
     friend std::ostream& operator<<(std::ostream& out, clientLobbyManager& state);
 
+    std::string chatMessage;
 public:
     explicit
     clientLobbyManager();
-    void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
 
-    void emptyFunc();
+    //Used-By-Session
+    void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
+    int receivedPacketSize = 0;
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP
