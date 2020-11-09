@@ -39,15 +39,23 @@ public:
     explicit
     serverLobbyManager(std::shared_ptr<serverListener> serverlistener_);
     void uselessWriteFunction(int id);
-    void leave (int id);
 
     //Used-By-Session
     int join  (std::shared_ptr<session<serverLobbyManager, true>> lobbySession);
     int excitedSessionId;
     int receivedPacketSize;
+    void leave (int id);
 
-    void sendSelfAndStateToOneAndUpdateToRemaining();
+
+
+    void sendSelfAndStateToOneAndPlayerJoinedToRemaining();
 
     void sendChatMessageToAllExceptSenderItself();
+
+    void managementPlayerJoined();
+
+    void managementPlayerLeft();
+
+    void sendPlayerLeftToAllExceptOne();
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

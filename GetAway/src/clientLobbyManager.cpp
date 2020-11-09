@@ -38,17 +38,26 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                 manager.gamePlayers.emplace(playersId, playerName);
             }
             manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGE;
-            manager.messageTypeExpected[1] = lobbyMessageType::UPDATE;
+            manager.messageTypeExpected[1] = lobbyMessageType::PLAYERJOINED;
+            manager.messageTypeExpected[2] = lobbyMessageType::PLAYERLEFT;
+            manager.managementLobbyReceived();
             manager.clientLobbySession->receiveMessage();
+
             break;
         }
-        case lobbyMessageType::UPDATE:{
+        case lobbyMessageType::PLAYERJOINED:{
             int playersId = 0;
             in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
             char arr[61];
             in.getline(arr, 61);
             std::string playerName(arr);
             manager.gamePlayers.emplace(playersId, playerName);
+            break;
+        }
+        case lobbyMessageType::PLAYERLEFT:{
+            int playersId = 0;
+            in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
+            manager.gamePlayers.erase(manager.gamePlayers.find(playersId));
             break;
         }
         case lobbyMessageType::CHATMESSAGE: {
@@ -79,3 +88,32 @@ void clientLobbyManager::join(std::shared_ptr<session<clientLobbyManager>> clien
     messageTypeExpected[0] = lobbyMessageType::SELFANDSTATE;
     clientLobbySession->receiveMessage();
 }
+
+void clientLobbyManager::uselessWriteFunction(){
+
+}
+
+
+void clientLobbyManager::managementLobbyReceived(){
+    std::cout<<"Players in Lobby Are" <<std::endl;
+    for(auto& player: gamePlayers){
+        std::cout<<player.second <<std::endl;
+    }
+}
+
+void clientLobbyManager::managementNextAction(){
+    int input = 0;
+    std::cout<<"1)Send Message 3)Exit" <<std::endl;
+    std::cin >> input;
+    if(input == 1){
+        std::string message;
+        std::cout << "Type Message"<<std::endl;
+        std::cin >> chatMessage;
+        clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
+    }
+    if(input == 3){
+        boost::system::error_code ec;
+        clientLobbySession->sock.close(ec);
+    }
+}
+

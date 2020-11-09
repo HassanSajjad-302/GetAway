@@ -9,15 +9,17 @@
 struct messageTypes{
 public:
     static const int STATE = 0;
-    static const int UPDATE = 1;
-    static const int MESSAGE = 2;
-    static inline std::string messageTypeStrings[4] = {"STATE", "UPDATE", "CHAT_MESSAGE"};
+    static const int PLAYERJOINED = 1;
+    static const int PLAYERLEFT = 2;
+    static const int MESSAGE = 3;
+    static inline std::string messageTypeStrings[4] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHAT_MESSAGE"};
 };
 
 enum class lobbyMessageType{
     SELFANDSTATE = messageTypes::STATE,
-    UPDATE = messageTypes::UPDATE,
+    PLAYERJOINED = messageTypes::PLAYERJOINED,
+    PLAYERLEFT = messageTypes::PLAYERLEFT,
     CHATMESSAGE = messageTypes::MESSAGE,
-    ENUMSIZE = 3
+    ENUMSIZE = 4
 };
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

@@ -40,7 +40,6 @@ std::istream &operator>>(std::istream &in, serverAuthManager &manager) {
     char arr[61]; //This constant will be fed from somewhere else but one is added.
     in.getline(arr,61);
     std::string str(arr);
-    std::cout<<"Step 1 completed in operator>> serverAuthManager. password is "<<str;
     if(str == manager.password)
     {
         //STEP 2;
@@ -49,14 +48,18 @@ std::istream &operator>>(std::istream &in, serverAuthManager &manager) {
         manager.nextManager->setPlayerNameAdvanced(std::move(str));
         std::make_shared<session<serverLobbyManager, true>>(std::move(manager.serverAuthSessions.find(manager.excitedSessionId)->second->sock),
                                                             manager.nextManager)->registerSessionToManager();
-        manager.serverAuthSessions.erase(manager.excitedSessionId);
+        manager.serverAuthSessions.erase(manager.serverAuthSessions.find(manager.excitedSessionId));
     }
     else
     {
-        manager.serverAuthSessions.erase(manager.excitedSessionId);
+        manager.serverAuthSessions.erase(manager.serverAuthSessions.find(manager.excitedSessionId));
     }
 #ifdef LOG
     spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
 #endif
     return in;
+}
+
+void serverAuthManager::leave(int id) {
+    serverAuthSessions.erase(serverAuthSessions.find(id));
 }

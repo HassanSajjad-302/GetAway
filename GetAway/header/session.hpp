@@ -5,10 +5,11 @@
 #ifndef GETAWAY_SESSION_HPP
 #define GETAWAY_SESSION_HPP
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <queue>
+#include <list>
 #include <boost/asio.hpp>
 #include "Log_Macro.hpp"
 
@@ -23,8 +24,8 @@ class session : public std::enable_shared_from_this<session<T, false>>
     boost::asio::streambuf sessionStreamBuff;
     std::ostream out{&sessionStreamBuff};
     std::istream in{&sessionStreamBuff};
-    std::queue<net::const_buffer> sendingMessagesQueue;
-    std::queue<int> sendingMessageSizesQueue;
+    std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
+    //std::queue<int> sendingMessageSizesQueue;
 
     static void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytesRead);
@@ -44,21 +45,6 @@ public:
 
 };
 
-//CPP FILE contents
-//
-// Created by hassan on 10/27/20.
-//
-
-
-#include <iostream>
-#include <utility>
-#include "Log_Macro.hpp"
-
-namespace net = boost::asio;
-using namespace net::ip;
-using errorCode = boost::system::error_code;
-//------------------------------------------------------------------------------
-
 template <typename T, bool ID>
 session<T, ID>::
 session(
@@ -71,12 +57,12 @@ session(
 }
 
 template<typename T, bool ID>
+session<T, ID>::~session() = default;
+
+template<typename T, bool ID>
 void session<T, ID>::registerSessionToManager() {
     managerPtr->join(this->shared_from_this());
 }
-
-template<typename T, bool ID>
-session<T, ID>::~session() = default;
 
 // Report a failure
 template <typename T, bool ID>
@@ -98,22 +84,23 @@ session<T, ID>::
 sendMessage(void (T::*func)()) {
     out << *managerPtr;
 
-    sendingMessagesQueue.emplace(sessionStreamBuff.data());
-    sendingMessageSizesQueue.emplace(sessionStreamBuff.size());
-
-    sessionStreamBuff.consume(sessionStreamBuff.size());
+    int msSize = sessionStreamBuff.data().size();
 
     std::vector<net::const_buffer> vec;
-    vec.emplace_back(reinterpret_cast<char *>(&sendingMessageSizesQueue.front()), sizeof(sendingMessageSizesQueue.front()));
-    vec.emplace_back(sendingMessagesQueue.front());
-    net::async_write(sock, vec,
+    vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
+    vec.emplace_back(sessionStreamBuff.data());
+
+    sendingMessagesQueue.emplace_back(std::move(vec));
+    sessionStreamBuff.consume(sessionStreamBuff.size());
+
+    net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
+
+                         self->sendingMessagesQueue.pop_front();
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
-                         self->sendingMessageSizesQueue.pop();
-                         self->sendingMessagesQueue.pop();
                          (*(self->managerPtr).*func)();
                      });
 }
@@ -192,10 +179,9 @@ class session<T, true> : public std::enable_shared_from_this<session<T,true>>
     boost::asio::streambuf sessionStreamBuff;
     std::ostream out{&sessionStreamBuff};
     std::istream in{&sessionStreamBuff};
-    std::queue<net::const_buffer> sendingMessagesQueue;
-    std::queue<int> sendingMessageSizesQueue;
+    std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
 
-    static void fail(errorCode ec, char const* what);
+    void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytesRead);
     void packetReceived(int consumeBytes);
     void packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes);
@@ -211,20 +197,6 @@ public:
     ~session();
 
 };
-
-
-//CPP FILE COTENTS
-//
-// Created by hassan on 10/28/20.
-//
-
-//This is same session
-//class but with join, leave and id reporting capabilities.
-
-#include <iostream>
-#include <boost/asio.hpp>
-#include <utility>
-#include "Log_Macro.hpp"
 
 namespace net = boost::asio;
 using namespace net::ip;
@@ -257,7 +229,7 @@ void session<T, true>::registerSessionToManager() {
 
 template<typename T>
 session<T, true>::~session(){
-    spdlog::info("Session Destructor Called");
+    //managerPtr->leave(id);
 }
 
 // Report a failure
@@ -266,11 +238,15 @@ void
 session<T, true>::
 fail(errorCode ec, char const* what)
 {
+    //TODO
+    //Currently On Operation Aborted I call the leave of manager to unregister
+    //the session but I believe I should call the leave on any sort of error
+    //Currently Not Sure On That Because I don't know meaning of boost system
+    //error codes
     // Don't report on canceled operations
-    if(ec == net::error::operation_aborted)
-        return;
 
     std::cerr << what << ": " << ec.message() << "\n";
+    managerPtr->leave(id);
 }
 
 //TODO
@@ -282,22 +258,22 @@ session<T, true>::
 sendMessage(void (T::*func)(int id)) {
     out << *managerPtr;
 
-    sendingMessagesQueue.emplace(sessionStreamBuff.data());
-    sendingMessageSizesQueue.emplace(sessionStreamBuff.size());
-
-    sessionStreamBuff.consume(sessionStreamBuff.size());
+    int msSize = sessionStreamBuff.data().size();
 
     std::vector<net::const_buffer> vec;
-    vec.emplace_back(reinterpret_cast<char *>(&sendingMessageSizesQueue.front()), sizeof(sendingMessageSizesQueue.front()));
-    vec.emplace_back(sendingMessagesQueue.front());
-    net::async_write(sock, vec,
+    vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
+    vec.emplace_back(sessionStreamBuff.data());
+
+    sendingMessagesQueue.emplace_back(std::move(vec));
+    sessionStreamBuff.consume(sessionStreamBuff.size());
+
+    net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
+                         self->sendingMessagesQueue.pop_front();
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
-                         self->sendingMessageSizesQueue.pop();
-                         self->sendingMessagesQueue.pop();
                          self->managerPtr->excitedSessionId = self->id;
                          (*(self->managerPtr).*func)(self->id);
                      });

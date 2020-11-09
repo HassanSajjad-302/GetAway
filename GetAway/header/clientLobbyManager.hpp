@@ -31,6 +31,12 @@ public:
     //Used-By-Session
     void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
     int receivedPacketSize = 0;
+
+    void managementLobbyReceived();
+
+    void managementNextAction();
+
+    void uselessWriteFunction();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

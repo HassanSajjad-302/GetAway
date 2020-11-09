@@ -20,13 +20,14 @@ class serverAuthManager
 
     friend std::istream &operator>>(std::istream &in, serverAuthManager &state);
 public:
+    //Used-By-Session
     int excitedSessionId = 0;
     int receivedPacketSize = 0;
-
+    int join(std::shared_ptr<session<serverAuthManager, true>> authSession);
+    void leave(int id);
     //connections before starting game.
     explicit
     serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_);
-    int join(std::shared_ptr<session<serverAuthManager, true>> authSession);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

@@ -4,7 +4,8 @@ message("src_files value is ${src_files}")
 #add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" ${src_files})
 add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" "../GetAway/src/clientAuthManager.cpp"
         "../GetAway/src/clientLobbyManager.cpp" "../GetAway/src/clientGameManager.cpp"
-        "../GetAway/src/messageTypeEnums.cpp")
+        "../GetAway/src/messageTypeEnums.cpp" "../GetAway/src/ManagementFunctions.cpp"
+        "../GetAway/src/sati.cpp")
 target_include_directories(Client PRIVATE "../GetAway/header")
 if (USE_GCC)
 target_compile_options(Client PRIVATE -fcoroutines)

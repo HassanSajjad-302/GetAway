@@ -15,7 +15,8 @@ join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
 #ifdef LOG
     spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
 #endif
-    auto tup = std::tuple(playerNameAdvanced, lobbySession);
+    lobbySession->receiveMessage();
+    auto tup = std::tuple(playerNameAdvanced, std::move(lobbySession));
     int id;
     if(gameData.empty())
     {
@@ -34,8 +35,9 @@ join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
         //Because of having same Id, I currently don't care. Though this is the only
         //reason server resends the playerName.
     }
+    managementPlayerJoined();
     //Tell EveryOne SomeOne has Joined In
-    sendSelfAndStateToOneAndUpdateToRemaining();
+    sendSelfAndStateToOneAndPlayerJoinedToRemaining();
 #ifdef LOG
     spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
 #endif
@@ -50,6 +52,9 @@ leave(int id)
     spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
 #endif
 
+    excitedSessionId = id;
+    managementPlayerLeft();
+    sendPlayerLeftToAllExceptOne();
     gameData.erase(gameData.find(id));
 
 #ifdef LOG
@@ -95,16 +100,26 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
             }
             break;
         }
-        case lobbyMessageType::UPDATE:{
+        case lobbyMessageType::PLAYERJOINED:{
             //STEP 1;
-            lobbyMessageType t = lobbyMessageType::UPDATE;
+            lobbyMessageType t = lobbyMessageType::PLAYERJOINED;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
-            auto map_ptr = manager.gameData.find(manager.excitedSessionId);
-            int id = map_ptr->first;
+            auto mapPtr = manager.gameData.find(manager.excitedSessionId);
+            int id = mapPtr->first;
             out.write(reinterpret_cast<char*>(&id), sizeof(id));
             //STEP 3;
-            out << std::get<0>(map_ptr->second) << std::endl;
+            out << std::get<0>(mapPtr->second) << std::endl;
+            break;
+        }
+        case lobbyMessageType::PLAYERLEFT:{
+            //STEP 1;
+            lobbyMessageType t = lobbyMessageType::PLAYERLEFT;
+            out.write(reinterpret_cast<char*>(&t), sizeof(t));
+            //STEP 2;
+            auto mapPtr = manager.gameData.find(manager.excitedSessionId);
+            int id = mapPtr->first;
+            out.write(reinterpret_cast<char*>(&id), sizeof(id));
             break;
         }
         case lobbyMessageType::CHATMESSAGE: {
@@ -120,11 +135,10 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
 }
 
 //excitedSessionId is the one to send state to and update of it to remaining
-void serverLobbyManager::sendSelfAndStateToOneAndUpdateToRemaining(){
-    std::cout <<"New Player Joined " << playerNameFinal <<std::endl;
+void serverLobbyManager::sendSelfAndStateToOneAndPlayerJoinedToRemaining(){
     messageSendingType = lobbyMessageType::SELFANDSTATE;
     std::get<1>(gameData.find(excitedSessionId)->second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
-    messageSendingType = lobbyMessageType::UPDATE;
+    messageSendingType = lobbyMessageType::PLAYERJOINED;
     for(auto& player: gameData){
         if(player.first != excitedSessionId){
             std::get<1>(player.second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
@@ -140,9 +154,32 @@ void serverLobbyManager::sendChatMessageToAllExceptSenderItself(){
         }
     }
 }
+
+void serverLobbyManager::sendPlayerLeftToAllExceptOne(){
+    messageSendingType = lobbyMessageType::PLAYERLEFT;
+    for(auto& player: gameData){
+        if(player.first != excitedSessionId){
+            std::get<1>(player.second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
+        }
+    }
+}
+
 void serverLobbyManager::uselessWriteFunction(int id){
 
 }
 void serverLobbyManager::setPlayerNameAdvanced(std::string advancedPlayerName_) {
     playerNameAdvanced = std::move(advancedPlayerName_);
+}
+
+
+
+//MANAGEMENT FUNCTIONS
+
+
+void serverLobbyManager::managementPlayerJoined(){
+    std::cout << "Player Joined: " << std::get<0>(gameData.find(excitedSessionId)->second) << std::endl;
+}
+
+void serverLobbyManager::managementPlayerLeft(){
+    std::cout << "Player Left: " << std::get<0>(gameData.find(excitedSessionId)->second) << std::endl;
 }
