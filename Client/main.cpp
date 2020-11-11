@@ -1,5 +1,6 @@
 //Client
 
+#include "sati.hpp"
 #include "session.hpp"
 #include "clientAuthManager.hpp"
 #include "spdlog/spdlog.h"
@@ -8,6 +9,8 @@
 #include <boost/asio.hpp>
 #include <iostream>
 #include <memory>
+#include <random>
+
 
 std::string getCompileVersion()
 {
@@ -32,6 +35,7 @@ using namespace net::ip;
 int
 main(int argc, char* argv[])
 {
+    system("clear");
 
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
@@ -40,12 +44,20 @@ main(int argc, char* argv[])
 
 
     net::io_context io;
+    std::mutex mu;
+    sati& s = sati::getInstanceFirstTime(io, mu);
+    std::jthread thr{[s = std::ref(s)](){s.get().operator()();}};
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
+    std::random_device rd;
+    std::mt19937 mt(rd());
+    std::uniform_int_distribution<int> dist(1,200);
+    std::string name = "Hassan ";
+    name += std::to_string(dist(mt));
     std::make_shared<session<clientAuthManager>>(
             std::move(sock),
-            std::make_shared<clientAuthManager>("Hassan Sajjad", "password"))->registerSessionToManager();
+            std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();
 
 
     // Capture SIGINT and SIGTERM to perform a clean shutdown

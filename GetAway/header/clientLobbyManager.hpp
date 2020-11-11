@@ -10,20 +10,24 @@
 #include <iostream>
 #include "session.hpp"
 #include "messageTypeEnums.hpp"
+#include "sati.hpp"
 
 // Represents the shared server state
-class clientLobbyManager
+class clientLobbyManager : inputRead
 {
     std::string playerName;
     int id = 0;
     std::map<int, std::string> gamePlayers;
-    int classSendSize =0;
     std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
     std::vector<lobbyMessageType> messageTypeExpected;
     friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
     friend std::ostream& operator<<(std::ostream& out, clientLobbyManager& state);
 
-    std::string chatMessage;
+    void inputInt(int input) override;
+    void inputString(std::string str) override;
+
+    std::string chatMessageString;
+    int chatMessageInt;
 public:
     explicit
     clientLobbyManager();

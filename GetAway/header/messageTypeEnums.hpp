@@ -12,7 +12,8 @@ public:
     static const int PLAYERJOINED = 1;
     static const int PLAYERLEFT = 2;
     static const int MESSAGE = 3;
-    static inline std::string messageTypeStrings[4] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHAT_MESSAGE"};
+    static const int CHATMESSAGEID = 4;
+    static inline std::string messageTypeStrings[5] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE", "CHATMESSAGEID"};
 };
 
 enum class lobbyMessageType{
@@ -20,6 +21,7 @@ enum class lobbyMessageType{
     PLAYERJOINED = messageTypes::PLAYERJOINED,
     PLAYERLEFT = messageTypes::PLAYERLEFT,
     CHATMESSAGE = messageTypes::MESSAGE,
-    ENUMSIZE = 4
+    CHATMESSAGEID = messageTypes::CHATMESSAGEID,
+    ENUMSIZE = 5
 };
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

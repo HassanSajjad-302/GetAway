@@ -69,11 +69,18 @@ std::istream &operator>>(std::istream &in, serverLobbyManager &manager) {
     if(messageTypeReceived != lobbyMessageType::CHATMESSAGE){
         std::cout<<"Unexpected Packet Type Received in class clientLobbyManager"<<std::endl;
     }
-    //STEP 2; //MESSAGE RECEIVED AND FORWARDED TO OTHER PLAYERS
+    //STEP 2;
+    int senderId;
+    in.read(reinterpret_cast<char*>(&senderId), sizeof(senderId));
+    assert(senderId == manager.excitedSessionId);
+    //STEP 3;
+    int arrSize = 4 + 4 - 1; //4 for messageType, 4 for Id, 1 for getline
     char arr[manager.receivedPacketSize - 4];
     in.getline(arr, manager.receivedPacketSize -4);
     manager.chatMessageReceived = std::string(arr);
     manager.sendChatMessageToAllExceptSenderItself();
+    std::cout<<"Message Sent To All Clients " << std::endl;
+    std::get<1>(manager.gameData.find(manager.excitedSessionId)->second)->receiveMessage();
     return in;
 }
 
@@ -90,12 +97,11 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
             //STEP 4;
             int size = manager.gameData.size();
             out.write(reinterpret_cast<char *>(&size), sizeof(size));
-            //STEP 5;
             for(auto& gamePlayer : manager.gameData){
-                //STEP 6;
+                //STEP 5;
                 int id = gamePlayer.first;
                 out.write(reinterpret_cast<char *>(&id), sizeof(id));
-                //STEP 7;
+                //STEP 6;
                 out << std::get<0>(gamePlayer.second) << std::endl;
             }
             break;
@@ -122,11 +128,13 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
             out.write(reinterpret_cast<char*>(&id), sizeof(id));
             break;
         }
-        case lobbyMessageType::CHATMESSAGE: {
+        case lobbyMessageType::CHATMESSAGEID: {
             //STEP 1;
-            lobbyMessageType t = lobbyMessageType::CHATMESSAGE;
+            lobbyMessageType t = lobbyMessageType::CHATMESSAGEID;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
+            out.write(reinterpret_cast<char *>(&manager.excitedSessionId), sizeof(manager.excitedSessionId));
+            //STEP 3;
             out << manager.chatMessageReceived << std::endl;
             break;
         }
@@ -147,7 +155,7 @@ void serverLobbyManager::sendSelfAndStateToOneAndPlayerJoinedToRemaining(){
 }
 
 void serverLobbyManager::sendChatMessageToAllExceptSenderItself(){
-    messageSendingType = lobbyMessageType::CHATMESSAGE;
+    messageSendingType = lobbyMessageType::CHATMESSAGEID;
     for(auto& player: gameData){
         if(player.first != excitedSessionId){
             std::get<1>(player.second)->sendMessage(&serverLobbyManager::uselessWriteFunction);

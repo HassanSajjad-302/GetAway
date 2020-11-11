@@ -21,9 +21,10 @@ template <typename T, bool ID = false>
 class session : public std::enable_shared_from_this<session<T, false>>
 {
     std::shared_ptr<T> managerPtr;
-    boost::asio::streambuf sessionStreamBuff;
-    std::ostream out{&sessionStreamBuff};
-    std::istream in{&sessionStreamBuff};
+    boost::asio::streambuf sessionStreamBuffInput;
+    std::istream in{&sessionStreamBuffInput};
+    net::streambuf sessionStreamBuffOutput;
+    std::ostream out{&sessionStreamBuffOutput};
     std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
     //std::queue<int> sendingMessageSizesQueue;
 
@@ -84,14 +85,14 @@ session<T, ID>::
 sendMessage(void (T::*func)()) {
     out << *managerPtr;
 
-    int msSize = sessionStreamBuff.data().size();
+    int msSize = sessionStreamBuffOutput.data().size();
 
     std::vector<net::const_buffer> vec;
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
-    vec.emplace_back(sessionStreamBuff.data());
+    vec.emplace_back(sessionStreamBuffOutput.data());
 
     sendingMessagesQueue.emplace_back(std::move(vec));
-    sessionStreamBuff.consume(sessionStreamBuff.size());
+    sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
@@ -111,7 +112,7 @@ session<T, ID>::
 receiveMessage() {
     //TODO
     //1500 is TCP MTU size. Provide it from somewhere else.
-    sock.async_receive(sessionStreamBuff.prepare(1500), [self = this->shared_from_this()](
+    sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
             errorCode ec, std::size_t bytes)
     {
         self->readMore(ec, bytes);
@@ -125,7 +126,7 @@ readMore(errorCode ec, int bytesRead) {
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuff.commit(bytesRead);
+    sessionStreamBuffInput.commit(bytesRead);
     int packetSize = 0;
     in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
     if(packetSize == bytesRead - 4){
@@ -135,7 +136,7 @@ readMore(errorCode ec, int bytesRead) {
         //Start Composite Asynchronous Operation Before Reporting
         //The Received data.
         int remainingBytes = packetSize - (bytesRead - 4);
-        net::async_read(sock, sessionStreamBuff.prepare(remainingBytes),
+        net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
                         [self = this->shared_from_this(), bytesRead, remainingBytes](
                                 errorCode ec, std::size_t bytes)
                         {
@@ -158,7 +159,7 @@ packetReceived(int consumeBytes) {
 //Whole packet Received in One Call
     managerPtr->receivedPacketSize = consumeBytes - 4;
     in >> *managerPtr;
-    sessionStreamBuff.consume(consumeBytes);
+    sessionStreamBuffInput.consume(consumeBytes);
 }
 
 template <typename T, bool ID>
@@ -176,9 +177,11 @@ class session<T, true> : public std::enable_shared_from_this<session<T,true>>
 {
     int id= 0;
     std::shared_ptr<T> managerPtr;
-    boost::asio::streambuf sessionStreamBuff;
-    std::ostream out{&sessionStreamBuff};
-    std::istream in{&sessionStreamBuff};
+    boost::asio::streambuf sessionStreamBuffInput;
+    std::istream in{&sessionStreamBuffInput};
+    boost::asio::streambuf sessionStreamBuffOutput;
+    std::ostream out{&sessionStreamBuffOutput};
+
     std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
 
     void fail(errorCode ec, char const* what);
@@ -258,14 +261,14 @@ session<T, true>::
 sendMessage(void (T::*func)(int id)) {
     out << *managerPtr;
 
-    int msSize = sessionStreamBuff.data().size();
+    int msSize = sessionStreamBuffOutput.data().size();
 
     std::vector<net::const_buffer> vec;
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
-    vec.emplace_back(sessionStreamBuff.data());
+    vec.emplace_back(sessionStreamBuffOutput.data());
 
     sendingMessagesQueue.emplace_back(std::move(vec));
-    sessionStreamBuff.consume(sessionStreamBuff.size());
+    sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
@@ -284,7 +287,7 @@ session<T, true>::
 receiveMessage() {
     //TODO
     //1500 is TCP MTU size. Provide it from somewhere else.
-    sock.async_receive(sessionStreamBuff.prepare(1500), [self = this->shared_from_this()](
+    sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
             errorCode ec, std::size_t bytes)
     {
         self->readMore(ec, bytes);
@@ -298,7 +301,7 @@ readMore(errorCode ec, int bytesRead) {
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuff.commit(bytesRead);
+    sessionStreamBuffInput.commit(bytesRead);
     int packetSize = 0;
     in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
     if(packetSize == bytesRead - 4){
@@ -308,7 +311,7 @@ readMore(errorCode ec, int bytesRead) {
         //Start Composite Asynchronous Operation Before Reporting
         //The Received data.
         int remainingBytes = packetSize - (bytesRead - 4);
-        net::async_read(sock, sessionStreamBuff.prepare(remainingBytes),
+        net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
                         [self = this->shared_from_this(), bytesRead, remainingBytes](
                                 errorCode ec, std::size_t bytes)
                         {
@@ -331,8 +334,9 @@ packetReceived(int consumeBytes) {
 //Whole packet Received in One Call
     managerPtr->receivedPacketSize = consumeBytes - 4;
     managerPtr->excitedSessionId= id;
-    in >> *managerPtr;
-    sessionStreamBuff.consume(consumeBytes);
+    T* p = managerPtr.get();
+    in >> *p;
+    sessionStreamBuffInput.consume(consumeBytes);
 }
 
 template <typename T>

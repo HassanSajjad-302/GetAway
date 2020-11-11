@@ -1,5 +1,6 @@
 //Server
 
+#include "sati.hpp"
 #include "serverListener.hpp"
 #include "serverAuthManager.hpp"
 #include "spdlog/spdlog.h"
@@ -63,6 +64,8 @@ main(int argc, char* argv[])
 #endif
     // The io_context is required for all I/O
     net::io_context ioc;
+    std::mutex m;
+    sati::getInstanceFirstTime(ioc, m);
 
     // Create and launch a listening port
     std::make_shared<serverListener>(

@@ -2,6 +2,7 @@
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
+#include "sati.hpp"
 clientLobbyManager::clientLobbyManager(){
     messageTypeExpected.resize((int)lobbyMessageType::ENUMSIZE);
     messageTypeExpected[0] = lobbyMessageType::SELFANDSTATE;
@@ -14,30 +15,34 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
         std::cout<<"Unexpected Packet Type Received in class clientLobbyManager"<<std::endl;
     }
     switch(messageTypeReceived){
+        //STEP 1;
         case lobbyMessageType::SELFANDSTATE: {
-            //STEP 1;
             int id;
+            //STEP 2
             in.read(reinterpret_cast<char*>(&id),sizeof(id));
             manager.id = id;
             //TODO
             char arr[61]; //This constant will be fed from somewhere else but one is added.
+            //STEP 3
             in.getline(arr, 61);
             std::string playerName(arr);
             //TODO
             //Action on if a new playerName is assigned.
             manager.playerName = std::move(playerName);
 
-            //STEP 2
             int size;
+            //STEP 4
             in.read(reinterpret_cast<char*>(&size), sizeof(size));
             for(int i=0; i<size; ++i){
                 int playersId = 0;
+                //STEP 5
                 in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
+                //STEP 6
                 in.getline(arr, 61);
                 playerName = std::string(arr);
                 manager.gamePlayers.emplace(playersId, playerName);
             }
-            manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGE;
+            manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGEID;
             manager.messageTypeExpected[1] = lobbyMessageType::PLAYERJOINED;
             manager.messageTypeExpected[2] = lobbyMessageType::PLAYERLEFT;
             manager.managementLobbyReceived();
@@ -46,28 +51,37 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
             break;
         }
         case lobbyMessageType::PLAYERJOINED:{
-            int playersId = 0;
-            in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
+            int playerId = 0;
+            in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
             char arr[61];
             in.getline(arr, 61);
             std::string playerName(arr);
-            manager.gamePlayers.emplace(playersId, playerName);
+            manager.gamePlayers.emplace(playerId, playerName);
+            manager.managementLobbyReceived();
+            manager.clientLobbySession->receiveMessage();
             break;
         }
         case lobbyMessageType::PLAYERLEFT:{
-            int playersId = 0;
-            in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
-            manager.gamePlayers.erase(manager.gamePlayers.find(playersId));
+            int playerId = 0;
+            in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
+            manager.gamePlayers.erase(manager.gamePlayers.find(playerId));
+            manager.managementLobbyReceived();
+            manager.clientLobbySession->receiveMessage();
             break;
         }
-        case lobbyMessageType::CHATMESSAGE: {
-            int messageSenderId;
-            in.read(reinterpret_cast<char*>(&messageSenderId), sizeof(messageSenderId));
-            char arr[manager.receivedPacketSize - 8];
+        //STEP 1;
+        case lobbyMessageType::CHATMESSAGEID: {
+            //STEP 2;
+            in.read(reinterpret_cast<char*>(&manager.chatMessageInt), sizeof(manager.chatMessageInt));
+            assert(manager.chatMessageInt != manager.id);
+            int arrSize = (manager.receivedPacketSize - 8) + 1; //4 for packety type enum and 4 for the id and 1 for getline
+            char arr[arrSize];
+            //STEP 3;
             in.getline(arr, manager.receivedPacketSize - 8);
-            //TODO
-            //Do something with the received message.
-            manager.chatMessage = std::string(arr);
+            manager.chatMessageString = std::string(arr);
+            sati::getInstance()->messageBufferAppend(manager.gamePlayers.find(manager.chatMessageInt)->second
+            + ": " +  manager.chatMessageString + "\r\n");
+            manager.clientLobbySession->receiveMessage();
             break;
         }
     }
@@ -75,10 +89,13 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
 }
 
 std::ostream &operator<<(std::ostream &out, clientLobbyManager &manager) {
+    //STEP 1;
     lobbyMessageType t = lobbyMessageType::CHATMESSAGE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
-    out << manager.chatMessage << std::endl;
+    out.write(reinterpret_cast<char *>(&manager.id), sizeof(manager.id));
+    //STEP 3;
+    out << manager.chatMessageString << std::endl;
     return out;
 }
 
@@ -87,33 +104,46 @@ void clientLobbyManager::join(std::shared_ptr<session<clientLobbyManager>> clien
     messageTypeExpected.clear();
     messageTypeExpected[0] = lobbyMessageType::SELFANDSTATE;
     clientLobbySession->receiveMessage();
+    managementNextAction();
 }
 
 void clientLobbyManager::uselessWriteFunction(){
-
+    sati::getInstance()->messageBufferAppend(gamePlayers.find(chatMessageInt)->second + ": " +  chatMessageString + "\r\n");
 }
 
 
 void clientLobbyManager::managementLobbyReceived(){
-    std::cout<<"Players in Lobby Are" <<std::endl;
-    for(auto& player: gamePlayers){
-        std::cout<<player.second <<std::endl;
+    std::string roundBufferBefore = "Players in Lobby Are\r\n";
+    for(auto& player: gamePlayers) {
+        roundBufferBefore += player.second;
+        roundBufferBefore += "\r\n";
     }
+    roundBufferBefore += "\r\n";
+    sati::getInstance()->roundBufferBeforeChanged(roundBufferBefore);
 }
 
 void clientLobbyManager::managementNextAction(){
-    int input = 0;
-    std::cout<<"1)Send Message 3)Exit" <<std::endl;
-    std::cin >> input;
+    std::string toPrint = "1)Send Message 2)Exit\r\n\n";
+    sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+    sati::getInstance()->setIntHandlerAndConstraints(this, 1, 2);
+}
+
+void clientLobbyManager::inputInt(int input) {
     if(input == 1){
-        std::string message;
-        std::cout << "Type Message"<<std::endl;
-        std::cin >> chatMessage;
-        clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
-    }
-    if(input == 3){
-        boost::system::error_code ec;
-        clientLobbySession->sock.close(ec);
+        std::string toPrint = "Please Type The Message \r\n\n";
+        sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+        sati::getInstance()->setStringHandlerAndConstraints(this);
     }
 }
 
+void clientLobbyManager::inputString(std::string input) {
+    chatMessageString = std::move(input);
+
+    //TODO
+    //This is an error if before the message write finishes, player receives the message
+    chatMessageInt = id;
+    clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
+    std::string toPrint = "1)Send Message 2)Exit\r\n\n";
+    sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+    sati::getInstance()->setIntHandlerAndConstraints(this, 1, 2);
+}
