@@ -29,7 +29,7 @@ class session : public std::enable_shared_from_this<session<T, false>>
     //std::queue<int> sendingMessageSizesQueue;
 
     static void fail(errorCode ec, char const* what);
-    void readMore(errorCode ec, int bytesRead);
+    void readMore(errorCode ec, int bytes);
     void packetReceived(int consumeBytes);
     void packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes);
 
@@ -122,26 +122,30 @@ receiveMessage() {
 template <typename T, bool ID>
 void
 session<T, ID>::
-readMore(errorCode ec, int bytesRead) {
+readMore(errorCode ec, int bytesFirstRead) {
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuffInput.commit(bytesRead);
+    sessionStreamBuffInput.commit(bytesFirstRead);
     int packetSize = 0;
     in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
-    if(packetSize == bytesRead - 4){
-        packetReceived(bytesRead);
+    if(packetSize == bytesFirstRead - 4){
+        packetReceived(bytesFirstRead);
     }
-    else if(packetSize > bytesRead-4){
+    else if(packetSize > bytesFirstRead - 4){
         //Start Composite Asynchronous Operation Before Reporting
         //The Received data.
-        int remainingBytes = packetSize - (bytesRead - 4);
+        int remainingBytes = packetSize - (bytesFirstRead - 4);
         net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                        [self = this->shared_from_this(), bytesRead, remainingBytes](
-                                errorCode ec, std::size_t bytes)
+                        [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
+                                errorCode ec, std::size_t bytesRead)
                         {
-                            int consumingBytes = bytesRead + remainingBytes;
-                            self->packetReceivedComposite(ec, bytes, consumingBytes);
+                            if(ec)
+                                self->fail(ec, "error in lambda readMore");
+                            int consumingBytes = bytesFirstRead + remainingBytes;
+                            assert(remainingBytes == bytesRead);
+                            self->sessionStreamBuffInput.commit(remainingBytes);
+                            self->packetReceivedComposite(ec, bytesRead, consumingBytes);
                         });
     }
     else
@@ -185,7 +189,7 @@ class session<T, true> : public std::enable_shared_from_this<session<T,true>>
     std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
 
     void fail(errorCode ec, char const* what);
-    void readMore(errorCode ec, int bytesRead);
+    void readMore(errorCode ec, int bytes);
     void packetReceived(int consumeBytes);
     void packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes);
 
@@ -287,7 +291,7 @@ session<T, true>::
 receiveMessage() {
     //TODO
     //1500 is TCP MTU size. Provide it from somewhere else.
-    sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
+    sock.async_receive(sessionStreamBuffInput.prepare(40), [self = this->shared_from_this()](
             errorCode ec, std::size_t bytes)
     {
         self->readMore(ec, bytes);
@@ -297,26 +301,30 @@ receiveMessage() {
 template <typename T>
 void
 session<T, true>::
-readMore(errorCode ec, int bytesRead) {
+readMore(errorCode ec, int bytesFirstRead) {
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuffInput.commit(bytesRead);
+    sessionStreamBuffInput.commit(bytesFirstRead);
     int packetSize = 0;
     in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
-    if(packetSize == bytesRead - 4){
-        packetReceived(bytesRead);
+    if(packetSize == bytesFirstRead - 4){
+        packetReceived(bytesFirstRead);
     }
-    else if(packetSize > bytesRead-4){
+    else if(packetSize > bytesFirstRead - 4){
         //Start Composite Asynchronous Operation Before Reporting
         //The Received data.
-        int remainingBytes = packetSize - (bytesRead - 4);
+        int remainingBytes = packetSize - (bytesFirstRead - 4);
         net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                        [self = this->shared_from_this(), bytesRead, remainingBytes](
-                                errorCode ec, std::size_t bytes)
+                        [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
+                                errorCode ec, std::size_t bytesRead)
                         {
-                            int consumingBytes = bytesRead + remainingBytes;
-                            self->packetReceivedComposite(ec, bytes, consumingBytes);
+                            if(ec)
+                                self->fail(ec, "error in lambda readMore");
+                            int consumingBytes = bytesFirstRead + remainingBytes;
+                            assert(remainingBytes == bytesRead);
+                            self->sessionStreamBuffInput.commit(remainingBytes);
+                            self->packetReceivedComposite(ec, bytesRead, consumingBytes);
                         });
     }
     else
