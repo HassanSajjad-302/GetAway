@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include "Log_Macro.hpp"
 
+#define LOG
 namespace net = boost::asio;
 using namespace net::ip;
 using errorCode = boost::system::error_code;
@@ -54,11 +55,13 @@ session(
         : sock(std::move(socket))
         , managerPtr(std::move(state))
 {
-
+    spdlog::info("Session Constructor Called");
 }
 
 template<typename T, bool ID>
-session<T, ID>::~session() = default;
+session<T, ID>::~session(){
+    spdlog::info("Session Destructor Called");
+}
 
 template<typename T, bool ID>
 void session<T, ID>::registerSessionToManager() {
@@ -236,7 +239,7 @@ void session<T, true>::registerSessionToManager() {
 
 template<typename T>
 session<T, true>::~session(){
-    //managerPtr->leave(id);
+    spdlog::info("Session Destructor Called");
 }
 
 // Report a failure

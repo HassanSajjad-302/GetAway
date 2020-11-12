@@ -27,6 +27,8 @@ class sati {
     std::string inputStatement;
     std::string roundBufferAfter;
     std::string userIncomingInput;
+    //This mutex needs to be locked when this class members changes. Or some other thread wants to
+    //print on screen.
     std::reference_wrapper<std::mutex> m;
 
 
@@ -36,7 +38,8 @@ class sati {
     bool messageConstraint;
     int lowerBound, upperBound;
 
-    void accumulateBuffersAndPrint();
+    void accumulateBuffersAndPrintWithLock();
+    void accumulateBuffersAndPrintWithOutLock();
     explicit sati(net::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
 public:
@@ -56,6 +59,8 @@ public:
     void roundBufferBeforeChanged(std::string roundInfo);
     void inputStatementBufferChanged(std::string inputStatementNew, bool clearRoundBuffer);
     void roundBufferAfterAppend(const std::string& roundInfo);
+
+    void printExitMessage(std::string message);
 
 };
 

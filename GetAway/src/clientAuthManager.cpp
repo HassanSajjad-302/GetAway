@@ -6,6 +6,7 @@
 clientAuthManager::clientAuthManager(std::string playerName_, std::string password_) :
 playerName(std::move(playerName_)), password(std::move(password_))
 {
+    spdlog::info("ClientAuthManager Constructor Called");
 }
 
 std::ostream &operator<<(std::ostream &out, clientAuthManager &state) {
@@ -15,11 +16,17 @@ std::ostream &operator<<(std::ostream &out, clientAuthManager &state) {
 }
 
 void clientAuthManager::starting() {
-    std::make_shared<session<clientLobbyManager>>(std::move(authSession->sock),
+    tcp::socket tmp = std::move(authSession->sock);
+    authSession.reset();
+    std::make_shared<session<clientLobbyManager>>(std::move(tmp),
                                                  std::make_shared<clientLobbyManager>())->registerSessionToManager();
 }
 
 void clientAuthManager::join(std::shared_ptr<session<clientAuthManager>> authSession_) {
     authSession = std::move(authSession_);
     authSession->sendMessage(&clientAuthManager::starting);
+}
+
+clientAuthManager::~clientAuthManager() {
+    spdlog::info("ClientAuthManager DestructorCalled");
 }

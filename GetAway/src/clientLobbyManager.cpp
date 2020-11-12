@@ -6,6 +6,7 @@
 clientLobbyManager::clientLobbyManager(){
     messageTypeExpected.resize((int)lobbyMessageType::ENUMSIZE);
     messageTypeExpected[0] = lobbyMessageType::SELFANDSTATE;
+    spdlog::info("ClientLobbyManager Constructor Called");
 }
 
 std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
@@ -134,6 +135,16 @@ void clientLobbyManager::inputInt(int input) {
         sati::getInstance()->inputStatementBufferChanged(toPrint, false);
         sati::getInstance()->setStringHandlerAndConstraints(this);
     }
+    if(input == 2){
+        sati::getInstance()->inputStatementBufferChanged("Exiting\r\n",true);
+        exitGame();
+    }
+}
+
+void clientLobbyManager::exitGame(){
+    clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
+    clientLobbySession->sock.close();
+    clientLobbySession.reset();
 }
 
 void clientLobbyManager::inputString(std::string input) {
@@ -146,4 +157,9 @@ void clientLobbyManager::inputString(std::string input) {
     std::string toPrint = "1)Send Message 2)Exit\r\n\n";
     sati::getInstance()->inputStatementBufferChanged(toPrint, false);
     sati::getInstance()->setIntHandlerAndConstraints(this, 1, 2);
+}
+
+clientLobbyManager::~clientLobbyManager() {
+    sati::getInstance()->printExitMessage("clientLobbyManagerDestructor Called");
+    spdlog::info("ClientLobbyManager Destructor Called");
 }

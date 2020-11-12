@@ -23,6 +23,7 @@ class clientAuthManager
 public:
     explicit
     clientAuthManager(std::string playerName, std::string password);
+    ~clientAuthManager();
     void join(std::shared_ptr<session<clientAuthManager>> authSession_);
     void starting();
 };

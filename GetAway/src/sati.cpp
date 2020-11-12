@@ -31,41 +31,56 @@ void sati::operator()() {
         {
             system("stty cooked");
             exit(0);
-        }
-        if(c == 13){ //Enter Pressed
+        }else if( c == 127){
             std::lock_guard<std::mutex> lok(m.get());
+            if(!userIncomingInput.empty()){
+                userIncomingInput.pop_back();
+            }
+            accumulateBuffersAndPrintWithOutLock();
+        }else if(c == 10 || c == 13){ //cr pressed
             //TODO
             //For The Current There is no moment when programme should not be accepting input
             if(!handlerAssigned){
                 std::cout<<"Receiving Input. But No Handler Assigned \r"<<std::endl;
-                exit(-1);
+                system("stty cooked");
+                throw std::logic_error("Receiving Input. But No Handler Assigned \r");
             }
-            handlerAssigned = false;
+            std::lock_guard<std::mutex> lok(m.get());
             if(messageConstraint){
+                handlerAssigned = false;
                 net::post(io, [input = std::move(userIncomingInput), handler = base](){
-                    handler->inputString(input);
+                    handler->inputString(input); //Assumed that this function calls accumulateAndBuffersAndPrint(); //That's requirement
                 });
             }else{
                 try{
                     int num = std::stoi(userIncomingInput);
                     if(num>=lowerBound && num<=upperBound){
+                        handlerAssigned = false;
                         net::post(io, [num, handler = base](){
-                            handler->inputInt(num);
+                            handler->inputInt(num); //Assumed that this function calls accumulateAndBuffersAndPrint(); //That's requirement
                         });
                     }else{
+                        userIncomingInput.clear();
+                        accumulateBuffersAndPrintWithOutLock();
                         std::cout<<"Please enter integer in range \r"<<std::endl;
                     }
                 }
                 catch (std::invalid_argument& e) {
+                    userIncomingInput.clear();
+                    accumulateBuffersAndPrintWithOutLock();
                     std::cout<<"Invalid Input. \r"<<std::endl;
                 }
                 catch(std::out_of_range& e){
+                    userIncomingInput.clear();
+                    accumulateBuffersAndPrintWithOutLock();
                     std::cout<<"Invalid Input. \r"<<std::endl;
                 }
                 userIncomingInput.clear();
             }
-        }else{
+        }
+        else{
             userIncomingInput += c;
+            accumulateBuffersAndPrintWithLock();
         }
     }
 }
@@ -94,13 +109,13 @@ void sati::setStringHandlerAndConstraints(inputRead* base_) {
 
 void sati::messageBufferAppend(const std::string& message) {
     messageBuffer += message;
-    accumulateBuffersAndPrint();
+    accumulateBuffersAndPrintWithLock();
 }
 
 void sati::roundBufferBeforeChanged(std::string roundInfo) {
     roundBufferBefore.clear();
     roundBufferBefore = std::move(roundInfo);
-    accumulateBuffersAndPrint();
+    accumulateBuffersAndPrintWithLock();
 }
 
 void sati::inputStatementBufferChanged(std::string inputStatementNew, bool clearRoundBuffer) {
@@ -109,15 +124,15 @@ void sati::inputStatementBufferChanged(std::string inputStatementNew, bool clear
         roundBufferBefore.clear();
         roundBufferAfter.clear();
     }
-    accumulateBuffersAndPrint();
+    accumulateBuffersAndPrintWithLock();
 }
 
 void sati::roundBufferAfterAppend(const std::string& roundInfo) {
     roundBufferAfter += roundInfo;
-    accumulateBuffersAndPrint();
+    accumulateBuffersAndPrintWithLock();
 }
 
-void sati::accumulateBuffersAndPrint() {
+void sati::accumulateBuffersAndPrintWithLock() {
     std::string toPrint = messageBuffer + roundBufferBefore + inputStatement + roundBufferAfter;
     {
         std::lock_guard lock(m.get());
@@ -125,4 +140,16 @@ void sati::accumulateBuffersAndPrint() {
     }
     system("clear");
     std::cout<<toPrint;
+}
+
+void sati::accumulateBuffersAndPrintWithOutLock() {
+    std::string toPrint = messageBuffer + roundBufferBefore + inputStatement + roundBufferAfter;
+    toPrint += userIncomingInput;
+    system("clear");
+    std::cout<<toPrint;
+}
+
+void sati::printExitMessage(std::string message) {
+    std::lock_guard<std::mutex> lockGuard(m);
+    std::cout<<message<<std::endl;
 }

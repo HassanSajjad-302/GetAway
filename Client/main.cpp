@@ -41,12 +41,11 @@ main(int argc, char* argv[])
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
     spdlog::set_default_logger(logger);
     logger->flush_on(spdlog::level::info);
-
-
+    spdlog::info("Hassan Sajjad");
+#define LOG
     net::io_context io;
     std::mutex mu;
-    sati& s = sati::getInstanceFirstTime(io, mu);
-    std::jthread thr{[s = std::ref(s)](){s.get().operator()();}};
+    std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
@@ -60,7 +59,7 @@ main(int argc, char* argv[])
             std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();
 
 
-    // Capture SIGINT and SIGTERM to perform a clean shutdown
+   /* // Capture SIGINT and SIGTERM to perform a clean shutdown
     net::signal_set signals(io, SIGINT, SIGTERM);
     signals.async_wait(
         [&io](boost::system::error_code const&, int)
@@ -69,12 +68,13 @@ main(int argc, char* argv[])
             // to return immediately, eventually destroying the
             // io_context and any remaining handlers in it.
             io.stop();
-        });
+        });*/
 
     // Run the I/O service on the main thread
     io.run();
 
+    spdlog::info("Reached Here");
     // (If we get here, it means we got a SIGINT or SIGTERM)
-
+    inputThread.detach();
     return EXIT_SUCCESS;
 }

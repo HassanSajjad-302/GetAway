@@ -31,7 +31,7 @@ class clientLobbyManager : inputRead
 public:
     explicit
     clientLobbyManager();
-
+    ~clientLobbyManager();
     //Used-By-Session
     void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
     int receivedPacketSize = 0;
@@ -41,6 +41,8 @@ public:
     void managementNextAction();
 
     void uselessWriteFunction();
+
+    void exitGame();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP
