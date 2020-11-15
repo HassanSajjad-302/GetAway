@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
@@ -51,10 +50,13 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
 
             break;
         }
+        //STEP 1;
         case lobbyMessageType::PLAYERJOINED:{
             int playerId = 0;
+            //STEP 2;
             in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
             char arr[61];
+            //STEP 3;
             in.getline(arr, 61);
             std::string playerName(arr);
             manager.gamePlayers.emplace(playerId, playerName);
@@ -82,6 +84,21 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
             manager.chatMessageString = std::string(arr);
             sati::getInstance()->messageBufferAppend(manager.gamePlayers.find(manager.chatMessageInt)->second
             + ": " +  manager.chatMessageString + "\r\n");
+            manager.clientLobbySession->receiveMessage();
+            break;
+        }
+        //STEP 1;
+        case lobbyMessageType::GAMESTART
+        :{
+            int playerId = 0;
+            //STEP 2;
+            in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
+            char arr[61];
+            //STEP 3;
+            in.getline(arr, 61);
+            std::string playerName(arr);
+            manager.gamePlayers.emplace(playerId, playerName);
+            manager.managementLobbyReceived();
             manager.clientLobbySession->receiveMessage();
             break;
         }

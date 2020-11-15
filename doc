@@ -4,7 +4,7 @@ Game Rules:
 
 Deck of shuffled cards is distributed among players. If can't be distributed equally, some randomly selected players will have an additional card. Number of players can't be less than 2.
 
-In first round there is no sequence of turns. Player having ace of spade must play it and will be the player having first turn in next round. Each player has to play a card. If a palyer has spade, then spade must be played. These cards will be flushed.
+In first round there is no sequence of turns. Player having ace of spade must play it and will be the player having first turn in next round. Each player has to play a card. If a player has spade, then spade must be played. These cards will be flushed.
 
 Now every player will play on their turn. Player who plays first sets the suit for the round by playing the card of that suit. Every player has to play the card of the same suit. Players are free to play any of the suit, if they have more than one card.
 

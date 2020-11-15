@@ -13,7 +13,9 @@ public:
     static const int PLAYERLEFT = 2;
     static const int MESSAGE = 3;
     static const int CHATMESSAGEID = 4;
-    static inline std::string messageTypeStrings[5] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE", "CHATMESSAGEID"};
+    static const int HAND= 5;
+    static inline std::string messageTypeStrings[6] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE",
+                                                       "CHATMESSAGEID", "HAND"};
 };
 
 enum class lobbyMessageType{
@@ -22,6 +24,22 @@ enum class lobbyMessageType{
     PLAYERLEFT = messageTypes::PLAYERLEFT,
     CHATMESSAGE = messageTypes::MESSAGE,
     CHATMESSAGEID = messageTypes::CHATMESSAGEID,
-    ENUMSIZE = 5
+    FIRSTGAMEMESSAGE = messageTypes::HAND,
+
+    ENUMSIZE = 6
 };
+
+
+
+struct gameTypes{
+public:
+    static const int HAND = 0;
+    static inline std::string messageTypeStrings[1] = {"HAND"};
+};
+
+enum class enumGameType{
+    HAND = gameTypes::HAND,
+    ENUMSIZE = 1
+};
+
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

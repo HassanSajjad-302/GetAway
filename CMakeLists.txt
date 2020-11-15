@@ -30,7 +30,8 @@ message("src_files value is ${src_files}")
 add_executable(GetAway "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
         "GetAway/src/serverAuthManager.cpp" "GetAway/src/serverLobbyManager.cpp"
         "GetAway/src/serverGameManager.cpp" "GetAway/src/messageTypeEnums.cpp"
-        "GetAway/src/ManagementFunctions.cpp" "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp")
+        "GetAway/src/ManagementFunctions.cpp" "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp"
+        "GetAway/src/playerCards.cpp")
 target_include_directories(GetAway PRIVATE "GetAway/header")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)
