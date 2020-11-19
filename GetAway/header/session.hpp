@@ -259,9 +259,6 @@ fail(errorCode ec, char const* what)
     managerPtr->leave(id);
 }
 
-//TODO
-//This is a bug because if we are writing more than one message than
-//
 template <typename T>
 void
 session<T, true>::

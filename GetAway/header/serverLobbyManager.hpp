@@ -17,7 +17,7 @@
 #include "serverListener.hpp"
 #include "serverGameManager.hpp"
 #include "messageTypeEnums.hpp"
-#include "playerCards.hpp"
+#include "playerData.hpp"
 struct deckSuitValue{
 public:
     static const int CLUB = 0;
@@ -34,43 +34,28 @@ enum class deckSuit{
     DIAMOND = deckSuitValue::DIAMOND,
     ENUMSIZE = 5
 };
-enum class turnType{
-    TURNBYPLAYER,
-    TURNNOOTHERPOSSIBLE,
-    TURNPLAYEROFFLINE
-};
 
-class turnMeta{
-    std::vector<int> turnOrder; //First int is id, second is turnType;a
-    int currentPlayer = 0;
-public:
-    void setTurnOrder(std::vector<int> Ids);
-    int nextPlayerId();
-    int getCurrentPlayerId();
 
-    void setCurrentPlayer(int playerId);
-};
 class serverLobbyManager
 {
     std::map<int, std::tuple<const std::string,
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
 
     //Following 2 are used for starting the game
-    net::steady_timer timer{std::get<1>(gameData.find(excitedSessionId)->second)->sock.get_executor(), std::chrono::seconds(2)};
+    net::steady_timer gameTimer{std::get<1>(gameData.find(excitedSessionId)->second)->sock.get_executor(), std::chrono::seconds(2)};
     int numOfPlayers = 0;
 
     //Following are used for game management only.
-    std::map<int, playerCards> playerGameCards;
+    bool gameStarted = false;
+    bool firstTurn = true;
     std::list<int> flushedCards;
-
-    std::map<int, std::vector<lobbyMessageType>> messagesExpectedFromPlayers;
-    //Tuple first int is id second is the value of the card. Used only for first turn.
-    std::list<std::tuple<int,int>> turnAlreadyDeterminedIdsInFirstTurn;
     deckSuit suitOfTheRound;
-    turnMeta turnIfo;
 
+    std::vector<playerData> gamePlayersData;
+    int currentIndexGamePlayersData;
 
-
+    //used in receive handlers
+    int receivedCardNumber;
     //
     friend std::ostream& operator<<(std::ostream& out, serverLobbyManager& state);
     friend std::istream& operator>>(std::istream& in, serverLobbyManager& state);
@@ -117,5 +102,7 @@ public:
     void checkForNextTurn(int nextPlayerId);
 
     void initializeGame();
+
+    void handlerPlayerLeft(int id);
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

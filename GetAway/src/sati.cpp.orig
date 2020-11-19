@@ -58,6 +58,42 @@ void sati::operator()() {
     }
 }
 
+<<<<<<< Updated upstream
+void sati::setIntHandlerAndConstraints(inputRead* base_, int lowerBound_, int upperBound_) {
+    std::lock_guard<std::mutex> lok(m.get());
+    if(handlerAssigned){
+        throw std::logic_error("constraint already assigned\r");
+    }
+    base = base_;
+    lowerBound = lowerBound_;
+    upperBound = upperBound_;
+    messageConstraint = false;
+    handlerAssigned = true;
+}
+
+
+void sati::setIntHandlerAndConstraintsReWrite(inputRead* base_, int lowerBound_, int upperBound_) {
+    std::lock_guard<std::mutex> lok(m.get());
+    base = base_;
+    lowerBound = lowerBound_;
+    upperBound = upperBound_;
+    messageConstraint = false;
+    handlerAssigned = true;
+}
+
+
+void sati::setStringHandlerAndConstraints(inputRead* base_) {
+    std::lock_guard<std::mutex> lok(m.get());
+    if(handlerAssigned){
+        throw std::logic_error("constraint already assigned\r");
+    }
+    base = base_;
+    messageConstraint = true;
+    handlerAssigned = true;
+}
+
+=======
+>>>>>>> Stashed changes
 void sati::messageBufferAppend(const std::string& message) {
     messageBuffer += message;
     accumulateBuffersAndPrintWithLock();

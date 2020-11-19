@@ -20,14 +20,27 @@ class clientLobbyManager : inputRead
     std::map<int, std::string> gamePlayers;
     std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
     std::vector<lobbyMessageType> messageTypeExpected;
+    inputType inputTypeExpected;
+
     friend std::istream& operator>>(std::istream& in, clientLobbyManager& state);
     friend std::ostream& operator<<(std::ostream& out, clientLobbyManager& state);
 
-    void inputInt(int input) override;
-    void inputString(std::string str) override;
+
+    void input(std::string inputString, inputType inputReceivedType) override;
 
     std::string chatMessageString;
     int chatMessageInt;
+
+
+    //Following Are Used For Game Management
+    std::list<int> myCards;
+    //Used For First Turn Only
+    std::vector<int> turnAlreadyDetermined;
+    bool gameStarted = false;
+    bool notRunPosted = false;
+
+
+
 public:
     explicit
     clientLobbyManager();
@@ -37,6 +50,8 @@ public:
     int receivedPacketSize = 0;
 
     void managementLobbyReceived();
+
+    void managementGAMEFIRSTTURNSERVERReceived();
 
     void managementNextAction();
 

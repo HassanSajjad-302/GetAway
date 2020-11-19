@@ -30,10 +30,26 @@ enum class lobbyMessageType{
     ENUMSIZE = 7
 };
 
+<<<<<<< Updated upstream
+
+
+struct gameTypes{
+public:
+    static const int HAND = 0;
+    static inline std::string messageTypeStrings[1] = {"HAND"};
+};
+
+enum class enumGameType{
+    HAND = gameTypes::HAND,
+    ENUMSIZE = 1
+};
+
+=======
 enum class inputType{
     LOBBYINT,
     LOBBYSTRING,
     GAMEINT,
     GAMESTRING
 };
+>>>>>>> Stashed changes
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
@@ -116,7 +115,7 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
             }
             manager.managementGAMEFIRSTTURNSERVERReceived();
             manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGE;
-            //manager.messageTypeExpected[1] = lobbyMessageType::GAMETURNSERVER;
+            manager.messageTypeExpected[1] = lobbyMessageType::GAMETURNSERVER;
 
             break;
         }
@@ -161,15 +160,42 @@ void clientLobbyManager::managementLobbyReceived(){
 void clientLobbyManager::managementNextAction(){
     std::string toPrint = "1)Send Message 2)Exit\r\n\n";
     sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+<<<<<<< Updated upstream
+    sati::getInstance()->setIntHandlerAndConstraints(this, 1, 2);
+}
+
+void clientLobbyManager::inputInt(int input) {
+    if(!gameStarted){
+        if(input == 1){
+            std::string toPrint = "Please Type The Message \r\n\n";
+            sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+            sati::getInstance()->setStringHandlerAndConstraints(this);
+        }
+        if(input == 2){
+            sati::getInstance()->inputStatementBufferChanged("Exiting\r\n",true);
+            exitGame();
+        }
+    }else{
+        if(input == 1){
+            std::string toPrint = "Please Type The Message \r\n\n";
+            sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+            sati::getInstance()->setStringHandlerAndConstraints(this);
+        }
+        if(input == 2){
+            sati::getInstance()->inputStatementBufferChanged("Exiting\r\n",true);
+            exitGame();
+        }
+        if(input == 3){
+
+        }
+    }
+=======
     inputTypeExpected = inputType::LOBBYINT;
     sati::getInstance()->setInputType(inputTypeExpected);
     sati::getInstance()->setBase(this);
 }
+>>>>>>> Stashed changes
 
-void clientLobbyManager::exitGame(){
-    clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
-    clientLobbySession->sock.close();
-    clientLobbySession.reset();
 }
 
 void clientLobbyManager::input(std::string inputString, inputType inputReceivedType) {
@@ -234,14 +260,22 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
     }
 }
 
+void clientLobbyManager::exitGame(){
+    clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
+    clientLobbySession->sock.close();
+    clientLobbySession.reset();
+}
+
 clientLobbyManager::~clientLobbyManager() {
     sati::getInstance()->printExitMessage("clientLobbyManagerDestructor Called");
     spdlog::info("ClientLobbyManager Destructor Called");
 }
 
+<<<<<<< Updated upstream
 void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived() {
     std::string toPrint = "1)Send Message 2)Exit 3)Perform Turn\r\n\n";
     sati::getInstance()->inputStatementBufferChanged(toPrint, false);
-    //sati::getInstance()->setIntHandlerAndConstraintsReWrite(this, 1, 3);
+    sati::getInstance()->setIntHandlerAndConstraintsReWrite(this, 1, 3);
 }
-
+=======
+>>>>>>> Stashed changes

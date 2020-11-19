@@ -36,7 +36,6 @@ class sati {
     inputRead* base;
 
 
-    void accumulateBuffersAndPrintWithLock();
     void accumulateBuffersAndPrintWithOutLock();
     explicit sati(net::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
@@ -61,8 +60,13 @@ public:
     void roundBufferAfterAppend(const std::string& roundInfo);
 
     void printExitMessage(std::string message);
+<<<<<<< Updated upstream
+
+    void setIntHandlerAndConstraintsReWrite(inputRead *base_, int lowerBound_, int upperBound_);
+=======
     void accumulateBuffersAndPrintWithLock();
     void setBase(inputRead* base_);
+>>>>>>> Stashed changes
 };
 
 
