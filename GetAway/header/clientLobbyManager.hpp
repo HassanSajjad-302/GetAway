@@ -39,7 +39,11 @@ class clientLobbyManager : inputRead
     bool gameStarted = false;
     bool notRunPosted = false;
 
-
+    //
+#ifndef NDEBUG
+    int numOfRoundPlayers = 0;
+    std::vector<int> flushedCards;
+#endif
 
 public:
     explicit
@@ -58,6 +62,8 @@ public:
     void uselessWriteFunction();
 
     void exitGame();
+
+    inline void setInputType(inputType inputType);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

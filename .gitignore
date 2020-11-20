@@ -1,5 +1,6 @@
 /Build
 *.user
+*.orig
 
 # Prerequisites
 *.d

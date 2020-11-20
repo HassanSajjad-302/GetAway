@@ -15,8 +15,10 @@ public:
     static const int CHATMESSAGEID = 4;
     static const int GAMEFIRSTTURNSERVER= 5;
     static const int GAMETURNCLIENT = 6;
-    static inline std::string messageTypeStrings[7] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE",
-                                                       "CHATMESSAGEID", "GAMEFIRSTTURNSERVER", "GAMETURNCLIENT"};
+    static const int GAMETURNSERVER = 7;
+    static inline std::string messageTypeStrings[8] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE",
+                                                       "CHATMESSAGEID", "GAMEFIRSTTURNSERVER", "GAMETURNCLIENT",
+                                                       "GAMETURNSERVER"}
 };
 
 enum class lobbyMessageType{
@@ -27,7 +29,8 @@ enum class lobbyMessageType{
     CHATMESSAGEID = messageTypes::CHATMESSAGEID,
     GAMEFIRSTTURNSERVER = messageTypes::GAMEFIRSTTURNSERVER,
     GAMETURNCLIENT = messageTypes::GAMETURNCLIENT,
-    ENUMSIZE = 7
+    GAMETURNSERVER = messageTypes::GAMETURNSERVER,
+    ENUMSIZE = 8
 };
 
 enum class inputType{

@@ -36,7 +36,6 @@ class sati {
     inputRead* base;
 
 
-    void accumulateBuffersAndPrintWithLock();
     void accumulateBuffersAndPrintWithOutLock();
     explicit sati(net::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
@@ -55,10 +54,10 @@ public:
     //RE-EVALUATE THESE DECISIONS
     //Currently, there is no function to clear buffers
     //Any of the following function call means, print something
-    void messageBufferAppend(const std::string& message);
-    void roundBufferBeforeChanged(std::string roundInfo);
-    void inputStatementBufferChanged(std::string inputStatementNew, bool clearRoundBuffer);
-    void roundBufferAfterAppend(const std::string& roundInfo);
+    void messageBufferAppend(const std::string& message); //messages
+    void roundBufferBeforeChanged(std::string roundInfo); //Players in lobby are, Your cards
+    void inputStatementBufferChanged(std::string inputStatementNew, bool clearRoundBuffer); //input statement
+    void roundBufferAfterAppend(const std::string& roundInfo); //turns played by other players
 
     void printExitMessage(std::string message);
     void accumulateBuffersAndPrintWithLock();
