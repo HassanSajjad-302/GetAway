@@ -18,23 +18,7 @@
 #include "serverGameManager.hpp"
 #include "messageTypeEnums.hpp"
 #include "playerData.hpp"
-struct deckSuitValue{
-public:
-    static const int CLUB = 0;
-    static const int HEART = 1;
-    static const int SPADE = 2;
-    static const int DIAMOND = 3;
-    static inline std::string messageTypeStrings[4] = {"CLUB", "HEART", "SPADE", "DIAMOND"};
-};
-
-enum class deckSuit{
-    CLUB = deckSuitValue::CLUB,
-    HEART = deckSuitValue::HEART,
-    SPADE = deckSuitValue::SPADE,
-    DIAMOND = deckSuitValue::DIAMOND,
-    ENUMSIZE = 5
-};
-
+#include "deckSuit.hpp"
 
 class serverLobbyManager
 {

@@ -21,12 +21,32 @@ public:
 
 //singleton for asynchronous terminal input
 class sati {
+private:
     net::io_context& io;
-    std::string messageBuffer;
-    std::string roundBufferBefore;
-    std::string inputStatement;
-    std::string roundBufferAfter;
+    //Buffers For Holding And RePrinting
+
+    //Common In Both Lobby And Game
+    std::string messageBuffer; //messages
     std::string userIncomingInput;
+    std::string inputStatementBuffer; //input
+
+    //Only For Lobby
+    std::string playersInLobby;
+
+    //Only For Game
+    std::string turnSequence;
+    std::string turns;
+    std::string waitingForTurn;
+    std::string timeLeft;
+    std::string cardsString;
+
+
+    bool gameStarted = false;
+public:
+    void setGameStarted(bool gameStarted_);
+
+private:
+
     //This mutex needs to be locked when this class members changes. Or some other thread wants to
     //print on screen.
     std::reference_wrapper<std::mutex> m;
@@ -36,7 +56,12 @@ class sati {
     inputRead* base;
 
 
-    void accumulateBuffersAndPrintWithOutLock();
+    void accumulateBuffersAndPrintWithLockLobby();
+    void accumulateBuffersAndPrintWithOutLockLobby();
+
+    void accumulateBuffersAndPrintWithLockGame();
+    void accumulateBuffersAndPrintWithOutLockGame();
+
     explicit sati(net::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
 public:
@@ -44,26 +69,69 @@ public:
     static sati* getInstance();
     void operator()();
 
-    //void setIntHandlerAndConstraints(inputRead* base_, int lowerBound_, int upperBound_);
-    //void setStringHandlerAndConstraints(inputRead* base_);
-
     inputType receiveInputType;
     void setInputType(inputType nextReceiveInputType);
 
+    //If the function name has accumulate, it will also call accumulate in the end.
+    //If the function name has game then it will use game strings above if it has
+    //lobby it will use lobby strings above.
+
+    void lobbyAccumulatePrint();
+    void gameAccumulatePrint();
+
+    void setInputStatementMessagePrint();
+    void setInputStatementMessageAccumulatePrint();
+
+    void addMessagePrint(const std::string& playerName, const std::string& message);
+    void addMessageAccumulatePrint(const std::string& playerName, const std::string& message);
+
+
+    //USED ONLY IN LOBBY
+
+    //input-statement-functions
+    void setInputStatementLobbyPrint();
+    void setInputStringStatementAccumulatePrint();
+
+    //others
+    void addOrRemovePlayerLobbyPrint(const std::map<int, std::string>& gamePlayer_);
+    void addOrRemovePlayerLobbyAccumulatePrint(const std::map<int, std::string>& gamePlayer_);
+
+
+
+
+    //USED ONLY IN GAME
+
+    //input-statement-functions
+    void setInputStringGamePrint();
+    void setInputStringGameAccumulatePrint();
+
     //TODO
-    //RE-EVALUATE THESE DECISIONS
-    //Currently, there is no function to clear buffers
-    //Any of the following function call means, print something
-    void messageBufferAppend(const std::string& message); //messages
-    void roundBufferBeforeChanged(std::string roundInfo); //Players in lobby are, Your cards
-    void inputStatementBufferChanged(std::string inputStatementNew, bool clearRoundBuffer); //input statement
-    void roundBufferAfterAppend(const std::string& roundInfo); //turns played by other players
+    //This should be accepting another parameter std::vector<int> playerTurnSequence
+    void addPlayerSequenceGamePrint(const std::map<int, std::string>& gamePlayer_);
+    void addPlayerSequenceGameAccumulatePrint(const std::map<int, std::string>& gamePlayer_);
+
+    //Following 4 are used for manipulation of turn
+    //TODO
+    //This should also accept another parameter bool playerOffline
+    void addTurnGamePrint(const std::string& playerName, int cardNumber);
+    void addTurnGameAccumulatePrint(const std::string& playerName, int cardNumber);
+
+    void clearTurnGamePrint();
+    void clearTurnGameAccumulatePrint();
+
+    void setWaitingForTurnGamePrint(const std::vector<int>& waitingplayersId, const std::map<int, std::string>& gamePlayers);
+    void setWaitingForTurnGameAccumulatePrint(const std::vector<int>& waitingPlayersId, const std::map<int, std::string>& gamePlayers);
+
+    void setTimeLeftGamePrint(int seconds);
+    void setTimeLeftGameAccumulatePrint(int seconds);
+
+    void setCardsGamePrint(const std::map<int, std::set<int>>& cardsMap);
+    void setCardsGameAccumulatePrint(const std::map<int, std::set<int>>& cardsMap);
+    //others
 
     void printExitMessage(std::string message);
-    void accumulateBuffersAndPrintWithLock();
     void setBase(inputRead* base_);
+
 };
-
-
 
 #endif //GETAWAY_SATI_HPP

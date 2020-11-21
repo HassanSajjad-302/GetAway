@@ -37,7 +37,7 @@ class clientLobbyManager : inputRead
     //Used For First Turn Only
     std::vector<int> turnAlreadyDetermined;
     bool gameStarted = false;
-    bool notRunPosted = false;
+    std::vector<int> turnSequence;
 
     //
 #ifndef NDEBUG

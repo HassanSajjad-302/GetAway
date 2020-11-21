@@ -159,6 +159,11 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
                 //STEP 3;
                 out.write(reinterpret_cast<char*>(&card), sizeof(card));
             }
+            for(auto& turnSequenceId: manager.gamePlayersData){
+                int sequenceId = turnSequenceId.id;
+                //STEP 4; //Turn Sequence
+                out.write(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
+            }
             std::vector<std::tuple<int, int>>turnAlreadyDetermined; //id and cardValue
             for(auto& playerData: manager.gamePlayersData){
                 if(playerData.playerTurnType == turnType::TURNNOOTHERPOSSIBLE){
@@ -166,14 +171,14 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
                 }
             }
             int turnAlreadyDeterminedSize = turnAlreadyDetermined.size();
-            //STEP 4;
+            //STEP 5;
             out.write(reinterpret_cast<char*>(&turnAlreadyDeterminedSize), sizeof(turnAlreadyDeterminedSize));
             for(auto& alreadyDetermined: turnAlreadyDetermined){
                 int id = std::get<0>(alreadyDetermined);
                 int cardNumber = std::get<1>(alreadyDetermined);
-                //STEP 5;
-                out.write(reinterpret_cast<char*>(&id), sizeof(id));
                 //STEP 6;
+                out.write(reinterpret_cast<char*>(&id), sizeof(id));
+                //STEP 7;
                 out.write(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
             }
         }
@@ -231,12 +236,20 @@ void serverLobbyManager::printPlayerLeft(){
     std::cout << "Player Left: " << std::get<0>(gameData.find(excitedSessionId)->second) << std::endl;
 }
 
+//Game Functions
+void serverLobbyManager::startGame(){
+    initializeGame();
+    //At this point playerGameCards is ready to be distributed.
+    serverlistener->sock.cancel();
+    checkForAutoFirstTurn();
+    doFirstTurn();
+}
+
 void serverLobbyManager::initializeGame(){
     auto rd = std::random_device {};
     auto rng = std::default_random_engine { rd() };
 
     int numberOfPlayersWithExtraCards = 52 % numOfPlayers;
-    int numberOfPlayersWithNormalNumberOfCards = 52/numOfPlayers;
 
     std::vector<int> playersIdList;
     for(const auto& player: gameData){
@@ -248,6 +261,7 @@ void serverLobbyManager::initializeGame(){
     for(int i=0;i<numberOfPlayersWithExtraCards;++i){
         playerWithExtraCardIdsList.push_back(playersIdList[i]);
     }
+    std::shuffle(playerWithExtraCardIdsList.begin(), playerWithExtraCardIdsList.end(), rng);
 
     int cards[52];
     for(int i=0;i<52;++i){
@@ -259,10 +273,10 @@ void serverLobbyManager::initializeGame(){
 
     int cardsCount = 0;
     int count = 0;
-    for(const auto& player: gameData){
+    for(int i=0; i<playersIdList.size(); ++i){
         auto p = playerData(playersIdList[count]);
         ++count;
-        if(std::find(playerWithExtraCardIdsList.begin(),playerWithExtraCardIdsList.end(),player.first) !=
+        if(std::find(playerWithExtraCardIdsList.begin(),playerWithExtraCardIdsList.end(),gameData.find(i)->first) !=
            playerWithExtraCardIdsList.end()){
             for(;cardsCount<normalNumberOfCards+1; ++cardsCount){
                 assert(std::find(p.cards.begin(), p.cards.end(), cards[cardsCount]) == p.cards.end() &&
@@ -289,16 +303,6 @@ void serverLobbyManager::initializeGame(){
     assert(size == 52 && "Sum Of Cards distributed not equal to 52");
 #endif
 
-}
-
-
-//Game Functions
-void serverLobbyManager::startGame(){
-    initializeGame();
-    //At this point playerGameCards is ready to be distributed.
-    serverlistener->sock.cancel();
-    checkForAutoFirstTurn();
-    doFirstTurn();
 }
 
 //We need to check for in first turn whose players turn can be performed by the computer. This will be checked by
@@ -330,7 +334,6 @@ void serverLobbyManager::checkForAutoFirstTurn(){
 void serverLobbyManager::doFirstTurn(){
     messageSendingType = lobbyMessageType::GAMEFIRSTTURNSERVER;
     for(int i=0; i<gamePlayersData.size(); ++i){
-
         auto& player = gamePlayersData[i];
         currentIndexGamePlayersData = i;
         if(player.playerTurnType == turnType::TURNNOOTHERPOSSIBLE){

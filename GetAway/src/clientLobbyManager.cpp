@@ -91,8 +91,8 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                 //STEP 3;
                 in.getline(arr, manager.receivedPacketSize - 8);
                 manager.chatMessageString = std::string(arr);
-                sati::getInstance()->messageBufferAppend(manager.gamePlayers.find(manager.chatMessageInt)->second
-                                                         + ": " +  manager.chatMessageString + "\r\n");
+                sati::getInstance()->addMessageAccumulatePrint(manager.gamePlayers.find(manager.chatMessageInt)->second,
+                                                               manager.chatMessageString);
                 manager.clientLobbySession->receiveMessage();
                 break;
             }
@@ -109,16 +109,26 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                     in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
                     manager.myCards.push_back(cardNumber);
                 }
+                manager.turnSequence.resize(manager.gamePlayers.size());
+                for(int i=0;i<manager.turnSequence.size();++i){
+                    int sequenceId;
+                    //STEP 4; //turn sequence
+                    in.read(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
+                    assert(manager.gamePlayers.find(sequenceId) != manager.gamePlayers.end() && "turn SequenceId not present in manager.gamePlayerid");
+                    manager.turnSequence.emplace_back(sequenceId);
+                }
                 int turnAlreadyDeterminedSize;
-                //STEP 4;
+                //STEP 5;
                 in.read(reinterpret_cast<char*>(&turnAlreadyDeterminedSize), sizeof(turnAlreadyDeterminedSize));
+                assert(turnAlreadyDeterminedSize <= manager.gamePlayers.size() && turnAlreadyDeterminedSize > 0 &&
+                "turnAlreadyDeterminedSize not in range 0-manager.gamePlayers.size()");
                 std::vector<std::tuple<int, int>> turnAlreadyDetermined;
                 for(int i=0; i<turnAlreadyDeterminedSize; ++i){
                     int id;
                     int cardNumber;
-                    //STEP 5;
-                    in.read(reinterpret_cast<char*>(&id), sizeof(id));
                     //STEP 6;
+                    in.read(reinterpret_cast<char*>(&id), sizeof(id));
+                    //STEP 7;
                     in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
                     turnAlreadyDetermined.emplace_back(id, cardNumber);
                 }
@@ -146,23 +156,16 @@ std::ostream &operator<<(std::ostream &out, clientLobbyManager &manager) {
 }
 
 void clientLobbyManager::uselessWriteFunction(){
-    sati::getInstance()->messageBufferAppend(gamePlayers.find(chatMessageInt)->second + ": " +  chatMessageString + "\r\n");
+    sati::getInstance()->addMessageAccumulatePrint(gamePlayers.find(chatMessageInt)->second, chatMessageString);
 }
 
 
 void clientLobbyManager::managementLobbyReceived(){
-    std::string roundBufferBefore = "Players in Lobby Are\r\n";
-    for(auto& player: gamePlayers) {
-        roundBufferBefore += player.second;
-        roundBufferBefore += "\r\n";
-    }
-    roundBufferBefore += "\r\n";
-    sati::getInstance()->roundBufferBeforeChanged(roundBufferBefore);
+    sati::getInstance()->addOrRemovePlayerLobbyPrint(gamePlayers);
 }
 
 void clientLobbyManager::managementNextAction(){
-    std::string toPrint = "1)Send Message 2)Exit\r\n\n";
-    sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+    sati::getInstance()->setInputStringStatementAccumulatePrint();
     setInputType(inputType::LOBBYINT);
     sati::getInstance()->setBase(this);
 }
@@ -183,22 +186,24 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     int num = std::stoi(inputString);
                     if(num>=1 && num<=2){
                         if(num == 1){
-                            std::string toPrint = "Please Type The Message \r\n\n";
-                            sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+                            sati::getInstance()->setInputStatementMessageAccumulatePrint();
                             setInputType(inputType::LOBBYSTRING);
                         }
                         if(num == 2){
-                            sati::getInstance()->inputStatementBufferChanged("Exiting\r\n",true);
+                            std::string toPrint = "Exiting \r\n\n";
+                            //TODO
+                            //I will clear all screen here and then exit game.
+                            //sati::getInstance()->inputStatementBuffer = std::move(toPrint);
                             exitGame();
                         }
                     }else{
-                        sati::getInstance()->accumulateBuffersAndPrintWithLock();
+                        sati::getInstance()->lobbyAccumulatePrint();
                         sati::getInstance()->setInputType(inputType::LOBBYINT);
                         std::cout<<"Please enter integer in range \r"<<std::endl;
                     }
                 }
                 catch (std::invalid_argument& e) {
-                    sati::getInstance()->accumulateBuffersAndPrintWithLock();
+                    sati::getInstance()->lobbyAccumulatePrint();
                     sati::getInstance()->setInputType(inputType::LOBBYINT);
                     std::cout<<"Invalid Input. \r"<<std::endl;
                 }
@@ -206,17 +211,19 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
             }
             case inputType::LOBBYSTRING:
             {
-                //TODO
-                //if received string is empty, move back.
-                chatMessageString = std::move(inputString);
+                if(inputString == ""){
+                    //TODO
+                    //if received string is empty, move back.
+                }else{
+                    chatMessageString = std::move(inputString);
 
-                //TODO
-                //This is an error if before the message write finishes, player receives the message
-                chatMessageInt = id;
-                clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
-                std::string toPrint = "1)Send Message 2)Exit\r\n\n";
-                sati::getInstance()->inputStatementBufferChanged(toPrint, false);
-                setInputType(inputType::LOBBYINT);
+                    //TODO
+                    //This is an error if before the message write finishes, player receives the message
+                    chatMessageInt = id;
+                    clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
+                    sati::getInstance()->setInputStringStatementAccumulatePrint();
+                    setInputType(inputType::LOBBYINT);
+                }
                 break;
             }
             case inputType::GAMEINT:
@@ -240,9 +247,9 @@ clientLobbyManager::~clientLobbyManager() {
 }
 
 void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived() {
-    std::string toPrint = "1)Send Message 2)Exit 3)Perform Turn\r\n\n";
-    sati::getInstance()->inputStatementBufferChanged(toPrint, false);
+    sati::getInstance()->setInputStringGameAccumulatePrint();
     //display cards received
+    //No there are two things. Whether
     //ask user for cards input
     //display timer.
 }
@@ -251,5 +258,3 @@ void clientLobbyManager::setInputType(inputType inputType) {
     inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
 }
-
-
