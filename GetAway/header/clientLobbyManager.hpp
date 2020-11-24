@@ -38,6 +38,9 @@ class clientLobbyManager : inputRead
     std::vector<int> turnSequence;
 
     std::vector<int> waitingForTurn;
+    bool gameStarted = false; //not used yet
+    bool badranga = false;
+    deckSuit suitOfTheRound;
     //
 #ifndef NDEBUG
     int numOfRoundPlayers = 0;
@@ -56,13 +59,14 @@ public:
 
     void managementGAMEFIRSTTURNSERVERReceived(std::vector<std::tuple<int, int>> turnAlreadyDetermined_);
 
-    void managementNextAction();
-
     void uselessWriteFunction();
 
     void exitGame();
 
     inline void setInputType(inputType inputType);
+
+    bool inputHelper(const std::string& inputString, int lower, int upper, inputType notInRange_,
+                     inputType invalidInput_, int& input);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

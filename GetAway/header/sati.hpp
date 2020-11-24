@@ -43,9 +43,6 @@ private:
 
 
     bool gameStarted = false;
-public:
-    void setReceiveInputTypeAndGameStarted(inputType nextReceiveInputType, bool gameStarted_);
-
 private:
 
     //This mutex needs to be locked when this class members changes. Or some other thread wants to
@@ -54,34 +51,31 @@ private:
 
 
     bool handlerAssigned = false;
-    inputRead* base;
+    inputRead* base = nullptr;
 
-
-    void accumulateBuffersAndPrintWithLockLobby();
-    void accumulateBuffersAndPrintWithOutLockLobby();
-
-    void accumulateBuffersAndPrintWithLockGame();
-    void accumulateBuffersAndPrintWithOutLockGame();
+    void accumulateBuffersAndPrint(bool lock);
 
     explicit sati(net::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
 public:
     static sati& getInstanceFirstTime(net::io_context& io_, std::mutex& mut);
     static sati* getInstance();
+    void setInputType(inputType nextReceiveInputType);
+    void printExitMessage(std::string message);
+    void setBase(inputRead* base_);
     void operator()();
 
+    void setReceiveInputTypeAndGameStarted(inputType nextReceiveInputType, bool gameStarted_);
     inputType receiveInputType;
-    void setInputType(inputType nextReceiveInputType);
-
     //If the function name has accumulate, it will also call accumulate in the end.
     //If the function name has game then it will use game strings above if it has
     //lobby it will use lobby strings above.
 
-    void lobbyAccumulatePrint();
-    void gameAccumulatePrint();
+    void accumulatePrint();
 
     void setInputStatementMessagePrint();
     void setInputStatementMessageAccumulatePrint();
+
 
     void addMessagePrint(const std::string& playerName, const std::string& message);
     void addMessageAccumulatePrint(const std::string& playerName, const std::string& message);
@@ -109,8 +103,11 @@ public:
     void setInputStatementHomeThreeInputGamePrint();
     void setInputStatementHomeThreeInputGameAccumulatePrint();
 
-    void setInputStatement1GamePrint();
-    void setInputStatement1GameAccumulatePrint();
+    void setInputStatement3GamePrint(const std::set<int>& cards_, int deckSuitType);
+    void setInputStatement3GameAccumulatePrint(const std::set<int>& cards_, int deckSuitType);
+
+    void setInputStatement3GamePrint(const std::map<int, std::set<int>>& cards_);
+    void setInputStatement3GameAccumulatePrint(const std::map<int, std::set<int>>& cards_);
 
     //others
     //TODO
@@ -136,8 +133,6 @@ public:
     void setCardsGamePrint(const std::map<int, std::set<int>>& cardsMap);
     void setCardsGameAccumulatePrint(const std::map<int, std::set<int>>& cardsMap);
 
-    void printExitMessage(std::string message);
-    void setBase(inputRead* base_);
 };
 
 #endif //GETAWAY_SATI_HPP

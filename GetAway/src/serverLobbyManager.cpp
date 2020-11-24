@@ -74,7 +74,7 @@ std::istream &operator>>(std::istream &in, serverLobbyManager &manager) {
         std::get<1>(manager.gameData.find(manager.excitedSessionId)->second)->receiveMessage();
     }
     else{
-        std::cout<<"Unexpected Packet Type Received in class clientLobbyManager"<<std::endl;
+        std::cout<<"Unexpected Packet Type Received in class serverLobbyManager"<<std::endl;
     }
 
     return in;
@@ -343,8 +343,9 @@ void serverLobbyManager::doFirstTurn(){
 #endif
             flushedCards.emplace_back(player.cardValueAuto);
 
-        }else{ //In first turn turnType::TURNPLAYEROFFLINE not possible, so it is turnType::TURNBYPLAYER
+        }else{ //
             player.messageTypeExpectedGame.push_back(lobbyMessageType::GAMETURNCLIENT);
+
             std::get<1>(gameData.find(excitedSessionId)->second)->receiveMessage();
         }
     }
