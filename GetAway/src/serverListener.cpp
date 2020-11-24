@@ -26,9 +26,6 @@ void
 serverListener::
 run()
 {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this());
     // Start accepting a connection
     acceptor.async_accept(
@@ -37,9 +34,6 @@ run()
         {
             self->onAccept(ec);
         });
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
 }
 
 // Report a failure
@@ -47,16 +41,10 @@ void
 serverListener::
 fail(errorCode ec, char const* what)
 {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     // Don't report on canceled operations
     if(ec == net::error::operation_aborted)
         return;
     std::cerr << what << ": " << ec.message() << "\n";
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
 }
 
 // Handle a connection
@@ -64,9 +52,6 @@ void
 serverListener::
 onAccept(errorCode ec)
 {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     if(ec)
         return fail(ec, "accept");
     else
@@ -82,7 +67,4 @@ onAccept(errorCode ec)
         {
             self->onAccept(ec);
         });
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
 }

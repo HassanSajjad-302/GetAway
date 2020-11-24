@@ -26,8 +26,7 @@ class serverLobbyManager
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
 
     //Following 2 are used for starting the game
-    net::steady_timer gameTimer{std::get<1>(gameData.find(excitedSessionId)->second)->sock.get_executor(), std::chrono::seconds(2)};
-    int numOfPlayers = 0;
+    //net::steady_timer gameTimer{std::get<1>(gameData.find(excitedSessionId)->second)->sock.get_executor(), std::chrono::seconds(2)};
 
     //Following are used for game management only.
     bool gameStarted = false;

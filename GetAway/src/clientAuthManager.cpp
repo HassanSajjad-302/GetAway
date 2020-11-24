@@ -6,7 +6,6 @@
 clientAuthManager::clientAuthManager(std::string playerName_, std::string password_) :
 playerName(std::move(playerName_)), password(std::move(password_))
 {
-    spdlog::info("ClientAuthManager Constructor Called");
 }
 
 std::ostream &operator<<(std::ostream &out, clientAuthManager &state) {
@@ -28,5 +27,4 @@ void clientAuthManager::join(std::shared_ptr<session<clientAuthManager>> authSes
 }
 
 clientAuthManager::~clientAuthManager() {
-    spdlog::info("ClientAuthManager DestructorCalled");
 }

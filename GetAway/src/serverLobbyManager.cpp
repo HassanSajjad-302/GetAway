@@ -12,9 +12,6 @@ int
 serverLobbyManager::
 join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
 {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     lobbySession->receiveMessage();
     auto tup = std::tuple(playerNameAdvanced, std::move(lobbySession));
     int id;
@@ -38,15 +35,13 @@ join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
     printPlayerJoined();
     //Tell EveryOne SomeOne has Joined In
     sendSelfAndStateToOneAndPlayerJoinedToRemaining();
-    numOfPlayers +=1;
-    if(numOfPlayers == 2){
-        gameTimer.async_wait([self= this](errorCode ec){
+    if(gameData.size() == 2){
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        net::post(std::get<1>(gameData.begin()->second)->sock.get_executor(), [self = this](){self->startGame();});
+        /*gameTimer.async_wait([self= this](errorCode ec){
             self->startGame();
-        });
+        });*/
     }
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     return id;
 }
 
@@ -54,18 +49,10 @@ void
 serverLobbyManager::
 leave(int id)
 {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
-
     excitedSessionId = id;
     printPlayerLeft();
     sendPlayerLeftToAllExceptOne();
     gameData.erase(gameData.find(id));
-
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
 }
 
 std::istream &operator>>(std::istream &in, serverLobbyManager &manager) {
@@ -153,14 +140,19 @@ std::ostream &operator<<(std::ostream &out, serverLobbyManager &manager) {
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             auto &p = manager.gamePlayersData[manager.currentIndexGamePlayersData];
             int handSize = p.cards.size();
+            spdlog::info("Sending Messages to Player {}", std::get<0>(manager.gameData.find(manager.excitedSessionId)->second));
+            spdlog::info("Hand Size is {d}", handSize);
             //STEP 2;
             out.write(reinterpret_cast<char*>(&handSize),sizeof(handSize));
+            spdlog::info("Cards Written Are Following");
             for(auto card: p.cards){
                 //STEP 3;
+                spdlog::info("Card Number Is {}", card);
                 out.write(reinterpret_cast<char*>(&card), sizeof(card));
             }
             for(auto& turnSequenceId: manager.gamePlayersData){
                 int sequenceId = turnSequenceId.id;
+                spdlog::info("Turn Sequence {d}", turnSequenceId.id);
                 //STEP 4; //Turn Sequence
                 out.write(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
             }
@@ -240,7 +232,9 @@ void serverLobbyManager::printPlayerLeft(){
 void serverLobbyManager::startGame(){
     initializeGame();
     //At this point playerGameCards is ready to be distributed.
-    serverlistener->sock.cancel();
+    errorCode ec;
+    serverlistener->sock.shutdown(tcp::socket::shutdown_both, ec);
+    serverlistener->sock.close();
     checkForAutoFirstTurn();
     doFirstTurn();
 }
@@ -249,7 +243,7 @@ void serverLobbyManager::initializeGame(){
     auto rd = std::random_device {};
     auto rng = std::default_random_engine { rd() };
 
-    int numberOfPlayersWithExtraCards = 52 % numOfPlayers;
+    int numberOfPlayersWithExtraCards = 52 % gameData.size();
 
     std::vector<int> playersIdList;
     for(const auto& player: gameData){
@@ -269,27 +263,27 @@ void serverLobbyManager::initializeGame(){
     }
     std::shuffle(cards, cards + 52, rng);
 
-    int normalNumberOfCards = 52/numOfPlayers;
+    int normalNumberOfCards = 52/gameData.size();
 
     int cardsCount = 0;
-    int count = 0;
     for(int i=0; i<playersIdList.size(); ++i){
-        auto p = playerData(playersIdList[count]);
-        ++count;
+        auto p = playerData(playersIdList[i]);
         if(std::find(playerWithExtraCardIdsList.begin(),playerWithExtraCardIdsList.end(),gameData.find(i)->first) !=
            playerWithExtraCardIdsList.end()){
-            for(;cardsCount<normalNumberOfCards+1; ++cardsCount){
+            for(int j=0; j<normalNumberOfCards+1; ++j){
                 assert(std::find(p.cards.begin(), p.cards.end(), cards[cardsCount]) == p.cards.end() &&
                        "Card Is Already Present In The List");
                 assert(cards[cardsCount] >= 0 && cards[cardsCount] < 52 && "Card Id is out-of-range");
                 p.cards.push_back(cards[cardsCount]);
+                ++cardsCount;
             }
         }else{
-            for(;cardsCount <normalNumberOfCards; ++cardsCount){
+            for(int j =0; j<normalNumberOfCards; ++j){
                 assert(std::find(p.cards.begin(), p.cards.end(), cards[cardsCount]) == p.cards.end() &&
                        "Card Is Already Present In The List");
                 assert(cards[cardsCount] >= 0 && cards[cardsCount] < 52 && "Card Id is out-of-range");
                 p.cards.push_back(cards[cardsCount]);
+                ++cardsCount;
             }
         }
         gamePlayersData.emplace_back(std::move(p));
@@ -323,10 +317,10 @@ void serverLobbyManager::checkForAutoFirstTurn(){
                 spadeCardsCount += 1;
                 spadeCardValue = cardNumber;
             }
-            if(spadeCardsCount == 1){
-                player.playerTurnType = turnType::TURNNOOTHERPOSSIBLE;
-                player.cardValueAuto =  spadeCardValue;
-            }
+        }
+        if(spadeCardsCount == 1){
+            player.playerTurnType = turnType::TURNNOOTHERPOSSIBLE;
+            player.cardValueAuto =  spadeCardValue;
         }
     }
 }
@@ -336,8 +330,9 @@ void serverLobbyManager::doFirstTurn(){
     for(int i=0; i<gamePlayersData.size(); ++i){
         auto& player = gamePlayersData[i];
         currentIndexGamePlayersData = i;
+        excitedSessionId = gamePlayersData[i].id;
+        std::get<1>(gameData.find(excitedSessionId)->second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
         if(player.playerTurnType == turnType::TURNNOOTHERPOSSIBLE){
-            std::get<1>(gameData.find(excitedSessionId)->second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
 #ifndef NDEBUG
             int priorSize = player.cards.size();
 #endif
@@ -349,7 +344,6 @@ void serverLobbyManager::doFirstTurn(){
             flushedCards.emplace_back(player.cardValueAuto);
 
         }else{ //In first turn turnType::TURNPLAYEROFFLINE not possible, so it is turnType::TURNBYPLAYER
-            std::get<1>(gameData.find(excitedSessionId)->second)->sendMessage(&serverLobbyManager::uselessWriteFunction);
             player.messageTypeExpectedGame.push_back(lobbyMessageType::GAMETURNCLIENT);
             std::get<1>(gameData.find(excitedSessionId)->second)->receiveMessage();
         }

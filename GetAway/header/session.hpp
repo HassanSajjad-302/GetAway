@@ -55,12 +55,10 @@ session(
         : sock(std::move(socket))
         , managerPtr(std::move(state))
 {
-    spdlog::info("Session Constructor Called");
 }
 
 template<typename T, bool ID>
 session<T, ID>::~session(){
-    spdlog::info("Session Destructor Called");
 }
 
 template<typename T, bool ID>
@@ -221,25 +219,15 @@ session(
         : sock(std::move(socket))
         , managerPtr(std::move(state))
 {
-#ifdef LOG
-    spdlog::info("Session Constructor Called");
-#endif
 }
 
 template<typename T>
 void session<T, true>::registerSessionToManager() {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     this->id = managerPtr->join(std::enable_shared_from_this<session<T, true>>::shared_from_this());
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
 }
 
 template<typename T>
 session<T, true>::~session(){
-    spdlog::info("Session Destructor Called");
 }
 
 // Report a failure
@@ -329,6 +317,8 @@ readMore(errorCode ec, int bytesFirstRead) {
     }
     else
     {
+        //Sometimes error may be generated because it can read two coming messages at once.
+        //Even though those were seperately sent. No mechanism for dealing with that case.
         //Why it read extra bytes
         std::cout<<"All guarantees are fucked up" <<std::endl;
         exit(-1);

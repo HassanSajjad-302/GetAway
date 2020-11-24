@@ -42,20 +42,15 @@ void sati::operator()() {
                 accumulateBuffersAndPrintWithOutLockGame();
             }
         }else if(c == 10 || c == 13){ //cr pressed
-            //TODO
-            //For The Current There is no moment when programme should not be accepting input
             std::lock_guard<std::mutex> lok(m.get());
-            if(!handlerAssigned){
-                std::cout<<"Receiving Input. But No Handler Assigned \r"<<std::endl;
-                system("stty cooked");
-                throw std::logic_error("Receiving Input. But No Handler Assigned \r");
+            if(handlerAssigned){
+                net::post(io, [handler = base, expectedInput = receiveInputType,
+                        str = std::move(userIncomingInput)](){
+                    handler->input(str, expectedInput);
+                });
+                handlerAssigned = false;
+                userIncomingInput.clear();
             }
-            net::post(io, [handler = base, expectedInput = receiveInputType,
-                           str = std::move(userIncomingInput)](){
-                handler->input(str, expectedInput);
-            });
-            handlerAssigned = false;
-            userIncomingInput.clear();
         }
         else{
             userIncomingInput += c;
@@ -68,9 +63,11 @@ void sati::operator()() {
     }
 }
 
-void sati::setGameStarted(bool gameStarted_) {
+void sati::setReceiveInputTypeAndGameStarted(inputType nextReceiveInputType, bool gameStarted_) {
     std::lock_guard<std::mutex> lok(m.get());
     gameStarted = gameStarted_;
+    receiveInputType = nextReceiveInputType;
+    handlerAssigned = true;
 }
 
 void sati::accumulateBuffersAndPrintWithLockLobby() {
@@ -113,8 +110,8 @@ void sati::printExitMessage(std::string message) {
 }
 
 void sati::setInputType(inputType nextReceiveInputType) {
-    receiveInputType = nextReceiveInputType;
     std::lock_guard<std::mutex> lock{m.get()};
+    receiveInputType = nextReceiveInputType;
     handlerAssigned = true;
 }
 
@@ -152,10 +149,10 @@ void sati::addOrRemovePlayerLobbyAccumulatePrint(const std::map<int, std::string
     accumulateBuffersAndPrintWithLockLobby();
 }
 
-void sati::setInputStatementLobbyPrint() {
+void sati::setInputStatementHomeLobbyPrint() {
     inputStatementBuffer = "1)Send Message 2)Exit\r\n";
 }
-void sati::setInputStringStatementAccumulatePrint() {
+void sati::setInputStatementHomeLobbyAccumulatePrint() {
     inputStatementBuffer = "1)Send Message 2)Exit\r\n";
     accumulateBuffersAndPrintWithLockLobby();
 }
@@ -173,27 +170,38 @@ void sati::setInputStatementMessageAccumulatePrint() {
 
 //For Game
 
-void sati::setInputStringGamePrint() {
+//input statement
+void sati::setInputStatementHomeTwoInputGamePrint() {
+    inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+}
+
+void sati::setInputStatementHomeTwoInputGameAccumulatePrint() {
+    inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+    accumulateBuffersAndPrintWithLockLobby();
+}
+
+void sati::setInputStatementHomeThreeInputGamePrint() {
+    inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n\n";
+}
+
+void sati::setInputStatementHomeThreeInputGameAccumulatePrint() {
     inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n\n";
     accumulateBuffersAndPrintWithLockLobby();
 }
 
-void sati::setInputStringGameAccumulatePrint() {
-
-}
-
-void sati::addPlayerSequenceGamePrint(const std::map<int, std::string> &gamePlayer_) {
+//other
+void sati::setTurnSequenceGamePrint(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
     turnSequence = "Turn Sequence: ";
-    for(auto& player: gamePlayer_){
-        turnSequence += player.second + "\t";
+    for(auto& t: turnSequence_){
+        turnSequence += gamePlayer_.find(t)->second + "\t";
     }
     turnSequence += "\r\n\n";
 }
 
-void sati::addPlayerSequenceGameAccumulatePrint(const std::map<int, std::string> &gamePlayer_) {
+void sati::setTurnSequenceGameAccumulatePrint(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
     turnSequence = "Turn Sequence: ";
-    for(auto& player: gamePlayer_){
-        turnSequence += player.second + "\t";
+    for(auto& t: turnSequence_){
+        turnSequence += gamePlayer_.find(t)->second + "\t";
     }
     turnSequence += "\r\n\n";
     accumulateBuffersAndPrintWithLockGame();
@@ -201,13 +209,13 @@ void sati::addPlayerSequenceGameAccumulatePrint(const std::map<int, std::string>
 
 void sati::addTurnGamePrint(const std::string& playerName, int cardNumber) {
     turns += playerName;
-    assert(cardNumber/13 >=0 && cardNumber <=4 && "CardNumber not in range in addTurnGamePrint");
+    assert(cardNumber/13 >=0 && cardNumber/13 <=4 && "CardNumber not in range in addTurnGamePrint");
     turns += ": " + deckSuitValue::literal[cardNumber/13] + "\r\n";
 }
 
 void sati::addTurnGameAccumulatePrint(const std::string& playerName, int cardNumber) {
     turns += playerName;
-    assert(cardNumber/13 >=0 && cardNumber <=4 && "CardNumber not in range in addTurnGamePrint");
+    assert(cardNumber/13 >=0 && cardNumber/13 <=4 && "CardNumber not in range in addTurnGamePrint");
     turns += ": " + deckSuitValue::literal[cardNumber/13] + "\r\n";
     accumulateBuffersAndPrintWithLockGame();
 }

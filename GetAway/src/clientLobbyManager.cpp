@@ -6,7 +6,11 @@
 clientLobbyManager::clientLobbyManager(){
     messageTypeExpected.resize((int)lobbyMessageType::ENUMSIZE);
     messageTypeExpected[0] = lobbyMessageType::SELFANDSTATE;
-    spdlog::info("ClientLobbyManager Constructor Called");
+    std::set<int> s;
+    myCards.emplace(0, s);
+    myCards.emplace(1, s);
+    myCards.emplace(2, s);
+    myCards.emplace(3, s);
 }
 
 void clientLobbyManager::join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_) {
@@ -51,12 +55,7 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                     playerName = std::string(arr);
                     manager.gamePlayers.emplace(playersId, playerName);
                 }
-                manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGEID;
-                manager.messageTypeExpected[1] = lobbyMessageType::PLAYERJOINED;
-                manager.messageTypeExpected[2] = lobbyMessageType::PLAYERLEFT;
                 manager.managementLobbyReceived();
-                manager.clientLobbySession->receiveMessage();
-
                 break;
             }
                 //STEP 1;
@@ -99,18 +98,17 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                 //STEP 1;
             case lobbyMessageType::GAMEFIRSTTURNSERVER
                 :{
-                int numOfCards = 0;
+                int handSize = 0;
                 //STEP 2;
-                in.read(reinterpret_cast<char*>(&numOfCards), sizeof(numOfCards));
-                assert(numOfCards<=((52/manager.gamePlayers.size()) + 1) && "Unexpected Number Of Cards Received");
-                for(int i=0; i<numOfCards; ++i){
+                in.read(reinterpret_cast<char*>(&handSize), sizeof(handSize));
+                assert(handSize <= ((52 / manager.gamePlayers.size()) + 1) && "Unexpected Number Of Cards Received");
+                for(int i=0; i < handSize; ++i){
                     //STEP 3;
                     int cardNumber;
                     in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-                    manager.myCards.push_back(cardNumber);
+                    manager.myCards.find(cardNumber/13)->second.emplace(cardNumber%13);
                 }
-                manager.turnSequence.resize(manager.gamePlayers.size());
-                for(int i=0;i<manager.turnSequence.size();++i){
+                for(int i=0;i<manager.gamePlayers.size();++i){
                     int sequenceId;
                     //STEP 4; //turn sequence
                     in.read(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
@@ -132,10 +130,16 @@ std::istream &operator>>(std::istream &in, clientLobbyManager &manager) {
                     in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
                     turnAlreadyDetermined.emplace_back(id, cardNumber);
                 }
-                manager.managementGAMEFIRSTTURNSERVERReceived();
-                manager.messageTypeExpected[0] = lobbyMessageType::CHATMESSAGE;
-                manager.messageTypeExpected[1] = lobbyMessageType::GAMETURNSERVER;
-                manager.clientLobbySession->receiveMessage();
+                for(auto& gp: manager.gamePlayers){
+                    if(!std::any_of(turnAlreadyDetermined.begin(), turnAlreadyDetermined.end(), [&gp](std::tuple<int, int>& tup){
+                        return gp.first == std::get<0>(tup);
+                    })){
+                        manager.waitingForTurn.emplace_back(gp.first);
+                    }
+                }
+                assert(manager.waitingForTurn.size() == manager.gamePlayers.size() - turnAlreadyDeterminedSize &&
+                "waitingForTurn vector size mismatch error operator>> clientLobbyManager.cpp");
+                manager.managementGAMEFIRSTTURNSERVERReceived(std::move(turnAlreadyDetermined));
                 break;
             }
         }
@@ -161,11 +165,16 @@ void clientLobbyManager::uselessWriteFunction(){
 
 
 void clientLobbyManager::managementLobbyReceived(){
+    messageTypeExpected[0] = lobbyMessageType::CHATMESSAGEID;
+    messageTypeExpected[1] = lobbyMessageType::PLAYERJOINED;
+    messageTypeExpected[2] = lobbyMessageType::PLAYERLEFT;
+    messageTypeExpected[3] = lobbyMessageType::GAMEFIRSTTURNSERVER;
     sati::getInstance()->addOrRemovePlayerLobbyPrint(gamePlayers);
+    clientLobbySession->receiveMessage();
 }
 
 void clientLobbyManager::managementNextAction(){
-    sati::getInstance()->setInputStringStatementAccumulatePrint();
+    sati::getInstance()->setInputStatementHomeLobbyAccumulatePrint();
     setInputType(inputType::LOBBYINT);
     sati::getInstance()->setBase(this);
 }
@@ -211,7 +220,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
             }
             case inputType::LOBBYSTRING:
             {
-                if(inputString == ""){
+                if(inputString.empty()){
                     //TODO
                     //if received string is empty, move back.
                 }else{
@@ -221,7 +230,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     //This is an error if before the message write finishes, player receives the message
                     chatMessageInt = id;
                     clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunction);
-                    sati::getInstance()->setInputStringStatementAccumulatePrint();
+                    sati::getInstance()->setInputStatementHomeLobbyAccumulatePrint();
                     setInputType(inputType::LOBBYINT);
                 }
                 break;
@@ -243,15 +252,41 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
 
 clientLobbyManager::~clientLobbyManager() {
     sati::getInstance()->printExitMessage("clientLobbyManagerDestructor Called");
-    spdlog::info("ClientLobbyManager Destructor Called");
 }
 
-void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived() {
-    sati::getInstance()->setInputStringGameAccumulatePrint();
-    //display cards received
-    //No there are two things. Whether
-    //ask user for cards input
-    //display timer.
+void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(std::vector<std::tuple<int, int>> turnAlreadyDetermined_) {
+    messageTypeExpected[0] = lobbyMessageType::CHATMESSAGE;
+    messageTypeExpected[1] = lobbyMessageType::GAMETURNSERVER;
+    clientLobbySession->receiveMessage();
+
+    //Printing Starts
+    sati::getInstance()->setTurnSequenceGamePrint(gamePlayers, turnSequence);
+    bool myTurnAlreadyPerformed = false;
+    for(auto& tu: turnAlreadyDetermined_){
+        if(std::get<0>(tu) == id){
+            myTurnAlreadyPerformed = true;
+            break;
+        }
+    }
+
+    for(auto& tu: turnAlreadyDetermined_){
+        assert((std::get<1>(tu)/13) == (int)deckSuit::SPADE && "Card Receved Not In Spade");
+        sati::getInstance()->addTurnGamePrint(gamePlayers.find(std::get<0>(tu))->second, std::get<1>(tu));
+    }
+
+    sati::getInstance()->setWaitingForTurnGamePrint(waitingForTurn, gamePlayers); //waiting for turn
+    sati::getInstance()->setCardsGamePrint(myCards); //cards
+
+
+    //set input statement and print all this
+
+    if(myTurnAlreadyPerformed){
+        sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
+    }else{
+        sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+    }
+
+    //set sati gamestarted and sati inputhandler
 }
 
 void clientLobbyManager::setInputType(inputType inputType) {

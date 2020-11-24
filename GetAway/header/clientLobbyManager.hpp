@@ -2,15 +2,16 @@
 #define GETAWAY_CLIENTLOBBYMANAGER_HPP
 
 #include <map>
+#include <set>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include <chrono>
 #include <iostream>
 #include "session.hpp"
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
+#include "deckSuit.hpp"
 
 // Represents the shared server state
 class clientLobbyManager : inputRead
@@ -29,16 +30,14 @@ class clientLobbyManager : inputRead
     void input(std::string inputString, inputType inputReceivedType) override;
 
     std::string chatMessageString;
-    int chatMessageInt;
+    int chatMessageInt{};
 
 
     //Following Are Used For Game Management
-    std::list<int> myCards;
-    //Used For First Turn Only
-    std::vector<int> turnAlreadyDetermined;
-    bool gameStarted = false;
+    std::map<int, std::set<int>> myCards; //here cards are stored based on there 0-12 number and 0-4 enum value as in
     std::vector<int> turnSequence;
 
+    std::vector<int> waitingForTurn;
     //
 #ifndef NDEBUG
     int numOfRoundPlayers = 0;
@@ -55,7 +54,7 @@ public:
 
     void managementLobbyReceived();
 
-    void managementGAMEFIRSTTURNSERVERReceived();
+    void managementGAMEFIRSTTURNSERVERReceived(std::vector<std::tuple<int, int>> turnAlreadyDetermined_);
 
     void managementNextAction();
 

@@ -18,7 +18,7 @@ public:
     static const int GAMETURNSERVER = 7;
     static inline std::string messageTypeStrings[8] = {"STATE", "PLAYERJOINED", "PLAYERLEFT", "CHATMESSAGE",
                                                        "CHATMESSAGEID", "GAMEFIRSTTURNSERVER", "GAMETURNCLIENT",
-                                                       "GAMETURNSERVER"}
+                                                       "GAMETURNSERVER"};
 };
 
 enum class lobbyMessageType{
@@ -34,9 +34,10 @@ enum class lobbyMessageType{
 };
 
 enum class inputType{
-    LOBBYINT,
-    LOBBYSTRING,
-    GAMEINT,
-    GAMESTRING
+    LOBBYINT = 0,
+    LOBBYSTRING = 1,
+    GAMEINT = 2,
+    GAMESTRING = 3,
+    GAMEISGREATERTHANOREQUALTO = 2
 };
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

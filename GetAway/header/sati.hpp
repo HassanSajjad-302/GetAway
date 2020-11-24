@@ -5,6 +5,7 @@
 #ifndef GETAWAY_SATI_HPP
 #define GETAWAY_SATI_HPP
 
+#include <set>
 #include <mutex>
 #include <thread>
 #include "boost/asio.hpp"
@@ -43,7 +44,7 @@ private:
 
     bool gameStarted = false;
 public:
-    void setGameStarted(bool gameStarted_);
+    void setReceiveInputTypeAndGameStarted(inputType nextReceiveInputType, bool gameStarted_);
 
 private:
 
@@ -89,8 +90,8 @@ public:
     //USED ONLY IN LOBBY
 
     //input-statement-functions
-    void setInputStatementLobbyPrint();
-    void setInputStringStatementAccumulatePrint();
+    void setInputStatementHomeLobbyPrint();
+    void setInputStatementHomeLobbyAccumulatePrint();
 
     //others
     void addOrRemovePlayerLobbyPrint(const std::map<int, std::string>& gamePlayer_);
@@ -102,13 +103,20 @@ public:
     //USED ONLY IN GAME
 
     //input-statement-functions
-    void setInputStringGamePrint();
-    void setInputStringGameAccumulatePrint();
+    void setInputStatementHomeTwoInputGamePrint();
+    void setInputStatementHomeTwoInputGameAccumulatePrint();
 
+    void setInputStatementHomeThreeInputGamePrint();
+    void setInputStatementHomeThreeInputGameAccumulatePrint();
+
+    void setInputStatement1GamePrint();
+    void setInputStatement1GameAccumulatePrint();
+
+    //others
     //TODO
     //This should be accepting another parameter std::vector<int> playerTurnSequence
-    void addPlayerSequenceGamePrint(const std::map<int, std::string>& gamePlayer_);
-    void addPlayerSequenceGameAccumulatePrint(const std::map<int, std::string>& gamePlayer_);
+    void setTurnSequenceGamePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
+    void setTurnSequenceGameAccumulatePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
 
     //Following 4 are used for manipulation of turn
     //TODO
@@ -127,11 +135,9 @@ public:
 
     void setCardsGamePrint(const std::map<int, std::set<int>>& cardsMap);
     void setCardsGameAccumulatePrint(const std::map<int, std::set<int>>& cardsMap);
-    //others
 
     void printExitMessage(std::string message);
     void setBase(inputRead* base_);
-
 };
 
 #endif //GETAWAY_SATI_HPP

@@ -11,9 +11,6 @@ serverlistener(std::move(listener))
 }
 
 int serverAuthManager::join(std::shared_ptr<session<serverAuthManager, true>> authSession) {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     authSession->receiveMessage();
     int id;
     if(serverAuthSessions.empty())
@@ -25,16 +22,10 @@ int serverAuthManager::join(std::shared_ptr<session<serverAuthManager, true>> au
         id = serverAuthSessions.rbegin()->first + 1;
         serverAuthSessions.emplace(id, std::move(authSession));
     }
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     return id;
 }
 
 std::istream &operator>>(std::istream &in, serverAuthManager &manager) {
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     //STEP 1;
     //TODO
     char arr[61]; //This constant will be fed from somewhere else but one is added.
@@ -54,9 +45,6 @@ std::istream &operator>>(std::istream &in, serverAuthManager &manager) {
     {
         manager.serverAuthSessions.erase(manager.serverAuthSessions.find(manager.excitedSessionId));
     }
-#ifdef LOG
-    spdlog::info("{}\t{}\t{}",__FILE__,__FUNCTION__ ,__LINE__);
-#endif
     return in;
 }
 
