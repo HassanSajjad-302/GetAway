@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <list>
+#include <queue>
 #include <boost/asio.hpp>
 #include "Log_Macro.hpp"
 
@@ -28,13 +28,11 @@ class session : public std::enable_shared_from_this<session<T, false>>
 public:
     std::ostream out{&sessionStreamBuffOutput};
 private:
-    std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
+    std::queue<std::vector<net::const_buffer>> sendingMessagesQueue;
     //std::queue<int> sendingMessageSizesQueue;
 
     static void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytes);
-    void packetReceived(int consumeBytes);
-    void packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes);
 
 
 
@@ -93,19 +91,19 @@ sendMessage(void (T::*func)()) {
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
     vec.emplace_back(sessionStreamBuffOutput.data());
 
-    sendingMessagesQueue.emplace_back(std::move(vec));
+    sendingMessagesQueue.emplace(std::move(vec));
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
 
-                         self->sendingMessagesQueue.pop_front();
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
                          (*(self->managerPtr).*func)();
                      });
+    sendingMessagesQueue.pop();
 }
 
 template <typename T, bool ID>
@@ -130,51 +128,32 @@ readMore(errorCode ec, int bytesFirstRead) {
 
     sessionStreamBuffInput.commit(bytesFirstRead);
     int packetSize = 0;
-    in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
-    if(packetSize == bytesFirstRead - 4){
-        packetReceived(bytesFirstRead);
+    while(true) {
+        in.read(reinterpret_cast<char *>(&packetSize), sizeof(packetSize));
+        if (packetSize == bytesFirstRead - 4) {
+            managerPtr->packetReceivedFromNetwork(in, packetSize);
+            break;
+        } else if (packetSize > bytesFirstRead - 4) {
+            //Start Composite Asynchronous Operation Before Reporting
+            //The Received data.
+            int remainingBytes = packetSize - (bytesFirstRead - 4);
+            net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
+                            [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
+                                    errorCode ec, std::size_t bytesRead) {
+                                if (ec)
+                                    self->fail(ec, "error in lambda readMore");
+                                int consumingBytes = bytesFirstRead + remainingBytes;
+                                assert(remainingBytes == bytesRead);
+                                self->sessionStreamBuffInput.commit(remainingBytes);
+                                self->managerPtr->packetReceivedFromNetwork(self->in, consumingBytes - 4);
+                            });
+            break;
+        }
+        else {
+            managerPtr->packetReceivedFromNetwork(in, packetSize);
+            bytesFirstRead -= (packetSize + 4);
+        }
     }
-    else if(packetSize > bytesFirstRead - 4){
-        //Start Composite Asynchronous Operation Before Reporting
-        //The Received data.
-        int remainingBytes = packetSize - (bytesFirstRead - 4);
-        net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                        [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
-                                errorCode ec, std::size_t bytesRead)
-                        {
-                            if(ec)
-                                self->fail(ec, "error in lambda readMore");
-                            int consumingBytes = bytesFirstRead + remainingBytes;
-                            assert(remainingBytes == bytesRead);
-                            self->sessionStreamBuffInput.commit(remainingBytes);
-                            self->packetReceivedComposite(ec, bytesRead, consumingBytes);
-                        });
-    }
-    else
-    {
-        //Why it read extra bytes
-        std::cout<<"All guarantees are fucked up" <<std::endl;
-        exit(-1);
-    }
-}
-
-template <typename T, bool ID>
-void
-session<T, ID>::
-packetReceived(int consumeBytes) {
-//Whole packet Received in One Call
-    managerPtr->packetReceivedFromNetwork(in, consumeBytes-4);
-    sessionStreamBuffInput.consume(consumeBytes);
-}
-
-template <typename T, bool ID>
-void
-session<T, ID>::
-packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes) {
-    if(ec)
-        return fail(ec, "packetReceivedComposite");
-
-    packetReceived(consumingBytes);
 }
 
 template <typename T>
@@ -189,12 +168,10 @@ public:
     std::ostream out{&sessionStreamBuffOutput};
 
 private:
-    std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
+    std::queue<std::vector<net::const_buffer>> sendingMessagesQueue;
 
     void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytes);
-    void packetReceived(int consumeBytes);
-    void packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes);
 
     //friend T;
 public:
@@ -260,18 +237,17 @@ sendMessage(void (T::*func)(int id)) {
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
     vec.emplace_back(sessionStreamBuffOutput.data());
 
-    sendingMessagesQueue.emplace_back(std::move(vec));
+    sendingMessagesQueue.emplace(std::move(vec));
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     net::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
-                         self->sendingMessagesQueue.pop_front();
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
-                         (*(self->managerPtr).*func)(self->id);
                      });
+    sendingMessagesQueue.pop();
 }
 template <typename T>
 void
@@ -295,55 +271,37 @@ readMore(errorCode ec, int bytesFirstRead) {
 
     sessionStreamBuffInput.commit(bytesFirstRead);
     int packetSize = 0;
-    in.read(reinterpret_cast<char*>(&packetSize), sizeof(packetSize));
-    if(packetSize == bytesFirstRead - 4){
-        packetReceived(bytesFirstRead);
+    while(true) {
+        in.read(reinterpret_cast<char *>(&packetSize), sizeof(packetSize));
+        if (packetSize == bytesFirstRead - 4) {
+            managerPtr->packetReceivedFromNetwork(in, packetSize, id);
+            break;
+        } else if (packetSize > bytesFirstRead - 4) {
+            //Start Composite Asynchronous Operation Before Reporting
+            //The Received data.
+            int remainingBytes = packetSize - (bytesFirstRead - 4);
+            net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
+                            [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
+                                    errorCode ec, std::size_t bytesRead) {
+                                if (ec)
+                                    self->fail(ec, "error in lambda readMore");
+                                int consumingBytes = bytesFirstRead + remainingBytes;
+                                assert(remainingBytes == bytesRead);
+                                self->sessionStreamBuffInput.commit(remainingBytes);
+                                self->managerPtr->packetReceivedFromNetwork(self->in, consumingBytes - 4, self->id);
+                            });
+            break;
+        }
+        else {
+            //Sometimes error may be generated because it can read two coming messages at once.
+            //Even though those were seperately sent. No mechanism for dealing with that case.
+            //Why it read extra bytes
+
+            //This bug happened once because async_receive was called twice on same socket.
+            managerPtr->packetReceivedFromNetwork(in, packetSize, id);
+            bytesFirstRead -= (packetSize + 4);
+        }
     }
-    else if(packetSize > bytesFirstRead - 4){
-        //Start Composite Asynchronous Operation Before Reporting
-        //The Received data.
-        int remainingBytes = packetSize - (bytesFirstRead - 4);
-        net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                        [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
-                                errorCode ec, std::size_t bytesRead)
-                        {
-                            if(ec)
-                                self->fail(ec, "error in lambda readMore");
-                            int consumingBytes = bytesFirstRead + remainingBytes;
-                            assert(remainingBytes == bytesRead);
-                            self->sessionStreamBuffInput.commit(remainingBytes);
-                            self->packetReceivedComposite(ec, bytesRead, consumingBytes);
-                        });
-    }
-    else
-    {
-        //Sometimes error may be generated because it can read two coming messages at once.
-        //Even though those were seperately sent. No mechanism for dealing with that case.
-        //Why it read extra bytes
-
-        //This bug happened once because async_receive was called twice on same socket.
-        std::cout<<"All guarantees are fucked up" <<std::endl;
-        exit(-1);
-    }
-}
-
-template <typename T>
-void
-session<T, true>::
-packetReceived(int consumeBytes) {
-//Whole packet Received in One Call
-    managerPtr->packetReceivedFromNetwork(in, consumeBytes-4, id);
-    sessionStreamBuffInput.consume(consumeBytes);
-}
-
-template <typename T>
-void
-session<T, true>::
-packetReceivedComposite(errorCode ec, int bytesRead, int consumingBytes) {
-    if(ec)
-        return fail(ec, "packetReceivedComposite");
-
-    packetReceived(consumingBytes);
 }
 
 #endif //GETAWAY_SESSION_HPP
