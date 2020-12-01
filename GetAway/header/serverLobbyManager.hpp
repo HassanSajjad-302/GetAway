@@ -5,7 +5,6 @@
 
 
 #include <memory>
-#include <memory>
 #include <string>
 #include <unordered_set>
 #include <vector>
@@ -25,33 +24,23 @@ class serverLobbyManager
     std::map<int, std::tuple<const std::string,
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
 
-    //Following 2 are used for starting the game
-    //net::steady_timer gameTimer{std::get<1>(gameData.find(excitedSessionId)->second)->sock.get_executor(), std::chrono::seconds(2)};
-
     //Following are used for game management only.
     bool gameStarted = false;
-    bool firstTurn = true;
+    bool firstRound;
     std::list<int> flushedCards;
     deckSuit suitOfTheRound;
 
     std::vector<playerData> gamePlayersData;
-    int currentIndexGamePlayersData;
-
-    //used in receive handlers
-    int receivedCardNumber;
+    std::vector<std::tuple<int, int>> roundTurns; //cardNumber and id
     //
-    friend std::ostream& operator<<(std::ostream& out, serverLobbyManager& state);
-    friend std::istream& operator>>(std::istream& in, serverLobbyManager& state);
 
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
     std::shared_ptr<serverGameManager> nextManager;
 
-    std::string chatMessageReceived;
     std::string playerNameAdvanced;
     std::string playerNameFinal;
-    lobbyMessageType messageSendingType;
 public:
-    void setPlayerNameAdvanced(std::string advancedPlayerName_);
+    void setPlayerNameAdvanced(std::string advancedPlayerName);
 
 public:
     explicit
@@ -60,32 +49,48 @@ public:
 
     //Used-By-Session
     int join  (std::shared_ptr<session<serverLobbyManager, true>> lobbySession);
-    int excitedSessionId;
-    int receivedPacketSize;
     void leave (int id);
+    void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 
+    void sendPLAYERJOINEDToAllExceptOne(int excitedSessionId);
 
+    void sendPLAYERLEFTToAllExceptOne(int excitedSessionId);
 
-    void sendSelfAndStateToOneAndPlayerJoinedToRemaining();
+    void sendCHATMESSAGEIDToAllExceptOne(const std::string &chatMessageReceived, int excitedSessionId);
 
-    void sendChatMessageToAllExceptSenderItself();
+    void sendGAMETURNSERVERTOAllExceptOne(int receivedCardNumber, int excitedSessionId);
 
-    void printPlayerJoined();
+    void managementJoin(int excitedSessionId);
 
-    void printPlayerLeft();
-
-    void sendPlayerLeftToAllExceptOne();
+    void managementCHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId);
 
     void startGame();
 
-    void doFirstTurn();
-
-    void checkForAutoFirstTurn();
-
-    void checkForNextTurn(int nextPlayerId);
+    void doFirstTurnOfFirstRound();
 
     void initializeGame();
 
-    void handlerPlayerLeft(int id);
+    void managementGAMETURNCLIENTReceived(int receivedCardNumber, int sessionId);
+
+    void doTurnReceivedOfFirstRound(std::vector<playerData>::iterator turnReceivedPlayer, int receivedCardNumber);
+
+    void newRoundTurn(std::vector<playerData>::iterator currentGamePlayer);
+
+    void Turn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber);
+
+    void
+    performFirstOrMiddleTurn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber,
+                             bool firstTurn);
+
+    void
+    performLastOrThullaTurn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber, bool lastTurn);
+
+    void
+    turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer, int receivedCardNumber);
+
+    bool indexGamePlayerDataFromId(int id, int &index);
+
+    std::vector<playerData>::iterator roundKingGamePlayerDataIterator();
+
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

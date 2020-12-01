@@ -8,12 +8,6 @@ playerName(std::move(playerName_)), password(std::move(password_))
 {
 }
 
-std::ostream &operator<<(std::ostream &out, clientAuthManager &state) {
-    out << state.password << std::endl;
-    out << state.playerName << std::endl;
-    return out;
-}
-
 void clientAuthManager::starting() {
     tcp::socket tmp = std::move(authSession->sock);
     authSession.reset();
@@ -23,8 +17,9 @@ void clientAuthManager::starting() {
 
 void clientAuthManager::join(std::shared_ptr<session<clientAuthManager>> authSession_) {
     authSession = std::move(authSession_);
+    authSession->out << password << std::endl;
+    authSession->out << playerName << std::endl;
     authSession->sendMessage(&clientAuthManager::starting);
 }
 
-clientAuthManager::~clientAuthManager() {
-}
+clientAuthManager::~clientAuthManager() = default;

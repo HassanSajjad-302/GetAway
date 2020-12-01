@@ -25,7 +25,9 @@ class session : public std::enable_shared_from_this<session<T, false>>
     boost::asio::streambuf sessionStreamBuffInput;
     std::istream in{&sessionStreamBuffInput};
     net::streambuf sessionStreamBuffOutput;
+public:
     std::ostream out{&sessionStreamBuffOutput};
+private:
     std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
     //std::queue<int> sendingMessageSizesQueue;
 
@@ -84,7 +86,6 @@ template <typename T, bool ID>
 void
 session<T, ID>::
 sendMessage(void (T::*func)()) {
-    out << *managerPtr;
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -162,8 +163,7 @@ void
 session<T, ID>::
 packetReceived(int consumeBytes) {
 //Whole packet Received in One Call
-    managerPtr->receivedPacketSize = consumeBytes - 4;
-    in >> *managerPtr;
+    managerPtr->packetReceivedFromNetwork(in, consumeBytes-4);
     sessionStreamBuffInput.consume(consumeBytes);
 }
 
@@ -185,8 +185,10 @@ class session<T, true> : public std::enable_shared_from_this<session<T,true>>
     boost::asio::streambuf sessionStreamBuffInput;
     std::istream in{&sessionStreamBuffInput};
     boost::asio::streambuf sessionStreamBuffOutput;
+public:
     std::ostream out{&sessionStreamBuffOutput};
 
+private:
     std::list<std::vector<net::const_buffer>> sendingMessagesQueue;
 
     void fail(errorCode ec, char const* what);
@@ -251,7 +253,6 @@ template <typename T>
 void
 session<T, true>::
 sendMessage(void (T::*func)(int id)) {
-    out << *managerPtr;
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -269,7 +270,6 @@ sendMessage(void (T::*func)(int id)) {
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
-                         self->managerPtr->excitedSessionId = self->id;
                          (*(self->managerPtr).*func)(self->id);
                      });
 }
@@ -320,6 +320,8 @@ readMore(errorCode ec, int bytesFirstRead) {
         //Sometimes error may be generated because it can read two coming messages at once.
         //Even though those were seperately sent. No mechanism for dealing with that case.
         //Why it read extra bytes
+
+        //This bug happened once because async_receive was called twice on same socket.
         std::cout<<"All guarantees are fucked up" <<std::endl;
         exit(-1);
     }
@@ -330,10 +332,7 @@ void
 session<T, true>::
 packetReceived(int consumeBytes) {
 //Whole packet Received in One Call
-    managerPtr->receivedPacketSize = consumeBytes - 4;
-    managerPtr->excitedSessionId= id;
-    T* p = managerPtr.get();
-    in >> *p;
+    managerPtr->packetReceivedFromNetwork(in, consumeBytes-4, id);
     sessionStreamBuffInput.consume(consumeBytes);
 }
 

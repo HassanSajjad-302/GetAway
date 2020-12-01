@@ -7,25 +7,22 @@
 
 #include<list>
 #include <vector>
-#include "messageTypeEnums.hpp"
+#include "deckSuit.hpp"
 enum class turnType{
-    TURNBYPLAYER,
-    TURNNOOTHERPOSSIBLE,
-    TURNPLAYEROFFLINE //There should be 2. player offline and player left. //And also player rejoining capability.
+    FIRSTROUNDSPADE,
+    FIRSTROUNDANY,
+    ROUNDFIRSTTURN,
+    ROUNDMIDDLETURN,
+    ROUNDLASTTURN,
+    THULLA
 };
 
 struct playerData{
     int id;
     std::list<int> cards;
-    turnType playerTurnType;
-    std::vector<lobbyMessageType> messageTypeExpectedGame;
-    int cardValueAuto; //if playerTurnType == turnType::TURNNOOTHERPOSSIBLE, then this should be assigned.
+    bool turnExpected = false;
+    turnType turnTypeExpected;
     explicit playerData(int id_);
-};
-
-struct playerDataAndTurnManagement{
-    std::vector<playerData> gamePlayers;
-    int currentIndex;
 };
 
 #endif //GETAWAY_PLAYERDATA_HPP

@@ -18,13 +18,11 @@ class serverAuthManager
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
     std::shared_ptr<serverLobbyManager> nextManager;
 
-    friend std::istream &operator>>(std::istream &in, serverAuthManager &state);
 public:
     //Used-By-Session
-    int excitedSessionId = 0;
-    int receivedPacketSize = 0;
     int join(std::shared_ptr<session<serverAuthManager, true>> authSession);
     void leave(int id);
+    void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int excitedSessionId);
     //connections before starting game.
     explicit
     serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_);

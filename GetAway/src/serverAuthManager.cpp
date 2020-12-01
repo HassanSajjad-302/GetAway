@@ -25,27 +25,26 @@ int serverAuthManager::join(std::shared_ptr<session<serverAuthManager, true>> au
     return id;
 }
 
-std::istream &operator>>(std::istream &in, serverAuthManager &manager) {
+void serverAuthManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int excitedSessionId){
     //STEP 1;
     //TODO
     char arr[61]; //This constant will be fed from somewhere else but one is added.
     in.getline(arr,61);
     std::string str(arr);
-    if(str == manager.password)
+    if(str == password)
     {
         //STEP 2;
         in.getline(arr,61);
         str = std::string(arr);
-        manager.nextManager->setPlayerNameAdvanced(std::move(str));
-        std::make_shared<session<serverLobbyManager, true>>(std::move(manager.serverAuthSessions.find(manager.excitedSessionId)->second->sock),
-                                                            manager.nextManager)->registerSessionToManager();
-        manager.serverAuthSessions.erase(manager.serverAuthSessions.find(manager.excitedSessionId));
+        nextManager->setPlayerNameAdvanced(std::move(str));
+        std::make_shared<session<serverLobbyManager, true>>(std::move(serverAuthSessions.find(excitedSessionId)->second->sock),
+                                                            nextManager)->registerSessionToManager();
+        serverAuthSessions.erase(serverAuthSessions.find(excitedSessionId));
     }
     else
     {
-        manager.serverAuthSessions.erase(manager.serverAuthSessions.find(manager.excitedSessionId));
+        serverAuthSessions.erase(serverAuthSessions.find(excitedSessionId));
     }
-    return in;
 }
 
 void serverAuthManager::leave(int id) {

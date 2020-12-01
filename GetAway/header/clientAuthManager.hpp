@@ -18,7 +18,6 @@ class clientAuthManager
     std::string password;
     std::string playerName;
     std::shared_ptr<session<clientAuthManager>> authSession;
-    friend std::ostream& operator<<(std::ostream& out, clientAuthManager& state);
 
 public:
     explicit

@@ -61,7 +61,7 @@ public:
     static sati& getInstanceFirstTime(net::io_context& io_, std::mutex& mut);
     static sati* getInstance();
     void setInputType(inputType nextReceiveInputType);
-    void printExitMessage(std::string message);
+    void printExitMessage(const std::string& message);
     void setBase(inputRead* base_);
     void operator()();
 
@@ -109,17 +109,15 @@ public:
     void setInputStatement3GamePrint(const std::map<int, std::set<int>>& cards_);
     void setInputStatement3GameAccumulatePrint(const std::map<int, std::set<int>>& cards_);
 
-    //others
-    //TODO
-    //This should be accepting another parameter std::vector<int> playerTurnSequence
     void setTurnSequenceGamePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
     void setTurnSequenceGameAccumulatePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
 
-    //Following 4 are used for manipulation of turn
-    //TODO
-    //This should also accept another parameter bool playerOffline
-    void addTurnGamePrint(const std::string& playerName, int cardNumber);
-    void addTurnGameAccumulatePrint(const std::string& playerName, int cardNumber);
+    void
+    setRoundTurnsGamePrint(const std::vector<std::tuple<int, int>> &roundTurns,
+                           const std::map<int, std::string> &gamePlayers);
+
+    void setRoundTurnsGameAccumulatePrint(const std::vector<std::tuple<int, int>> &roundTurns,
+                                          const std::map<int, std::string> &gamePlayers);
 
     void clearTurnGamePrint();
     void clearTurnGameAccumulatePrint();
@@ -132,6 +130,7 @@ public:
 
     void setCardsGamePrint(const std::map<int, std::set<int>>& cardsMap);
     void setCardsGameAccumulatePrint(const std::map<int, std::set<int>>& cardsMap);
+
 
 };
 

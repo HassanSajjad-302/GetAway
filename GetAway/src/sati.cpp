@@ -30,7 +30,7 @@ void sati::setInputType(inputType nextReceiveInputType) {
     handlerAssigned = true;
 }
 
-void sati::printExitMessage(std::string message) {
+void sati::printExitMessage(const std::string& message) {
     std::lock_guard<std::mutex> lockGuard(m);
     std::cout<<message<<std::endl;
 }
@@ -52,11 +52,7 @@ void sati::operator()() {
             if(!userIncomingInput.empty()){
                 userIncomingInput.pop_back();
             }
-            if(!gameStarted){
-                accumulateBuffersAndPrint(false);
-            }else{
-                accumulateBuffersAndPrint(false);
-            }
+            accumulateBuffersAndPrint(true);
         }else if(c == 10 || c == 13){ //cr pressed
             std::lock_guard<std::mutex> lok(m.get());
             if(handlerAssigned && (base != nullptr)){
@@ -70,11 +66,7 @@ void sati::operator()() {
         }
         else{
             userIncomingInput += c;
-            if(!gameStarted){
-                accumulateBuffersAndPrint(true);
-            }else{
-                accumulateBuffersAndPrint(true);
-            }
+            accumulateBuffersAndPrint(true);
         }
     }
 }
@@ -230,14 +222,20 @@ void sati::setTurnSequenceGameAccumulatePrint(const std::map<int, std::string> &
     accumulateBuffersAndPrint(true);
 }
 
-void sati::addTurnGamePrint(const std::string& playerName, int cardNumber) {
-    turns += playerName;
-    assert(cardNumber/13 >=0 && cardNumber/13 <=4 && "CardNumber not in range in addTurnGamePrint");
-    turns += ": " + deckSuitValue::literal[cardNumber/13] + "\r\n";
+void sati::setRoundTurnsGamePrint(
+        const std::vector<std::tuple<int, int>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
+    for(auto& tu: roundTurns){
+        assert((std::get<0>(tu)/13) == (int)deckSuit::SPADE && "Card Receved Not In Spade");
+        turns += gamePlayers.find(std::get<1>(tu))->second;
+        assert(std::get<0>(tu)/13 >=0 && std::get<0>(tu)/13 <=4 && "CardNumber not in range in setRoundTurnsGamePrint");
+        turns += ": " + deckSuitValue::literal[std::get<1>(tu)/13] + " "
+                + deckSuitValue::displayCards[std::get<1>(tu)] + "\r\n";
+    }
 }
 
-void sati::addTurnGameAccumulatePrint(const std::string& playerName, int cardNumber) {
-    addTurnGamePrint(playerName, cardNumber);
+void sati::setRoundTurnsGameAccumulatePrint(
+        const std::vector<std::tuple<int, int>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
+    setRoundTurnsGamePrint(roundTurns, gamePlayers);
     accumulateBuffersAndPrint(true);
 }
 
