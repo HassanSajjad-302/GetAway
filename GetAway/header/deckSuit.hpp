@@ -18,7 +18,7 @@ public:
     static const int ROUNDFIRSTTURN = 5;
     static const int ROUNDLASTTURN = 6;
     static const int THULLA = 7;
-    static inline std::string literal[4] = {"CLUB", "HEART", "SPADE", "DIAMOND"};
+    static inline std::string displaySuitType[4] = {"CLUB", "HEART", "SPADE", "DIAMOND"};
     static inline std::string displayCards[13] = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
 };
 
@@ -29,4 +29,9 @@ enum class deckSuit{
     DIAMOND = deckSuitValue::DIAMOND,
 };
 
+struct Card{
+    deckSuit suit;
+    int cardNumber;
+    Card(deckSuit suit_, int cardNumber_);
+};
 #endif //GETAWAY_DECKSUIT_HPP

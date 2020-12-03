@@ -10,7 +10,7 @@
 #include <thread>
 #include "boost/asio.hpp"
 #include "messageTypeEnums.hpp"
-
+#include "deckSuit.hpp"
 
 namespace net = boost::asio;
 using namespace net::ip;
@@ -103,20 +103,17 @@ public:
     void setInputStatementHomeThreeInputGamePrint();
     void setInputStatementHomeThreeInputGameAccumulatePrint();
 
-    void setInputStatement3GamePrint(const std::set<int>& cards_, int deckSuitType);
-    void setInputStatement3GameAccumulatePrint(const std::set<int>& cards_, int deckSuitType);
-
-    void setInputStatement3GamePrint(const std::map<int, std::set<int>>& cards_);
-    void setInputStatement3GameAccumulatePrint(const std::map<int, std::set<int>>& cards_);
+    void setInputStatement3GamePrint(const std::vector<Card>& turnAbleCards_);
+    void setInputStatement3GameAccumulatePrint(const std::vector<Card>& turnAbleCards_);
 
     void setTurnSequenceGamePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
     void setTurnSequenceGameAccumulatePrint(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
 
     void
-    setRoundTurnsGamePrint(const std::vector<std::tuple<int, int>> &roundTurns,
+    setRoundTurnsGamePrint(const std::vector<std::tuple<int, Card>> &roundTurns,
                            const std::map<int, std::string> &gamePlayers);
 
-    void setRoundTurnsGameAccumulatePrint(const std::vector<std::tuple<int, int>> &roundTurns,
+    void setRoundTurnsGameAccumulatePrint(const std::vector<std::tuple<int, Card>> &roundTurns,
                                           const std::map<int, std::string> &gamePlayers);
 
     void clearTurnGamePrint();
@@ -128,8 +125,8 @@ public:
     void setTimeLeftGamePrint(int seconds);
     void setTimeLeftGameAccumulatePrint(int seconds);
 
-    void setCardsGamePrint(const std::map<int, std::set<int>>& cardsMap);
-    void setCardsGameAccumulatePrint(const std::map<int, std::set<int>>& cardsMap);
+    void setCardsGamePrint(const std::map<deckSuit, std::set<int>>& cardsMap);
+    void setCardsGameAccumulatePrint(const std::map<deckSuit, std::set<int>>& cardsMap);
 
 
 };

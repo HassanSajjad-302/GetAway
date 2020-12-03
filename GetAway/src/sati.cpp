@@ -8,6 +8,7 @@
 #include "sati.hpp"
 #include <functional>
 #include "deckSuit.hpp"
+#include "constants.h"
 
 sati& sati::getInstanceFirstTime(net::io_context& io_, std::mutex& mut) {
     static sati s{io_, mut};
@@ -52,7 +53,7 @@ void sati::operator()() {
             if(!userIncomingInput.empty()){
                 userIncomingInput.pop_back();
             }
-            accumulateBuffersAndPrint(true);
+            accumulateBuffersAndPrint(false);
         }else if(c == 10 || c == 13){ //cr pressed
             std::lock_guard<std::mutex> lok(m.get());
             if(handlerAssigned && (base != nullptr)){
@@ -172,42 +173,37 @@ void sati::setInputStatementHomeThreeInputGameAccumulatePrint() {
     accumulateBuffersAndPrint(true);
 }
 
-void sati::setInputStatement3GamePrint(const std::set<int>& cards_, int deckSuitType) {
+void sati::setInputStatement3GamePrint(const std::vector<Card>& turnAbleCards_) {
     inputStatementBuffer = "Please select one of following:\r\n";
-    inputStatementBuffer += deckSuitValue::displayCards[deckSuitType] + ": ";
     int count = 1;
-    for(auto t: cards_){
-        inputStatementBuffer += std::to_string(count) + ")" + deckSuitValue::displayCards[t] + " ";
-        ++count;
+    std::map<int, std::set<int>> cards;
+    for(auto c: turnAbleCards_){
+        auto it = cards.find((int)c.suit);
+        if(it == cards.end()){
+            std::set<int> s;
+            s.emplace(c.cardNumber);
+            cards.emplace((int)c.suit, s);
+        }else{
+            it->second.emplace(c.cardNumber);
+        }
     }
-    inputStatementBuffer += "\r\n";
-}
-
-void sati::setInputStatement3GameAccumulatePrint(const std::set<int>& cards_, int deckSuitType) {
-    setInputStatement3GamePrint(cards_, deckSuitType);
-    accumulateBuffersAndPrint(true);
-}
-
-void sati::setInputStatement3GamePrint(const std::map<int, std::set<int>>& cards_) {
-    inputStatementBuffer = "Please select one of following:\r\n";
-    int count = 1;
-    for(auto& ca: cards_){
-        inputStatementBuffer += deckSuitValue::displayCards[ca.first] + ": ";
+    for(auto& ca: cards){
+        if(!ca.second.empty())
+            inputStatementBuffer += deckSuitValue::displaySuitType[ca.first] + ": ";
         for(auto t: ca.second){
             inputStatementBuffer += std::to_string(count) + ")" + deckSuitValue::displayCards[t] + " ";
             ++count;
         }
-        inputStatementBuffer += "\t";
+        if(!ca.second.empty())
+            inputStatementBuffer += "\t";
     }
     inputStatementBuffer += "\r\n";
 }
 
-void sati::setInputStatement3GameAccumulatePrint(const std::map<int, std::set<int>>& cards_) {
-    inputStatementBuffer = "Please select one of following:\r\n";
+void sati::setInputStatement3GameAccumulatePrint(const std::vector<Card>& turnAbleCards_) {
+    setInputStatement3GamePrint(turnAbleCards_);
     accumulateBuffersAndPrint(true);
 }
-
-
 //other
 void sati::setTurnSequenceGamePrint(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
     turnSequence = "Turn Sequence: ";
@@ -223,18 +219,19 @@ void sati::setTurnSequenceGameAccumulatePrint(const std::map<int, std::string> &
 }
 
 void sati::setRoundTurnsGamePrint(
-        const std::vector<std::tuple<int, int>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
+        const std::vector<std::tuple<int, Card>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
+    turns.clear();
     for(auto& tu: roundTurns){
-        assert((std::get<0>(tu)/13) == (int)deckSuit::SPADE && "Card Receved Not In Spade");
-        turns += gamePlayers.find(std::get<1>(tu))->second;
-        assert(std::get<0>(tu)/13 >=0 && std::get<0>(tu)/13 <=4 && "CardNumber not in range in setRoundTurnsGamePrint");
-        turns += ": " + deckSuitValue::literal[std::get<1>(tu)/13] + " "
-                + deckSuitValue::displayCards[std::get<1>(tu)] + "\r\n";
+        turns += gamePlayers.find(std::get<0>(tu))->second;
+        assert((std::get<1>(tu).cardNumber >=0 && std::get<1>(tu).cardNumber < constants::SUITSIZE)
+        && "CardNumber not in range in setRoundTurnsGamePrint");
+        turns += ": " + deckSuitValue::displaySuitType[(int) std::get<1>(tu).suit] + " "
+                 + deckSuitValue::displayCards[std::get<1>(tu).cardNumber] + "\r\n";
     }
 }
 
 void sati::setRoundTurnsGameAccumulatePrint(
-        const std::vector<std::tuple<int, int>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
+        const std::vector<std::tuple<int, Card>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
     setRoundTurnsGamePrint(roundTurns, gamePlayers);
     accumulateBuffersAndPrint(true);
 }
@@ -271,25 +268,25 @@ void sati::setTimeLeftGameAccumulatePrint(int seconds) {
     accumulateBuffersAndPrint(true);
 }
 
-void sati::setCardsGamePrint(const std::map<int, std::set<int>> &cards) {
+void sati::setCardsGamePrint(const std::map<deckSuit, std::set<int>> &cards) {
     cardsString = "Your Cards\r\n";
     for(auto& ca: cards){
-        cardsString += deckSuitValue::literal[(int) ca.first] + ": ";
+        cardsString += deckSuitValue::displaySuitType[(int) ca.first] + ": ";
         for(auto it = ca.second.begin(); it != ca.second.end(); ++it){
             ++it;
             if(it == ca.second.end()){
                 --it;
-                cardsString += deckSuitValue::displayCards[ *it % 13 ];
+                cardsString += deckSuitValue::displayCards[ *it % constants::SUITSIZE ];
             }else{
                 --it;
-                cardsString += deckSuitValue::displayCards[ *it % 13 ] + ", ";
+                cardsString += deckSuitValue::displayCards[ *it % constants::SUITSIZE ] + ", ";
             }
         }
         cardsString += "\r\n";
     }
 }
 
-void sati::setCardsGameAccumulatePrint(const std::map<int, std::set<int>> &cards) {
+void sati::setCardsGameAccumulatePrint(const std::map<deckSuit, std::set<int>> &cards) {
     setCardsGamePrint(cards);
     accumulateBuffersAndPrint(true);
 }

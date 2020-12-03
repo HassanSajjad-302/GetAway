@@ -49,7 +49,9 @@ main(int argc, char* argv[])
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
-    std::random_device rd;
+    //todo
+    //temp testing change it later;
+    std::default_random_engine rd{1};
     std::mt19937 mt(rd());
     std::uniform_int_distribution<int> dist(1,200);
     std::string name = "Hassan ";

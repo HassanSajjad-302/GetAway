@@ -15,6 +15,7 @@
 
 // Represents the shared server state
 class clientLobbyManager : inputRead {
+    int * debug;
     std::string playerName;
     int id = 0;
     std::map<int, std::string> gamePlayers;
@@ -31,21 +32,20 @@ class clientLobbyManager : inputRead {
     int chatMessageInt{};
 
     //Following Are Used For Game Management
-    std::map<int, std::set<int>> myCards; //here cards are stored based on there 0-12 number and 0-4 enum value as in
+    std::map<deckSuit, std::set<int>> myCards; //here cards are stored based on there 0-12 number and 0-4 enum value as in
     std::map<int, int> numberOfCards; //numberOfCards for each player
     std::vector<int> turnSequence;
-
+    std::vector<Card> turnAbleCards;
     std::vector<int> waitingForTurn; //used for first turn
-    bool gameStarted = false; //not used yet
-    bool firstTurn = false;
+    bool firstRound = false;
 
-    std::vector<std::tuple<int, int>> roundTurns; //cardNumber and id
+    std::vector<std::tuple<int, Card>> roundTurns; //id and Card
 
     bool badranga = false;
     deckSuit suitOfTheRound = static_cast<deckSuit>(-1);
     int senderIdExpected; //used only if firstRound = false
     //
-    std::vector<int> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
+    std::map<deckSuit, std::set<int>> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
 
 
 public:
@@ -72,26 +72,27 @@ public:
     bool inputHelper(const std::string &inputString, int lower, int upper, inputType notInRange_,
                      inputType invalidInput_, int &input);
 
-    int inputHelperGAMEPERFORMTURN();
-
-    void managementGAMETURNSERVERReceived(int senderId, int cardNumber);
+    void managementGAMETURNSERVERReceived(int senderId, Card cardReceived);
 
     void sendCHATMESSAGE();
 
-    void sendGAMETURNCLIENT(int excitedCardId);
+    void sendGAMETURNCLIENT(Card card);
 
     void uselessWriteFunctionGAMETURNCLIENT();
-
-    int inputHelperGAMEPERFORMTURN(int index);
 
     int nextInTurnSequence(int currentSessionId);
 
     int roundKing();
 
-    void helperLastTurnAndThullaTurn(int nextTurnId);
+    void helperLastTurnAndThullaTurn(int nextTurnId, bool thullaTurn);
 
-    void helperFirstTurnAndMiddleTurn(int cardNumber, int senderId);
+    void helperFirstTurnAndMiddleTurn(int senderId, Card card);
 
+    void setInputTypeGameInt();
+
+    void assignToTurnAbleCards();
+
+    void assignToTurnAbleCards(deckSuit suit);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

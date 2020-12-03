@@ -3,14 +3,12 @@
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
+#include "constants.h"
 
 clientLobbyManager::clientLobbyManager(){
     //TODO
     //DO NOT USE RESIZE AND ELSE EMPLACE BACK
-    std::set<int> s;
-    for(int i=0;i<4;++i){
-        myCards.emplace(i, s);
-    }
+    constants::initializeCards(myCards);
 }
 
 clientLobbyManager::~clientLobbyManager() = default;
@@ -91,51 +89,63 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
                 //STEP 1;
-            case lobbyMessageType::GAMEFIRSTTURNSERVER
-                :{
+            case lobbyMessageType::GAMEFIRSTTURNSERVER:{
                 int handSize = 0;
                 //STEP 2;
                 in.read(reinterpret_cast<char*>(&handSize), sizeof(handSize));
-                assert(handSize <= ((52 / gamePlayers.size()) + 1) && "Unexpected Number Of Cards Received");
+                assert((handSize <= ((constants::DECKSIZE / gamePlayers.size()) + 1) &&
+                        handSize >= ((constants::DECKSIZE / gamePlayers.size()) - 1)) &&
+                       "Unexpected Number Of Cards Received");
                 for(int i=0; i < handSize; ++i){
+                    deckSuit suit;
                     int cardNumber;
                     //STEP 3;
+                    in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
+                    //STEP 4;
                     in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-                    myCards.find(cardNumber/13)->second.emplace(cardNumber%13);
+                    myCards.find(suit)->second.emplace(cardNumber);
                 }
+
+                //STAGE 2;
                 for(int i=0;i<gamePlayers.size();++i){
                     int sequenceId;
-                    //STEP 4; //turn sequence
+                    //STEP 5; //turn sequence
                     in.read(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
                     assert(gamePlayers.find(sequenceId) != gamePlayers.end() && "turn SequenceId not present in gamePlayerid");
                     turnSequence.emplace_back(sequenceId);
                 }
+
+                //STAGE 3;
                 int turnAlreadyDeterminedSize;
                 //STEP 5;
                 in.read(reinterpret_cast<char*>(&turnAlreadyDeterminedSize), sizeof(turnAlreadyDeterminedSize));
                 assert(turnAlreadyDeterminedSize <= gamePlayers.size() && turnAlreadyDeterminedSize > 0 &&
                 "turnAlreadyDeterminedSize not in range 0-gamePlayers.size()");
-                for(int i=0; i<turnAlreadyDeterminedSize; ++i){
+                constants::initializeCards(flushedCards);
+                for(int i=0; i<turnAlreadyDeterminedSize; ++i) {
                     int turnAlreadyDeterminedId;
+                    deckSuit suit;
                     int cardNumber;
-                    //STEP 6;
-                    in.read(reinterpret_cast<char*>(&turnAlreadyDeterminedId), sizeof(turnAlreadyDeterminedId));
                     //STEP 7;
-                    in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-                    flushedCards.emplace_back(cardNumber);
-                    roundTurns.emplace_back(cardNumber, turnAlreadyDeterminedId);
+                    in.read(reinterpret_cast<char *>(&turnAlreadyDeterminedId), sizeof(turnAlreadyDeterminedId));
+                    //STEP 8;
+                    in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
+                    //STEP 9;
+                    in.read(reinterpret_cast<char *>(&cardNumber), sizeof(cardNumber));
+                    roundTurns.emplace_back(turnAlreadyDeterminedId, Card(suit, cardNumber));
+                    flushedCards.find(suit)->second.emplace(cardNumber);
                 }
                 for(int i=0; i<gamePlayers.size(); ++i){
                     int gpId;
                     int gpSize;
-                    //STEP 8;
-                    in.read(reinterpret_cast<char*>(&gpId), sizeof(gpId));
                     //STEP 9;
+                    in.read(reinterpret_cast<char*>(&gpId), sizeof(gpId));
+                    //STEP 10;
                     in.read(reinterpret_cast<char*>(&gpSize), sizeof(gpSize));
                 }
                 for(auto& gp: gamePlayers){
-                    if(!std::any_of(roundTurns.begin(), roundTurns.end(), [&gp](std::tuple<int, int>& tup){
-                        return gp.first == std::get<1>(tup);
+                    if(!std::any_of(roundTurns.begin(), roundTurns.end(), [&gp](std::tuple<int, Card>& tup){
+                        return gp.first == std::get<0>(tup);
                     })){
                         waitingForTurn.emplace_back(gp.first);
                     }
@@ -147,13 +157,16 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
             }
             //STEP 1;
             case lobbyMessageType::GAMETURNSERVER:{
-                //STEP 2;
                 int senderId;
+                deckSuit suit;
+                int cardNumber;
+                //STEP 2;
                 in.read(reinterpret_cast<char*>(&senderId), sizeof(senderId));
                 //STEP 3;
-                int cardNumber;
+                in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
+                //STEP 4;
                 in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-                managementGAMETURNSERVERReceived(senderId, cardNumber);
+                managementGAMETURNSERVERReceived(senderId, Card(suit, cardNumber));
                 break;
             }
         }
@@ -174,12 +187,16 @@ void clientLobbyManager::sendCHATMESSAGE(){
     clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunctionCHATMESSAGE);
 }
 
-void clientLobbyManager::sendGAMETURNCLIENT(int excitedCardId){
+void clientLobbyManager::sendGAMETURNCLIENT(Card card){
     //STEP 1;
-    lobbyMessageType t = lobbyMessageType::CHATMESSAGE;
+    lobbyMessageType t = lobbyMessageType::GAMETURNCLIENT;
     clientLobbySession->out.write(reinterpret_cast<char*>(&t), sizeof(t));
+    //TODO
+    //Check if I can send and receive card in one go.
     //STEP 2;
-    clientLobbySession->out.write(reinterpret_cast<char *>(&excitedCardId), sizeof(excitedCardId));
+    clientLobbySession->out.write(reinterpret_cast<char *>(&card.suit), sizeof(card.suit));
+    //STEP 2;
+    clientLobbySession->out.write(reinterpret_cast<char *>(&card.cardNumber), sizeof(card.cardNumber));
 
     clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunctionGAMETURNCLIENT);
 }
@@ -270,14 +287,26 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
             {
                 int input;
                 bool success;
-                if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-                    //don't perform turn
-                    success = inputHelper(inputString, 1, 2, inputType::GAMEINT, inputType::GAMEINT,
-                                          input);
+                if(firstRound){
+                    if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
+                        //don't perform turn
+                        success = inputHelper(inputString, 1, 2, inputType::GAMEINT, inputType::GAMEINT,
+                                              input);
+                    }else{
+                        success = inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
+                                              input);
+                    }
                 }else{
-                    success = inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
-                                          input);
+                    if(senderIdExpected != id){
+                        //don't perform turn
+                        success = inputHelper(inputString, 1, 2, inputType::GAMEINT, inputType::GAMEINT,
+                                              input);
+                    }else{
+                        success = inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
+                                              input);
+                    }
                 }
+
                 if(success){
                     if(input == 1){
                         sati::getInstance()->setInputStatementMessageAccumulatePrint();
@@ -288,13 +317,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     }
                     if(input == 3){
                         //perform turn
-                        if(!badranga){
-                            sati::getInstance()->setInputStatement3GameAccumulatePrint(myCards.find((int)suitOfTheRound)->second,
-                                                                                       (int)suitOfTheRound);
-                        }
-                        else{
-                            sati::getInstance()->setInputStatement3GameAccumulatePrint(myCards);
-                        }
+                        sati::getInstance()->setInputStatement3GameAccumulatePrint(turnAbleCards);
                         setInputType(inputType::GAMEPERFORMTURN);
                     }
                 }
@@ -302,45 +325,24 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
             }
             case inputType::GAMESTRING:
             {
-                if(inputString.empty()){
-                    if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-                        sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
-                    }else{
-                        sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
-                    }
-                    setInputType(inputType::GAMEINT);
-                }else{
+                if(!inputString.empty()){
                     chatMessageString = std::move(inputString);
                     chatMessageInt = id;
                     sendCHATMESSAGE();
-                    if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-                        sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
-                    }else{
-                        sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
-                    }
-                    setInputType(inputType::GAMEINT);
                 }
+                setInputTypeGameInt();
                 break;
             }
             case inputType::GAMEPERFORMTURN:{
-                int input;
-
-                if(inputHelper(inputString, 1, inputHelperGAMEPERFORMTURN(), inputType::GAMEINT, inputType::GAMEINT,
-                               input)){
-                    input -= 1; //index adjustment
-                    int cardNumber = inputHelperGAMEPERFORMTURN(input);
-                    sendGAMETURNCLIENT(cardNumber);
-
-                    auto& setReference = myCards.find(cardNumber / 13)->second;
-                    assert(setReference.find(cardNumber) != setReference.end() &&
-                           "Trying to remove a card which player does not has");
-                    setReference.erase(cardNumber);
-                    roundTurns.emplace_back(cardNumber, id);
-                    if(roundTurns.size() == turnSequence.size()){
-                        //round has completed. determine who will have the next turn.
-                        //maybe i have given badranga.
+                if(inputString.empty()){
+                    setInputTypeGameInt();
+                }else{
+                    int input;
+                    if(inputHelper(inputString, 1, turnAbleCards.size(),
+                                   inputType::GAMEINT, inputType::GAMEINT,input)){
+                        sendGAMETURNCLIENT(turnAbleCards[input - 1]);
+                        managementGAMETURNSERVERReceived(id, turnAbleCards[input - 1]);
                     }
-                    roundTurns.emplace_back();
                 }
                 break;
             }
@@ -351,77 +353,82 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
     }
 }
 
-int clientLobbyManager::inputHelperGAMEPERFORMTURN(){
-    int cardsCount=0;
-    for(auto &s: myCards){
-        cardsCount += s.second.size();
-    }
-    return cardsCount;
-}
-
-int clientLobbyManager::inputHelperGAMEPERFORMTURN(int index){
-    int cardNumber = 0;
-    for(auto &s: myCards){
-        for(auto&c: s.second){
-            if(cardNumber == index){
-                return cardNumber;
-            }
-            cardNumber += 1;
+void clientLobbyManager::setInputTypeGameInt(){
+    if(firstRound){
+        if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
+            sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
+        }else{
+            sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+        }
+    }else{
+        if(senderIdExpected != id){
+            sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
+        }else{
+            sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
         }
     }
-    throw(std::logic_error("inputHelperGAMEPERFORMTURN should have returned a number"));
+    setInputType(inputType::GAMEINT);
 }
 
-void clientLobbyManager::managementGAMETURNSERVERReceived(int senderId, int cardNumber) {
-    if(firstTurn && std::find(
+void clientLobbyManager::managementGAMETURNSERVERReceived(int senderId, Card cardReceived) {
+    if(firstRound && std::find(
             waitingForTurn.begin(), waitingForTurn.end(), senderId) != waitingForTurn.end()) {
-        flushedCards.emplace_back(cardNumber);
+        flushedCards.find(cardReceived.suit)->second.emplace(cardReceived.cardNumber);
+        roundTurns.emplace_back(senderId, cardReceived);
+        numberOfCards.find(senderId)->second -= 1;
+        sati::getInstance()->setRoundTurnsGamePrint(roundTurns, gamePlayers);
         if (roundTurns.size() == turnSequence.size()) {
             for (auto t: roundTurns) {
-                if (std::get<0>(t) / 13 == 0) {
+                if (std::get<1>(t).suit == deckSuit::SPADE && std::get<1>(t).cardNumber == 0) {
                     //This is ace of spade
-                    senderIdExpected = std::get<1>(t);
-                    firstTurn = false;
+                    senderIdExpected = std::get<0>(t);
+                    firstRound = false;
+                    if(id == senderIdExpected){
+                        assignToTurnAbleCards();
+                    }
                     break;
                 }
             }
+            roundTurns.clear();
         }
-        sati::getInstance()->setRoundTurnsGameAccumulatePrint(roundTurns, gamePlayers);
-    }else if(!firstTurn && senderId != senderIdExpected){
+        setInputTypeGameInt();
+        sati::getInstance()->setCardsGameAccumulatePrint(myCards);
+    }else if(!firstRound && senderId != senderIdExpected){
         //There is no check whether card number is in range 0-51
         //client is quite dumb. It will have to believe in what it receives.
         if(roundTurns.empty()){
-            suitOfTheRound = static_cast<deckSuit>(cardNumber / 13);
-            helperFirstTurnAndMiddleTurn(cardNumber, senderId);
-        }else if(cardNumber / 13 != (int)suitOfTheRound){
+            suitOfTheRound = cardReceived.suit;
+            helperFirstTurnAndMiddleTurn(senderId, cardReceived);
+        }else if(cardReceived.suit != suitOfTheRound){
             int rk = roundKing();
             numberOfCards.find(rk)->second += turnSequence.size();
-            roundTurns.emplace_back(cardNumber, senderId);
-            helperLastTurnAndThullaTurn(rk);
+            roundTurns.emplace_back(senderId, cardReceived);
+            helperLastTurnAndThullaTurn(rk, true);
         }else if(roundTurns.size() == turnSequence.size() - 1){
             for(auto c: roundTurns){
-                flushedCards.emplace_back(std::get<0>(c));
+                flushedCards.find(std::get<1>(c).suit)->second.emplace(std::get<1>(c).cardNumber);
             }
-            roundTurns.emplace_back(cardNumber, senderId);
-            helperLastTurnAndThullaTurn(roundKing());
+            roundTurns.emplace_back(senderId, cardReceived);
+            helperLastTurnAndThullaTurn(roundKing(), false);
         }else{
-            helperFirstTurnAndMiddleTurn(cardNumber, senderId);
+            helperFirstTurnAndMiddleTurn(senderId, cardReceived);
         }
     }else{
         std::cout << "No Message Was Expected From This SenderId"<<std::endl;
     }
 }
 
-void clientLobbyManager::helperFirstTurnAndMiddleTurn(int cardNumber, int senderId) {
-    roundTurns.emplace_back(cardNumber, senderId);
+void clientLobbyManager::helperFirstTurnAndMiddleTurn(int senderId, Card card) {
+    roundTurns.emplace_back(senderId, card);
     senderIdExpected = nextInTurnSequence(senderId);
     if(senderIdExpected == id){
+        assignToTurnAbleCards(suitOfTheRound);
         sati::getInstance()->setInputStatementHomeThreeInputGamePrint();
     }
     sati::getInstance()->setRoundTurnsGameAccumulatePrint(roundTurns, gamePlayers);
 }
 
-void clientLobbyManager::helperLastTurnAndThullaTurn(int nextTurnId){
+void clientLobbyManager::helperLastTurnAndThullaTurn(int nextTurnId, bool thullaTurn) {
     for(auto p: numberOfCards){
         int id1 = std::get<0>(p);
         int numOfCards = std::get<1>(p);
@@ -441,6 +448,12 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int nextTurnId){
     sati::getInstance()->setTurnSequenceGamePrint(gamePlayers, turnSequence);
     senderIdExpected = nextTurnId;
     if(id == senderIdExpected){
+        if(thullaTurn){
+            //badranga
+            assignToTurnAbleCards();
+        }else{
+            assignToTurnAbleCards(suitOfTheRound);
+        }
         sati::getInstance()->setInputStatementHomeThreeInputGamePrint();
     }
     sati::getInstance()->setRoundTurnsGameAccumulatePrint(roundTurns, gamePlayers);
@@ -461,18 +474,19 @@ int clientLobbyManager::nextInTurnSequence(int currentSessionId){
     return *turnSequence.begin();
 }
 
-int clientLobbyManager::roundKing(){
-    int highestCardNumber = std::get<0>(*roundTurns.begin());
-    int highestCardHolderId = std::get<1>(*roundTurns.begin());
+int clientLobbyManager::roundKing() {
+    int highestCardHolderId = std::get<0>(*roundTurns.begin());
+    int highestCardNumber = std::get<1>(*roundTurns.begin()).cardNumber;
     for(auto turns: roundTurns){
-        int cardNumber = std::get<0>(turns) % 13;
+        int cardNumber = std::get<1>(turns).cardNumber;
+        assert((cardNumber >= 0 && cardNumber < constants::SUITSIZE) && "Card-Number not in range");
         if(cardNumber == 0 ){
-            return std::get<1>(turns);
+            return std::get<0>(turns);
             break;
         }else{
             if(cardNumber > highestCardNumber){
                 highestCardNumber = cardNumber;
-                highestCardHolderId = std::get<1>(turns);
+                highestCardHolderId = std::get<0>(turns);
             }
         }
     }
@@ -480,6 +494,7 @@ int clientLobbyManager::roundKing(){
 }
 
 void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived() {
+    debug = &waitingForTurn[0];
     messageTypeExpected.clear();
     messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
     messageTypeExpected.emplace_back(lobbyMessageType::GAMETURNSERVER);
@@ -499,14 +514,41 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived() {
         //don't perform turn
         sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
     }else{
+        if(myCards.find(deckSuit::SPADE)->second.empty()){
+            //badranga
+            assignToTurnAbleCards();
+        }else{
+            assignToTurnAbleCards(deckSuit::SPADE);
+        }
         sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+        senderIdExpected = id;
     }
     inputTypeExpected = inputType::GAMEINT;
-    gameStarted = true;
-    firstTurn = true;
+    if(waitingForTurn.empty()){
+        firstRound = false;
+    }
+    else{
+        firstRound = true;
+    }
 }
 
 void clientLobbyManager::setInputType(inputType inputType) {
     inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
+}
+
+void clientLobbyManager::assignToTurnAbleCards(){
+    turnAbleCards.clear();
+    for(auto& cardPair: myCards){
+        for(auto c: cardPair.second){
+            turnAbleCards.emplace_back(static_cast<deckSuit>(cardPair.first), c);
+        }
+    }
+}
+
+void clientLobbyManager::assignToTurnAbleCards(deckSuit suit) {
+    turnAbleCards.clear();
+    for(auto c: myCards.find(suit)->second){
+        turnAbleCards.emplace_back(suit, c);
+    }
 }

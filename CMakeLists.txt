@@ -31,7 +31,7 @@ add_executable(GetAway "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
         "GetAway/src/serverAuthManager.cpp" "GetAway/src/serverLobbyManager.cpp"
         "GetAway/src/serverGameManager.cpp" "GetAway/src/messageTypeEnums.cpp"
         "GetAway/src/ManagementFunctions.cpp" "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp"
-        "GetAway/src/playerData.cpp")
+        "GetAway/src/playerData.cpp" "GetAway/src/constants.cpp" "GetAway/src/deckSuit.cpp")
 target_include_directories(GetAway PRIVATE "GetAway/header")
 if (USE_GCC)
 target_compile_options(GetAway PRIVATE -fcoroutines)

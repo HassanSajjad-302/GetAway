@@ -27,11 +27,11 @@ class serverLobbyManager
     //Following are used for game management only.
     bool gameStarted = false;
     bool firstRound;
-    std::list<int> flushedCards;
+    std::map<deckSuit, std::set<int>> flushedCards;
     deckSuit suitOfTheRound;
 
     std::vector<playerData> gamePlayersData;
-    std::vector<std::tuple<int, int>> roundTurns; //cardNumber and id
+    std::vector<std::tuple<int, Card>> roundTurns; //id and Card
     //
 
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
@@ -58,7 +58,7 @@ public:
 
     void sendCHATMESSAGEIDToAllExceptOne(const std::string &chatMessageReceived, int excitedSessionId);
 
-    void sendGAMETURNSERVERTOAllExceptOne(int receivedCardNumber, int excitedSessionId);
+    void sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card);
 
     void managementJoin(int excitedSessionId);
 
@@ -70,23 +70,22 @@ public:
 
     void initializeGame();
 
-    void managementGAMETURNCLIENTReceived(int receivedCardNumber, int sessionId);
+    void managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived);
 
-    void doTurnReceivedOfFirstRound(std::vector<playerData>::iterator turnReceivedPlayer, int receivedCardNumber);
+    void doTurnReceivedOfFirstRound(std::vector<playerData>::iterator turnReceivedPlayer, Card cardReceived);
 
     void newRoundTurn(std::vector<playerData>::iterator currentGamePlayer);
 
-    void Turn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber);
+    void Turn(std::vector<playerData>::iterator currentTurnPlayer, Card card);
 
     void
-    performFirstOrMiddleTurn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber,
-                             bool firstTurn);
+    performFirstOrMiddleTurn(std::vector<playerData>::iterator currentTurnPlayer, Card card, bool firstTurn);
 
     void
-    performLastOrThullaTurn(std::vector<playerData>::iterator currentTurnPlayer, int receivedCardNumber, bool lastTurn);
+    performLastOrThullaTurn(std::vector<playerData>::iterator currentTurnPlayer, Card card, bool lastTurn);
 
     void
-    turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer, int receivedCardNumber);
+    turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer, Card card);
 
     bool indexGamePlayerDataFromId(int id, int &index);
 
