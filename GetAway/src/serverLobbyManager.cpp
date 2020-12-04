@@ -69,9 +69,11 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
         managementCHATMESSAGEReceived(std::string(arr), sessionId);
     }
     else if(messageTypeReceived == lobbyMessageType::GAMETURNCLIENT && gameStarted){
+        spdlog::info("GAMETURNCLIENT received");
         int index;
         if(indexGamePlayerDataFromId(sessionId, index)){
             if(gamePlayersData[index].turnExpected) {
+                spdlog::info("Turn Expected from this GameTurnClient");
                 deckSuit suit;
                 int receivedCardNumber;
                 in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
@@ -152,6 +154,9 @@ void serverLobbyManager::sendCHATMESSAGEIDToAllExceptOne(const std::string &chat
 }
 
 void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
+    spdlog::info("Sending GameTurnServerToAllExceptOne to all. Called By Session-Id {}", sessionId);
+    spdlog::info("Sending Card {} {}", deckSuitValue::displaySuitType[(int) card.suit],
+                 deckSuitValue::displayCards[card.cardNumber]);
     for(auto& player: gameData){
         if(player.first != sessionId){
             auto playerSession = std::get<1>(player.second);
@@ -303,16 +308,16 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
     constants::initializeCards(flushedCards);
     for(auto& player: gamePlayersData){
         if(player.cards.find(deckSuit::SPADE)->second.find(0) !=player.cards.find(deckSuit::SPADE)->second.end()){
+            roundTurns.emplace_back(player.id, Card(deckSuit::SPADE, 0));
             turnAlreadyDetermined.emplace_back(player.id, Card(deckSuit::SPADE, 0));
             player.cards.find(deckSuit::SPADE)->second.erase(0);
-            flushedCards.find(deckSuit::SPADE)->second.emplace(0);
             continue;
         }
         if(player.cards.find(deckSuit::SPADE)->second.size() == 1){
             int cardNumber = *player.cards.find(deckSuit::SPADE)->second.begin();
+            roundTurns.emplace_back(player.id, Card(deckSuit::SPADE, cardNumber));
             turnAlreadyDetermined.emplace_back(player.id, Card(deckSuit::SPADE, cardNumber));
             player.cards.find(deckSuit::SPADE)->second.erase(cardNumber);
-            flushedCards.find(deckSuit::SPADE)->second.emplace(cardNumber);
             continue;
         }
         player.turnExpected = true;
@@ -396,6 +401,27 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
 //Following function should not be called if there is one player left i.e gamePlayersData.size() >1
 
 void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
+#ifndef NDEBUG
+    int cardsCount = 0;
+    cardsCount += constants::cardsCount(flushedCards);
+    cardsCount += roundTurns.size();
+    for(auto& p: gamePlayersData){
+        cardsCount += p.cards.size();
+    }
+    if(cardsCount != constants::DECKSIZE){
+        std::cout<< "Flushed Cards " << constants::cardsCount(flushedCards) << std::endl;
+        std::cout<< "Round Turns " <<roundTurns.size() << std::endl;
+        for(auto& p: gamePlayersData){
+            std::cout<< "Player Id " << p.id << "  Player Cards Size " <<p.cards.size() << std::endl;
+        }
+    }
+    assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
+
+#endif
+
+    spdlog::info("Game Turn Client Received From{}", std::get<0>(gameData.find(sessionId)->second));
+    spdlog::info("Card Received Is {} {}", deckSuitValue::displaySuitType[(int)cardReceived.suit],
+                 deckSuitValue::displayCards[cardReceived.cardNumber]);
     //iterating over gamePlayerData
     auto turnReceivedPlayer = std::find_if(gamePlayersData.begin(), gamePlayersData.end(),
                                                [sessionId](playerData& p){
@@ -414,19 +440,39 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
     }
     if(firstRound){
         if(turnReceivedPlayer->turnTypeExpected == turnType::FIRSTROUNDANY){
-            doTurnReceivedOfFirstRound(turnReceivedPlayer, cardReceived);//paste that code after this line
+            spdlog::info("First Round Any was expected from this user");
+            doTurnReceivedOfFirstRound(turnReceivedPlayer, cardReceived);
         }else{
             if(cardReceived.suit != deckSuit::SPADE) {
                 std::cout << "A Turn Received But Not Acted Upon. In First Turn Client"
                              "Turned Other Card When It Had The Spade\r\n";
                 return;
             }
+            spdlog::info("First Round SPADE was expected from this user");
             doTurnReceivedOfFirstRound(turnReceivedPlayer, cardReceived);//paste that code after this line
         }
 
     }else{
         Turn(turnReceivedPlayer, cardReceived);
     }
+
+#ifndef NDEBUG
+    cardsCount = 0;
+    cardsCount += constants::cardsCount(flushedCards);
+    cardsCount += roundTurns.size();
+    for(auto& p: gamePlayersData){
+        cardsCount += p.cards.size();
+    }
+    if(cardsCount != constants::DECKSIZE){
+        std::cout<< "Flushed Cards " << constants::cardsCount(flushedCards) << std::endl;
+        std::cout<< "Round Turns " <<roundTurns.size() << std::endl;
+        for(auto& p: gamePlayersData){
+            std::cout<< "Player Id " << p.id << "  Player Cards Size " <<p.cards.size() << std::endl;
+        }
+    }
+    assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
+
+#endif
 }
 
 void
@@ -437,13 +483,16 @@ serverLobbyManager::doTurnReceivedOfFirstRound(
     if(roundTurns.size() != gamePlayersData.size()) {
         return;
     }
-    roundTurns.clear();
     firstRound = false;
     for(auto t: roundTurns){
+        for(auto& rt: roundTurns){
+            flushedCards.find(std::get<1>(rt).suit)->second.emplace(std::get<1>(rt).cardNumber);
+        }
         if(std::get<1>(t).suit == deckSuit::SPADE && std::get<1>(t).cardNumber == 0){
             //This is ace of spade
             for(auto it = gamePlayersData.begin(); it!=gamePlayersData.end(); ++it){
                 if(it->id == std::get<0>(t)){
+                    roundTurns.clear();
                     newRoundTurn(it);
                     break;
                 }
@@ -483,18 +532,13 @@ void serverLobbyManager::Turn(std::vector<playerData>::iterator currentTurnPlaye
 void serverLobbyManager::performFirstOrMiddleTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool firstTurn){
 
-
-    std::vector<playerData>::iterator nextGamePlayerIterator;
-    if(currentTurnPlayer == gamePlayersData.end()){
-        nextGamePlayerIterator = gamePlayersData.begin();
-    }
-    nextGamePlayerIterator = ++currentTurnPlayer;
-    assert(!nextGamePlayerIterator->cards.empty() && "gamePlayerData[turnIndex] is empty."
-                                                     "An invariant is broken");
+    spdlog::info("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(firstTurn));
 
     if(firstTurn){
         assert(roundTurns.empty() && "If it is first turn then roundTurns should be empty");
-        //The Round Was Expected
+        spdlog::info("First Turn Of The Round Is Received. Suit Set For The Round {}",
+                     deckSuitValue::displaySuitType[(int) card.suit]);
+        //First Turn Was Expected
         suitOfTheRound = card.suit;
     }else{
         assert(!roundTurns.empty() && "If it is not first turn then roundTurns should not be empty");
@@ -505,56 +549,75 @@ void serverLobbyManager::performFirstOrMiddleTurn(
 
     turnCardNumberOfGamePlayerIterator(currentTurnPlayer, card);
     roundTurns.emplace_back(currentTurnPlayer->id, card);
+    currentTurnPlayer->cards.find(card.suit)->second.erase(card.cardNumber);
+
+    std::vector<playerData>::iterator nextGamePlayerIterator;
+    if(currentTurnPlayer == gamePlayersData.end()){
+        nextGamePlayerIterator = gamePlayersData.begin();
+    }
+    nextGamePlayerIterator = std::next(currentTurnPlayer);
+    assert(!nextGamePlayerIterator->cards.empty() && "gamePlayerData[turnIndex] is empty."
+                                                     "An invariant is broken");
 
 
     if(nextGamePlayerIterator->cards.find(suitOfTheRound)->second.empty()) {
         nextGamePlayerIterator->turnTypeExpected = turnType::THULLA;
+        spdlog::info("nextGamePlayerIterator Thulla Expected. Id {}", nextGamePlayerIterator->id);
         if (constants::cardsCount(nextGamePlayerIterator->cards) == 1) {
             for(auto &cardPair: nextGamePlayerIterator->cards){
                 if(!cardPair.second.empty()){
+                    spdlog::info("Turn Auto Performed Called");
                     Turn(nextGamePlayerIterator, Card(cardPair.first, *cardPair.second.begin()));
                 }
             }
         } else {
+            spdlog::info("Waiting For Turn. Turn Expected Called");
             currentTurnPlayer->turnExpected = true;
         }
     }else if(nextGamePlayerIterator->cards.find(suitOfTheRound)->second.size() == 1){
         if(roundTurns.size() == gamePlayersData.size() -1){
+            spdlog::info("nextGamePlayerIterator ROUNDLASTTURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDLASTTURN;
         }else{
+            spdlog::info("nextGamePlayerIterator ROUNDMIDDLETURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDMIDDLETURN;
         }
+        spdlog::info("Turn Auto Performed Called");
         Turn(nextGamePlayerIterator, Card(suitOfTheRound,
              *nextGamePlayerIterator->cards.find(suitOfTheRound)->second.begin()));
     }else{
         if(roundTurns.size() == gamePlayersData.size() -1){
+            spdlog::info("nextGamePlayerIterator ROUNDLASTTURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDLASTTURN;
         }else{
+            spdlog::info("nextGamePlayerIterator ROUNDMIDDLETURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDMIDDLETURN;
         }
+        spdlog::info("Waiting For Turn. Turn Expected Called");
         nextGamePlayerIterator->turnExpected = true;
     }
 }
 
 void serverLobbyManager::performLastOrThullaTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool lastTurn){
+    spdlog::info("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(lastTurn));
     std::vector<playerData>::iterator roundKing;
     if(lastTurn){
         if(card.suit != suitOfTheRound){
             std::cout<<"A Turn Received But Not Acted Upon Because Card is not of the required suit"<<std::endl;
             return;
         }
+        roundTurns.emplace_back(currentTurnPlayer->id, card);
         roundKing = roundKingGamePlayerDataIterator();
         for(auto cn: roundTurns){
             flushedCards.find(std::get<1>(cn).suit)->second.emplace(std::get<1>(cn).cardNumber);
         }
-        flushedCards.find(card.suit)->second.emplace(card.cardNumber);
     }else{
         roundKing = roundKingGamePlayerDataIterator();
+        roundTurns.emplace_back(currentTurnPlayer->id, card);
         for(auto cn: roundTurns){
             roundKing->cards.find(std::get<1>(cn).suit)->second.emplace(std::get<1>(cn).cardNumber);
         }
-        roundKing->cards.find(card.suit)->second.emplace(card.cardNumber);
     }
     turnCardNumberOfGamePlayerIterator(currentTurnPlayer, card);
 
@@ -575,6 +638,7 @@ void serverLobbyManager::performLastOrThullaTurn(
         //TODO
         return;
     }
+    roundTurns.clear();
     newRoundTurn(roundKing);
 }
 

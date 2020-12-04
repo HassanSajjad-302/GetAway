@@ -1,3 +1,5 @@
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB src_files "${CMAKE_CURRENT_SOURCE_DIR}/../GetAway/src/*.cpp" )
 message("src_files value is ${src_files}")

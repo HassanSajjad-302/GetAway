@@ -13,6 +13,11 @@
 #include "sati.hpp"
 #include "deckSuit.hpp"
 
+enum whoTurned{
+    CLIENT,
+    RECEIVED,
+    AUTO
+};
 // Represents the shared server state
 class clientLobbyManager : inputRead {
     int * debug;
@@ -43,7 +48,7 @@ class clientLobbyManager : inputRead {
 
     bool badranga = false;
     deckSuit suitOfTheRound = static_cast<deckSuit>(-1);
-    int senderIdExpected; //used only if firstRound = false
+    int turnPlayerIdExpected; //used only if firstRound = false
     //
     std::map<deckSuit, std::set<int>> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
 
@@ -72,7 +77,7 @@ public:
     bool inputHelper(const std::string &inputString, int lower, int upper, inputType notInRange_,
                      inputType invalidInput_, int &input);
 
-    void managementGAMETURNSERVERReceived(int senderId, Card cardReceived);
+    void Turn(int playerId, Card card, whoTurned who);
 
     void sendCHATMESSAGE();
 
@@ -84,15 +89,17 @@ public:
 
     int roundKing();
 
-    void helperLastTurnAndThullaTurn(int nextTurnId, bool thullaTurn);
+    void helperLastTurnAndThullaTurn(int nextTurnId, Card card, bool thullaTurn, whoTurned who);
 
-    void helperFirstTurnAndMiddleTurn(int senderId, Card card);
+    void helperFirstTurnAndMiddleTurn(int playerId, Card card, bool firstTurn, whoTurned who);
 
     void setInputTypeGameInt();
 
     void assignToTurnAbleCards();
 
     void assignToTurnAbleCards(deckSuit suit);
+
+    void firstRoundTurnHelper(int playerId, Card card, whoTurned who);
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

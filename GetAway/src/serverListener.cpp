@@ -54,11 +54,14 @@ onAccept(errorCode ec)
 {
     if(ec)
         return fail(ec, "accept");
-    else
+    else{
+        sock.set_option(boost::asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
         std::make_shared<session<serverAuthManager,true>>(
                 std::move(sock),
                 nextManager)->registerSessionToManager();
+    }
+
 
     // Accept another connection
     acceptor.async_accept(

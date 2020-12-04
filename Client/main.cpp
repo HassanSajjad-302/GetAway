@@ -49,6 +49,8 @@ main(int argc, char* argv[])
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
+    sock.set_option(boost::asio::ip::tcp::no_delay(true));   // enable PSH
+    //sock.set_option(boost::asio::ip::tcp::)
     //todo
     //temp testing change it later;
     std::default_random_engine rd{1};
