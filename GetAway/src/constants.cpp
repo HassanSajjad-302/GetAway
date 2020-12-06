@@ -6,6 +6,7 @@
 #include <assert.h>
 int constants::cardsCount(const std::map<deckSuit, std::set<int>> &cards) {
     int count = 0;
+
     for(auto & cardPair: cards){
         count += cardPair.second.size();
     }

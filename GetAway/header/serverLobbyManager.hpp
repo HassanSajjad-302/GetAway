@@ -21,6 +21,8 @@
 
 class serverLobbyManager
 {
+    typedef typeof(playerData::cards) cardType;
+    std::vector<cardType *> debug;
     std::map<int, std::tuple<const std::string,
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
 

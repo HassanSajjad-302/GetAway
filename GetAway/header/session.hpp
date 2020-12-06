@@ -29,14 +29,11 @@ public:
     std::ostream out{&sessionStreamBuffOutput};
 private:
     std::queue<std::vector<net::const_buffer>> sendingMessagesQueue;
-    //std::queue<int> sendingMessageSizesQueue;
+    bool allPacketsReceived = true;
 
     static void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytes);
 
-
-
-    //friend T;
 public:
     tcp::socket sock;
     void sendMessage(void (T::*func)());
@@ -122,36 +119,49 @@ receiveMessage() {
 template <typename T, bool ID>
 void
 session<T, ID>::
-readMore(errorCode ec, int bytesFirstRead) {
+readMore(errorCode ec, int firstRead) {
+    spdlog::info("readmore called");
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuffInput.commit(bytesFirstRead);
+    sessionStreamBuffInput.commit(firstRead);
     int packetSize = 0;
+    int waitingForService = firstRead;
     while(true) {
         in.read(reinterpret_cast<char *>(&packetSize), sizeof(packetSize));
-        if (packetSize == bytesFirstRead - 4) {
+
+        int waitingForServiceBody = waitingForService - 4;
+        if (packetSize == waitingForServiceBody) {
+            allPacketsReceived = true;
             managerPtr->packetReceivedFromNetwork(in, packetSize);
+
+            sessionStreamBuffInput.consume(firstRead);
+            //sessionStreamBuffInput.consume(SIZE_MAX);
             break;
-        } else if (packetSize > bytesFirstRead - 4) {
-            //Start Composite Asynchronous Operation Before Reporting
-            //The Received data.
-            int remainingBytes = packetSize - (bytesFirstRead - 4);
-            net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                            [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
-                                    errorCode ec, std::size_t bytesRead) {
+        } else if (packetSize > waitingForServiceBody) {
+            //if it has come here then it means that consumeSize is firstRead plus 1500 which is standard read.
+            int remainingPacket = packetSize - waitingForServiceBody;
+            net::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
+                            [self = this->shared_from_this(), waitingForServiceBody, firstRead, remainingPacket](
+                                    errorCode ec, std::size_t secondRead) {
                                 if (ec)
                                     self->fail(ec, "error in lambda readMore");
-                                int consumingBytes = bytesFirstRead + remainingBytes;
-                                assert(remainingBytes == bytesRead);
-                                self->sessionStreamBuffInput.commit(remainingBytes);
-                                self->managerPtr->packetReceivedFromNetwork(self->in, consumingBytes - 4);
+                                if(secondRead != remainingPacket){
+                                    self->fail(ec, "error in lambda readmore. handler called with not the required "
+                                                   "bytes Read");
+                                }
+                                self->sessionStreamBuffInput.commit(remainingPacket);
+                                self->allPacketsReceived = true;
+                                self->managerPtr->packetReceivedFromNetwork(
+                                        self->in, secondRead + waitingForServiceBody);
+                                self->sessionStreamBuffInput.consume(firstRead + secondRead);
                             });
             break;
         }
         else {
+            allPacketsReceived = false;
             managerPtr->packetReceivedFromNetwork(in, packetSize);
-            bytesFirstRead -= (packetSize + 4);
+            waitingForService -= (packetSize + 4);
         }
     }
 }
@@ -172,6 +182,7 @@ private:
 
     void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytes);
+    bool allPacketsReceived = true;
 
     //friend T;
 public:
@@ -265,41 +276,49 @@ receiveMessage() {
 template <typename T>
 void
 session<T, true>::
-readMore(errorCode ec, int bytesFirstRead) {
+readMore(errorCode ec, int firstRead) {
+    spdlog::info("readmore called");
     if(ec)
         return fail(ec, "readMore");
 
-    sessionStreamBuffInput.commit(bytesFirstRead);
+    sessionStreamBuffInput.commit(firstRead);
     int packetSize = 0;
+    int waitingForService = firstRead;
     while(true) {
         in.read(reinterpret_cast<char *>(&packetSize), sizeof(packetSize));
-        if (packetSize == bytesFirstRead - 4) {
+
+        int waitingForServiceBody = waitingForService - 4;
+        if (packetSize == waitingForServiceBody) {
+            allPacketsReceived = true;
             managerPtr->packetReceivedFromNetwork(in, packetSize, id);
+
+            sessionStreamBuffInput.consume(firstRead);
+            //sessionStreamBuffInput.consume(SIZE_MAX);
             break;
-        } else if (packetSize > bytesFirstRead - 4) {
-            //Start Composite Asynchronous Operation Before Reporting
-            //The Received data.
-            int remainingBytes = packetSize - (bytesFirstRead - 4);
-            net::async_read(sock, sessionStreamBuffInput.prepare(remainingBytes),
-                            [self = this->shared_from_this(), bytesFirstRead, remainingBytes](
-                                    errorCode ec, std::size_t bytesRead) {
+        } else if (packetSize > waitingForServiceBody) {
+            //if it has come here then it means that consumeSize is firstRead plus 1500 which is standard read.
+            int remainingPacket = packetSize - waitingForServiceBody;
+            net::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
+                            [self = this->shared_from_this(), waitingForServiceBody, firstRead, remainingPacket](
+                                    errorCode ec, std::size_t secondRead) {
                                 if (ec)
                                     self->fail(ec, "error in lambda readMore");
-                                int consumingBytes = bytesFirstRead + remainingBytes;
-                                assert(remainingBytes == bytesRead);
-                                self->sessionStreamBuffInput.commit(remainingBytes);
-                                self->managerPtr->packetReceivedFromNetwork(self->in, consumingBytes - 4, self->id);
+                                if(secondRead != remainingPacket){
+                                    self->fail(ec, "error in lambda readmore. handler called with not the required "
+                                                   "bytes Read");
+                                }
+                                self->sessionStreamBuffInput.commit(remainingPacket);
+                                self->allPacketsReceived = true;
+                                self->managerPtr->packetReceivedFromNetwork(
+                                        self->in, secondRead + waitingForServiceBody, self->id);
+                                self->sessionStreamBuffInput.consume(firstRead + secondRead);
                             });
             break;
         }
         else {
-            //Sometimes error may be generated because it can read two coming messages at once.
-            //Even though those were seperately sent. No mechanism for dealing with that case.
-            //Why it read extra bytes
-
-            //This bug happened once because async_receive was called twice on same socket.
+            allPacketsReceived = false;
             managerPtr->packetReceivedFromNetwork(in, packetSize, id);
-            bytesFirstRead -= (packetSize + 4);
+            waitingForService -= (packetSize + 4);
         }
     }
 }

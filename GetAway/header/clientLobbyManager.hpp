@@ -41,7 +41,7 @@ class clientLobbyManager : inputRead {
     std::map<int, int> numberOfCards; //numberOfCards for each player
     std::vector<int> turnSequence;
     std::vector<Card> turnAbleCards;
-    std::vector<int> waitingForTurn; //used for first turn
+    std::vector<int> waitingForTurn; //used for first round
     bool firstRound = false;
 
     std::vector<std::tuple<int, Card>> roundTurns; //id and Card
