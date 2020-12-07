@@ -1,5 +1,4 @@
 #include "clientAuthManager.hpp"
-
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "session.hpp"

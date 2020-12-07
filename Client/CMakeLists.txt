@@ -7,7 +7,9 @@ message("src_files value is ${src_files}")
 add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" "../GetAway/src/clientAuthManager.cpp"
         "../GetAway/src/clientLobbyManager.cpp" "../GetAway/src/clientGameManager.cpp"
         "../GetAway/src/messageTypeEnums.cpp" "../GetAway/src/ManagementFunctions.cpp"
-        "../GetAway/src/sati.cpp" "../GetAway/src/constants.cpp" "../GetAway/src/deckSuit.cpp")
+        "../GetAway/src/sati.cpp" "../GetAway/src/constants.cpp" "../GetAway/src/deckSuit.cpp"
+        "../GetAway/src/lobbyPF.cpp" "../GetAway/src/gamePF.cpp" "../GetAway/src/homePF.cpp"
+        "../GetAway/src/messagePF.cpp")
 target_include_directories(Client PRIVATE "../GetAway/header")
 if (USE_GCC)
 target_compile_options(Client PRIVATE -fcoroutines)

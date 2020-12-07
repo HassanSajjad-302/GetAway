@@ -35,7 +35,7 @@ enum class lobbyMessageType{
 
 enum class inputType{
     LOBBYINT = 0,
-    LOBBYSTRING = 1,
+    MESSAGESTRING = 1,
     GAMEINT = 2,
     GAMESTRING = 3,
     GAMEPERFORMTURN = 4,

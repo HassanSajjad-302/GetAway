@@ -51,7 +51,7 @@ class clientLobbyManager : inputRead {
     int turnPlayerIdExpected; //used only if firstRound = false
     //
     std::map<deckSuit, std::set<int>> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
-
+    bool gameStarted = false;
 
 public:
     explicit

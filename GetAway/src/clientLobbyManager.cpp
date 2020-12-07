@@ -4,6 +4,8 @@
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
 #include "constants.h"
+#include "gamePF.hpp"
+#include "messagePF.hpp"
 
 clientLobbyManager::clientLobbyManager(){
     //TODO
@@ -85,8 +87,8 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 //STEP 3;
                 in.getline(arr, receivedPacketSize - 8);
                 chatMessageString = std::string(arr);
-                sati::getInstance()->addMessageAccumulatePrint(gamePlayers.find(chatMessageInt)->second,
-                                                               chatMessageString);
+                messagePF::addAccumulate(gamePlayers.find(chatMessageInt)->second,
+                                         chatMessageString);
                 break;
             }
                 //STEP 1;
@@ -180,7 +182,7 @@ void clientLobbyManager::sendGAMETURNCLIENT(Card card){
 }
 
 void clientLobbyManager::uselessWriteFunctionCHATMESSAGE(){
-    sati::getInstance()->addMessageAccumulatePrint(gamePlayers.find(chatMessageInt)->second, chatMessageString);
+    messagePF::addAccumulate(gamePlayers.find(chatMessageInt)->second, chatMessageString);
 }
 
 void clientLobbyManager::uselessWriteFunctionGAMETURNCLIENT(){
@@ -193,12 +195,11 @@ void clientLobbyManager::managementLobbyReceived(){
     messageTypeExpected.emplace_back(lobbyMessageType::PLAYERJOINED);
     messageTypeExpected.emplace_back(lobbyMessageType::PLAYERLEFT);
     messageTypeExpected.emplace_back(lobbyMessageType::GAMEFIRSTTURNSERVER);
-    sati::getInstance()->addOrRemovePlayerLobbyPrint(gamePlayers);
-    sati::getInstance()->setInputStatementHomeLobbyAccumulatePrint();
     setInputType(inputType::LOBBYINT);
-    sati::getInstance()->setBase(this);
+    sati::getInstance()->setBase(this, appState::LOBBY);
+    lobbyPF::addOrRemovePlayer(gamePlayers);
+    lobbyPF::setInputStatementHomeAccumulate();
 }
-
 
 void clientLobbyManager::exitGame(){
     clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
@@ -238,8 +239,8 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                 if(inputHelper(inputString, 1, 2, inputType::LOBBYINT, inputType::LOBBYINT,
                                input)){
                     if(input == 1){
-                        sati::getInstance()->setInputStatementMessageAccumulatePrint();
-                        setInputType(inputType::LOBBYSTRING);
+                        messagePF::setInputStatementAccumulate();
+                        setInputType(inputType::MESSAGESTRING);
                     }
                     if(input== 2){
                         exitGame();
@@ -247,17 +248,17 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                 }
                 break;
             }
-            case inputType::LOBBYSTRING:
+            case inputType::MESSAGESTRING:
             {
                 if(inputString.empty()){
-                    sati::getInstance()->setInputStatementHomeLobbyAccumulatePrint();
-                    setInputType(inputType::LOBBYINT);
+                    lobbyPF::setInputStatementHomeAccumulate();
+                    gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
                 }else{
                     chatMessageString = std::move(inputString);
                     chatMessageInt = id;
                     sendCHATMESSAGE();
-                    sati::getInstance()->setInputStatementHomeLobbyAccumulatePrint();
-                    setInputType(inputType::LOBBYINT);
+                    lobbyPF::setInputStatementHomeAccumulate();
+                    gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
                 }
                 break;
             }
@@ -287,28 +288,18 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
 
                 if(success){
                     if(input == 1){
-                        sati::getInstance()->setInputStatementMessageAccumulatePrint();
-                        setInputType(inputType::GAMESTRING);
+                        messagePF::setInputStatementAccumulate();
+                        setInputType(inputType::MESSAGESTRING);
                     }
                     if(input == 2){
                         exitGame();
                     }
                     if(input == 3){
                         //perform turn
-                        sati::getInstance()->setInputStatement3GameAccumulatePrint(turnAbleCards);
+                        gamePF::setInputStatement3Accumulate(turnAbleCards);
                         setInputType(inputType::GAMEPERFORMTURN);
                     }
                 }
-                break;
-            }
-            case inputType::GAMESTRING:
-            {
-                if(!inputString.empty()){
-                    chatMessageString = std::move(inputString);
-                    chatMessageInt = id;
-                    sendCHATMESSAGE();
-                }
-                setInputTypeGameInt();
                 break;
             }
             case inputType::GAMEPERFORMTURN:{
@@ -317,7 +308,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                 }else{
                     int input;
                     if(inputHelper(inputString, 1, turnAbleCards.size(),
-                                   inputType::GAMEINT, inputType::GAMEINT,input)){
+                                   inputType::GAMEPERFORMTURN, inputType::GAMEPERFORMTURN,input)){
                         sendGAMETURNCLIENT(turnAbleCards[input - 1]);
                         Turn(id, turnAbleCards[input - 1], whoTurned::CLIENT);
                     }else{
@@ -336,15 +327,15 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
 void clientLobbyManager::setInputTypeGameInt(){
     if(firstRound){
         if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-            sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
+            gamePF::setInputStatementHomeTwoInputAccumulate();
         }else{
-            sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+            gamePF::setInputStatementHomeThreeInputAccumulate();
         }
     }else{
         if(turnPlayerIdExpected != id){
-            sati::getInstance()->setInputStatementHomeTwoInputGameAccumulatePrint();
+            gamePF::setInputStatementHomeTwoInputAccumulate();
         }else{
-            sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+            gamePF::setInputStatementHomeThreeInputAccumulate();
         }
     }
     setInputType(inputType::GAMEINT);
@@ -354,13 +345,12 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
     waitingForTurn.erase(std::find(waitingForTurn.begin(), waitingForTurn.end(), playerId));
     if(who == whoTurned::CLIENT){
         myCards.find(card.suit)->second.erase(card.cardNumber);
-        sati::getInstance()->setCardsGamePrint(myCards);
+        gamePF::setCards(myCards);
         setInputTypeGameInt();
     }
     flushedCards.find(card.suit)->second.emplace(card.cardNumber);
     roundTurns.emplace_back(playerId, card);
-    sati::getInstance()->setRoundTurnsGameAccumulatePrint(roundTurns, gamePlayers);
-
+    gamePF::setRoundTurnsAccumulate(roundTurns, gamePlayers);
     numberOfCards.find(playerId)->second -= 1;
 
     if (roundTurns.size() == turnSequence.size()) {
@@ -411,11 +401,11 @@ void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, b
         spdlog::info("Suit Of The Round is {}", deckSuitValue::displaySuitType[(int)suitOfTheRound]);
     }
     roundTurns.emplace_back(playerId, card);
-    sati::getInstance()->setRoundTurnsGamePrint(roundTurns, gamePlayers);
+    gamePF::setRoundTurns(roundTurns, gamePlayers);
 
     if(playerId == id){
         myCards.find(card.suit)->second.erase(card.cardNumber);
-        sati::getInstance()->setCardsGamePrint(myCards);
+        gamePF::setCards(myCards);
     }
 
 
@@ -439,17 +429,17 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         //playerId may be our Id.
         assert(turnPlayerIdExpected != playerId && "Why we are performing thulla turn if we have already performed our turn in the round");
         roundTurns.emplace_back(playerId, card);
-        sati::getInstance()->setRoundTurnsGamePrint(roundTurns, gamePlayers);
+        gamePF::setRoundTurns(roundTurns, gamePlayers);
 
         if(playerId == id){
             myCards.find(card.suit)->second.erase(card.cardNumber);
-            sati::getInstance()->setCardsGamePrint(myCards);
+            gamePF::setCards(myCards);
         }else if(turnPlayerIdExpected == id){
             spdlog::info("I received a thulla");
             for(auto thullaCards: roundTurns){
                 myCards.find(std::get<1>(thullaCards).suit)->second.emplace(std::get<1>(thullaCards).cardNumber);
             }
-            sati::getInstance()->setCardsGamePrint(myCards);
+            gamePF::setCards(myCards);
         }
 
         for(auto& rt: roundTurns){
@@ -458,12 +448,12 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         numberOfCards.find(turnPlayerIdExpected)->second += roundTurns.size();
     }else{
         roundTurns.emplace_back(playerId, card);
-        sati::getInstance()->setRoundTurnsGamePrint(roundTurns, gamePlayers);
+        gamePF::setRoundTurns(roundTurns, gamePlayers);
 
         turnPlayerIdExpected = roundKing();
         if(playerId == id){
             myCards.find(card.suit)->second.erase(card.cardNumber);
-            sati::getInstance()->setCardsGamePrint(myCards);
+            gamePF::setCards(myCards);
         }
         for(auto& rt: roundTurns){
             flushedCards.find(std::get<1>(rt).suit)->second.emplace(std::get<1>(rt).cardNumber);
@@ -490,13 +480,18 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
                     std::find(turnSequence.begin(), turnSequence.end(),std::get<0>(p)));
         }
     }
-    sati::getInstance()->setTurnSequenceGamePrint(gamePlayers, turnSequence);
+    gamePF::setTurnSequence(gamePlayers, turnSequence);
 
-    if(std::find(turnSequence.begin(), turnSequence.end(), id) == turnSequence.end()){
-        assert(false && "I Lost The Game");
+    if(turnSequence.empty()){
+        //game drawn
+        //move back to lobby
+    }else if(turnSequence.size() == 1){
+        int loosingId = *turnSequence.begin();
+        //move back to lobby
+    }else{
+        //game continues
     }
-    //Perform next auto turns. Also set one of accumulatethreeinputgame or
-    //accumulatetwoinputgame print.
+
     if(turnPlayerIdExpected == id){
         assignToTurnAbleCards();
     }
@@ -546,15 +541,14 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
     messageTypeExpected.emplace_back(lobbyMessageType::GAMETURNSERVER);
 
     //Printing Starts
-    sati::getInstance()->setTurnSequenceGamePrint(gamePlayers, turnSequence);
+    gamePF::setTurnSequence(gamePlayers, turnSequence);
 
-    sati::getInstance()->setRoundTurnsGamePrint(roundTurns, gamePlayers);
+    gamePF::setRoundTurns(roundTurns, gamePlayers);
 
-    sati::getInstance()->setWaitingForTurnGamePrint(waitingForTurn, gamePlayers); //waiting for turn
-    sati::getInstance()->setCardsGamePrint(myCards); //cards
+    gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
+    gamePF::setCards(myCards);
 
-
-    sati::getInstance()->setReceiveInputTypeAndGameStarted(inputType::GAMEINT,true);
+    sati::getInstance()->setBase(this, appState::GAME);
     //set input statement and print all this
 
     if(myCards.find(deckSuit::SPADE)->second.empty()){
@@ -568,16 +562,18 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
             assignToTurnAbleCards(deckSuit::SPADE);
         }
     }
-    sati::getInstance()->setInputStatementHomeThreeInputGameAccumulatePrint();
+    gamePF::setInputStatementHomeThreeInputAccumulate();
     turnPlayerIdExpected = id;
 
     inputTypeExpected = inputType::GAMEINT;
+    sati::getInstance()->setInputType(inputType::GAMEINT);
     if(waitingForTurn.empty()){
         firstRound = false;
     }
     else{
         firstRound = true;
     }
+    gameStarted = true;
 }
 
 void clientLobbyManager::setInputType(inputType inputType) {

@@ -107,13 +107,16 @@ template <typename T, bool ID>
 void
 session<T, ID>::
 receiveMessage() {
-    //TODO
-    //1500 is TCP MTU size. Provide it from somewhere else.
-    sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
-            errorCode ec, std::size_t bytes)
-    {
-        self->readMore(ec, bytes);
-    });
+    if(allPacketsReceived){
+        //TODO
+        //1500 is TCP MTU size. Provide it from somewhere else.
+        sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
+                errorCode ec, std::size_t bytes)
+        {
+            self->readMore(ec, bytes);
+        });
+    }
+
 }
 
 template <typename T, bool ID>
@@ -264,13 +267,16 @@ template <typename T>
 void
 session<T, true>::
 receiveMessage() {
-    //TODO
-    //1500 is TCP MTU size. Provide it from somewhere else.
-    sock.async_receive(sessionStreamBuffInput.prepare(40), [self = this->shared_from_this()](
-            errorCode ec, std::size_t bytes)
-    {
-        self->readMore(ec, bytes);
-    });
+    if(allPacketsReceived){
+        //TODO
+        //1500 is TCP MTU size. Provide it from somewhere else.
+        sock.async_receive(sessionStreamBuffInput.prepare(40), [self = this->shared_from_this()](
+                errorCode ec, std::size_t bytes)
+        {
+            self->readMore(ec, bytes);
+        });
+    }
+
 }
 
 template <typename T>
