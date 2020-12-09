@@ -10,6 +10,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <clientHome.hpp>
 
 
 std::string getCompileVersion()
@@ -20,12 +21,6 @@ std::string getCompileVersion()
      return compileInfo;
 }
 
-//TODO
-//Cosole output will be displaying the conversation until the point. When new message is received
-//the cosole clears and prints the conversation with the current game state. We parse input char by char
-//so that when new message is received, we can print the console with same input. However this may
-//cause problem of not able to use backspace option on that input. And if we can clear the chars, then
-//the problem of updating our char array in the programme.
 //Following link can be helpful
 //https://www.tutorialspoint.com/Read-a-character-from-standard-input-without-waiting-for-a-newline-in-Cplusplus
 
@@ -43,9 +38,11 @@ main(int argc, char* argv[])
     logger->flush_on(spdlog::level::info);
     spdlog::info("Hassan Sajjad");
 #define LOG
+
     net::io_context io;
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
+    /*
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
@@ -61,6 +58,10 @@ main(int argc, char* argv[])
     std::make_shared<session<clientAuthManager>>(
             std::move(sock),
             std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();
+
+     */
+    clientHome h(io);
+    h.run();
 
 
    /* // Capture SIGINT and SIGTERM to perform a clean shutdown

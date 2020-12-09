@@ -10,25 +10,25 @@
 //For Game
 
 //input statement
-void gamePF::setInputStatementHomeTwoInput() {
+void gamePF::setInputStatementHome2() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
 }
 
-void gamePF::setInputStatementHomeTwoInputAccumulate() {
+void gamePF::setInputStatementHome2Accumulate() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
     sati::getInstance()->accumulateBuffersAndPrint(true);
 }
 
-void gamePF::setInputStatementHomeThreeInput() {
+void gamePF::setInputStatementHome3() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n";
 }
 
-void gamePF::setInputStatementHomeThreeInputAccumulate() {
+void gamePF::setInputStatementHome3Accumulate() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n";
     sati::getInstance()->accumulateBuffersAndPrint(true);
 }
 
-void gamePF::setInputStatement3(const std::vector<Card>& turnAbleCards_) {
+void gamePF::setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_) {
     sati::getInstance()->inputStatementBuffer = "Please select one of following:\r\n";
     int count = 1;
     std::map<int, std::set<int>> cards;
@@ -55,8 +55,8 @@ void gamePF::setInputStatement3(const std::vector<Card>& turnAbleCards_) {
     sati::getInstance()->inputStatementBuffer += "\r\n";
 }
 
-void gamePF::setInputStatement3Accumulate(const std::vector<Card>& turnAbleCards_) {
-    setInputStatement3(turnAbleCards_);
+void gamePF::setInputStatementHome3R3Accumulate(const std::vector<Card>& turnAbleCards_) {
+    setInputStatementHome3R3(turnAbleCards_);
     sati::getInstance()->accumulateBuffersAndPrint(true);
 }
 //other

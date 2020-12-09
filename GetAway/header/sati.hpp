@@ -49,6 +49,8 @@ private:
     std::string timeLeft;
     std::string cardsString;
 
+    //Only For Home
+    std::string errorMessage;
     bool handlerAssigned = false;
     inputRead* base = nullptr;
 

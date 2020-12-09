@@ -75,7 +75,7 @@ void sati::operator()() {
 void sati::accumulateBuffersAndPrint(bool lock) {
     std::string toPrint;
     if(currentAppState == appState::HOME){
-
+        toPrint += inputStatementBuffer + errorMessage;
     }
     if(currentAppState == appState::LOBBY) {
         if(!messageBuffer.empty()){

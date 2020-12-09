@@ -14,8 +14,6 @@
 
 class lobbyPF {
 public:
-    //USED ONLY IN LOBBY
-
     //input-statement-functions
     static void setInputStatementHome();
     static void setInputStatementHomeAccumulate();

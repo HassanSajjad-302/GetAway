@@ -296,7 +296,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     }
                     if(input == 3){
                         //perform turn
-                        gamePF::setInputStatement3Accumulate(turnAbleCards);
+                        gamePF::setInputStatementHome3R3Accumulate(turnAbleCards);
                         setInputType(inputType::GAMEPERFORMTURN);
                     }
                 }
@@ -327,15 +327,15 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
 void clientLobbyManager::setInputTypeGameInt(){
     if(firstRound){
         if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-            gamePF::setInputStatementHomeTwoInputAccumulate();
+            gamePF::setInputStatementHome2Accumulate();
         }else{
-            gamePF::setInputStatementHomeThreeInputAccumulate();
+            gamePF::setInputStatementHome3Accumulate();
         }
     }else{
         if(turnPlayerIdExpected != id){
-            gamePF::setInputStatementHomeTwoInputAccumulate();
+            gamePF::setInputStatementHome2Accumulate();
         }else{
-            gamePF::setInputStatementHomeThreeInputAccumulate();
+            gamePF::setInputStatementHome3Accumulate();
         }
     }
     setInputType(inputType::GAMEINT);
@@ -562,7 +562,7 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
             assignToTurnAbleCards(deckSuit::SPADE);
         }
     }
-    gamePF::setInputStatementHomeThreeInputAccumulate();
+    gamePF::setInputStatementHome3Accumulate();
     turnPlayerIdExpected = id;
 
     inputTypeExpected = inputType::GAMEINT;

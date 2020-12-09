@@ -12,36 +12,16 @@
 #include "deckSuit.hpp"
 
 class gamePF {
-
-    //Common In Both Lobby And Game
-    std::string messageBuffer; //messages
-    std::string userIncomingInput;
-    std::string inputStatementBuffer; //input
-
-    //Only For Lobby
-    std::string playersInLobby;
-
-    //Only For Game
-    std::string turnSequence;
-    std::string turns;
-    std::string waitingForTurn;
-    std::string timeLeft;
-    std::string cardsString;
-
 public:
-
-
-    //USED ONLY IN GAME
-
     //input-statement-functions
-    static void setInputStatementHomeTwoInput();
-    static void setInputStatementHomeTwoInputAccumulate();
+    static void setInputStatementHome2();
+    static void setInputStatementHome2Accumulate();
 
-    static void setInputStatementHomeThreeInput();
-    static void setInputStatementHomeThreeInputAccumulate();
+    static void setInputStatementHome3();
+    static void setInputStatementHome3Accumulate();
 
-    static void setInputStatement3(const std::vector<Card>& turnAbleCards_);
-    static void setInputStatement3Accumulate(const std::vector<Card>& turnAbleCards_);
+    static void setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_);
+    static void setInputStatementHome3R3Accumulate(const std::vector<Card>& turnAbleCards_);
 
     static void setTurnSequence(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
     static void setTurnSequenceAccumulate(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);

@@ -60,7 +60,6 @@ onAccept(errorCode ec)
         std::make_shared<session<serverAuthManager,true>>(
                 std::move(sock),
                 nextManager)->registerSessionToManager();
-
     }
 
 
