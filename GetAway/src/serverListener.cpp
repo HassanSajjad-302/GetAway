@@ -5,7 +5,7 @@
 #include "serverListener.hpp"
 #include "session.hpp"
 #include "serverAuthManager.hpp"
-#include "Log_Macro.hpp"
+#include "serverPF.hpp"
 namespace net = boost::asio;
 using namespace net::ip;
 using errorCode = boost::system::error_code;
@@ -34,6 +34,10 @@ run()
         {
             self->onAccept(ec);
         });
+
+    serverPF::setLobbyMainOnePlayer();
+    sati::getInstance()->setBase(this, appState::LOBBY);
+    sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
 }
 
 // Report a failure
@@ -70,4 +74,24 @@ onAccept(errorCode ec)
         {
             self->onAccept(ec);
         });
+}
+
+void serverListener::input(std::string inputString, inputType inputReceivedType) {
+    if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
+        if(inputString != "1"){
+            //Exit The Game Here
+            //TODO
+        }else{
+            std::cout<<"Wrong Input\r\n";
+            sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+        }
+    }
+    else{
+        std::cout<<"Unexpected input type input received\r\n";
+    }
+}
+
+void serverListener::registerForInputReceival() {
+    serverPF::setLobbyMainOnePlayer();
+    sati::getInstance()->setBase(this, appState::LOBBY);
 }

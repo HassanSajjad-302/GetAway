@@ -8,8 +8,9 @@ add_executable(Client "${CMAKE_CURRENT_SOURCE_DIR}/../Client/main.cpp" "../GetAw
         "../GetAway/src/clientLobbyManager.cpp" "../GetAway/src/clientGameManager.cpp"
         "../GetAway/src/messageTypeEnums.cpp" "../GetAway/src/ManagementFunctions.cpp"
         "../GetAway/src/sati.cpp" "../GetAway/src/constants.cpp" "../GetAway/src/deckSuit.cpp"
-        "../GetAway/src/lobbyPF.cpp" "../GetAway/src/gamePF.cpp" "../GetAway/src/homePF.cpp"
+        "../GetAway/src/lobbyPF.cpp" "../GetAway/src/gamePF.cpp" "../GetAway/src/clientHomePF.cpp"
         "../GetAway/src/messagePF.cpp" "../GetAway/src/clientHome.cpp")
+target_compile_definitions(Client PRIVATE CLIENTMACRO=1)
 target_include_directories(Client PRIVATE "../GetAway/header")
 if (USE_GCC)
 target_compile_options(Client PRIVATE -fcoroutines)

@@ -8,6 +8,10 @@
 #include <functional>
 #include "deckSuit.hpp"
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <conio.h>
+#endif
+
 sati& sati::getInstanceFirstTime(net::io_context& io_, std::mutex& mut) {
     static sati s{io_, mut};
     oneInstanceOnly = &s;
@@ -41,12 +45,22 @@ void sati::setBase(inputRead *base_, appState currentAppState_) {
 }
 
 void sati::operator()() {
+#ifdef __linux__
     system("stty raw");
+#endif
+
     while(true){
+#if defined(_WIN32) || defined(_WIN64)
+        int c = getch();
+#endif
+#ifdef __linux__
         int c = getchar();
+#endif
         if(c == 3) //ctrl + c
         {
+#ifdef __linux__
             system("stty cooked");
+#endif
             exit(0);
         }else if( c == 127){
             std::lock_guard<std::mutex> lok(m.get());
@@ -74,6 +88,25 @@ void sati::operator()() {
 
 void sati::accumulateBuffersAndPrint(bool lock) {
     std::string toPrint;
+#ifdef SERVERMACRO
+    if(currentAppState == appState::HOME){
+        toPrint = inputStatementBuffer;
+    }
+    if(currentAppState == appState::LOBBY) {
+
+    }
+    if(currentAppState == appState::GAME){
+
+    }
+    if(lock){
+        std::lock_guard lockGuard(m.get());
+        toPrint += userIncomingInput;
+    }
+    else{
+        toPrint += userIncomingInput;
+    }
+#endif
+#ifdef CLIENTMACRO
     if(currentAppState == appState::HOME){
         toPrint += inputStatementBuffer + errorMessage;
     }
@@ -97,7 +130,13 @@ void sati::accumulateBuffersAndPrint(bool lock) {
     else{
         toPrint += userIncomingInput;
     }
+#endif
+#ifdef __linux__
     system("clear");
+#endif
+#if defined(_WIN32) || defined(_WIN64)
+    system("cls");
+#endif
     std::cout<<toPrint;
 }
 

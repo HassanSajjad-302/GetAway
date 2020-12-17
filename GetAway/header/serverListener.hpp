@@ -5,6 +5,7 @@
 #include <string>
 
 #include<boost/asio/ip/tcp.hpp>
+#include "sati.hpp"
 namespace net = boost::asio;
 using namespace net::ip;
 using errorCode = boost::system::error_code;
@@ -12,13 +13,15 @@ using errorCode = boost::system::error_code;
 class serverAuthManager;
 
 // Accepts incoming connections and launches the sessions
-class serverListener : public std::enable_shared_from_this<serverListener>
+class serverListener : public std::enable_shared_from_this<serverListener>, inputRead
 {
     tcp::acceptor acceptor;
     std::shared_ptr<serverAuthManager> nextManager;
     std::string password;
     void fail(errorCode ec, char const* what);
     void onAccept(errorCode ec);
+
+    void input(std::string inputString, inputType inputReceivedType) override;
 
 public:
     tcp::socket sock;
@@ -29,6 +32,7 @@ public:
 
     // Start accepting incoming connections
     void run();
+    void registerForInputReceival();
 };
 
 #endif //GETAWAY_SERVERLISTENER_HPP

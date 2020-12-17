@@ -11,7 +11,6 @@
 #include <vector>
 #include <queue>
 #include <boost/asio.hpp>
-#include "Log_Macro.hpp"
 
 #define LOG
 namespace net = boost::asio;
@@ -123,7 +122,6 @@ template <typename T, bool ID>
 void
 session<T, ID>::
 readMore(errorCode ec, int firstRead) {
-    spdlog::info("readmore called");
     if(ec)
         return fail(ec, "readMore");
 
@@ -283,7 +281,6 @@ template <typename T>
 void
 session<T, true>::
 readMore(errorCode ec, int firstRead) {
-    spdlog::info("readmore called");
     if(ec)
         return fail(ec, "readMore");
 

@@ -2,11 +2,11 @@
 // Created by hassan on 12/7/20.
 //
 
-#ifndef GETAWAY_HOMEPF_HPP
-#define GETAWAY_HOMEPF_HPP
+#ifndef GETAWAY_CLIENTHOMEPF_HPP
+#define GETAWAY_CLIENTHOMEPF_HPP
 
 
-class homePF{
+class clientHomePF{
 public:
     //input-statement-functions
     static void setInputStatementHome7();
@@ -37,4 +37,4 @@ public:
 
 
 
-#endif //GETAWAY_HOMEPF_HPP
+#endif //GETAWAY_CLIENTHOMEPF_HPP

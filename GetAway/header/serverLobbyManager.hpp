@@ -18,8 +18,9 @@
 #include "messageTypeEnums.hpp"
 #include "playerData.hpp"
 #include "deckSuit.hpp"
+#include "sati.hpp"
 
-class serverLobbyManager
+class serverLobbyManager : inputRead
 {
     typedef typeof(playerData::cards) cardType;
     std::vector<cardType *> debug;
@@ -93,5 +94,9 @@ public:
 
     std::vector<playerData>::iterator roundKingGamePlayerDataIterator();
 
+private:
+    void input(std::string inputString, inputType inputReceivedType) override;
+
+    void goBackToServerListener();
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

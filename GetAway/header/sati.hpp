@@ -15,7 +15,7 @@
 #include "lobbyPF.hpp"
 #include "gamePF.hpp"
 #include "messagePF.hpp"
-#include "homePF.hpp"
+#include "clientHomePF.hpp"
 
 namespace net = boost::asio;
 using namespace net::ip;
@@ -32,12 +32,13 @@ private:
     std::reference_wrapper<std::mutex> m; //This mutex needs to be locked when this class members changes.
     // Or some other thread wants to print on screen.
     appState currentAppState;
-
+public:
     //Buffers For Holding And RePrinting
     std::string userIncomingInput;
-
-    std::string messageBuffer; //messages
     std::string inputStatementBuffer;
+
+#ifdef CLIENTMACRO
+    std::string messageBuffer; //messages
 
     //Only For Lobby
     std::string playersInLobby;
@@ -51,6 +52,14 @@ private:
 
     //Only For Home
     std::string errorMessage;
+#endif
+#ifdef SERVERMACRO
+
+    std::string playerJoined;
+
+
+#endif
+
     bool handlerAssigned = false;
     inputRead* base = nullptr;
 

@@ -14,7 +14,7 @@ clientHome::clientHome(net::io_context &io_): io(io_), guard(io.get_executor()),
 void clientHome::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
-    homePF::setInputStatementMAIN();
+    clientHomePF::setInputStatementMAIN();
 }
 
 int clientHome::isValidIp4(const char *str) {
@@ -86,7 +86,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                            1, 7, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
                     //Add Server
-                    homePF::setInputStatementIPADDRESS();
+                    clientHomePF::setInputStatementIPADDRESS();
                     setInputType(inputType::HOMEIPADDRESS);
                 }else if(input == 2){
                     //Join Server
@@ -94,7 +94,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         setInputType(inputType::HOMEMAIN);
                         std::cout<<"No Registered Servers\r\n";
                     }else{
-                        homePF::setInputStatementSELECTSERVER(registeredServers);
+                        clientHomePF::setInputStatementSELECTSERVER(registeredServers);
                         setInputType(inputType::HOMESELECTSERVER);
                     }
                 }else if(input == 3){
@@ -113,13 +113,15 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         sock.close();
                     }
                     guard.reset();
+#ifdef __linux__
                     system("stty cooked");
+#endif
                 }
             }
         }else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(isValidIp4(inputString.c_str())){
                 ipAddress = std::move(inputString);
-                homePF::setInputStatementPORTNUMBER();
+                clientHomePF::setInputStatementPORTNUMBER();
                 setInputType(inputType::HOMEPORTNUMBER);
             }else{
                 std::cout<<"Please enter valid ip address"<<std::endl;
@@ -129,7 +131,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             std::regex rg("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
             if(std::regex_match(inputString, rg)){
                 portNumber = std::move(inputString);
-                homePF::setInputStatementASSIGNSERVERNAME();
+                clientHomePF::setInputStatementASSIGNSERVERNAME();
                 setInputType(inputType::HOMEASSIGNSERVERNAME);
             }else{
                 std::cout<<"Please enter valid port number"<<std::endl;
@@ -137,7 +139,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             }
         }else if(inputReceivedType == inputType::HOMEASSIGNSERVERNAME){
             registeredServers.emplace_back(std::move(ipAddress), std::move(portNumber), std::move(inputString));
-            homePF::setInputStatementMAIN();
+            clientHomePF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
         }else if(inputReceivedType == inputType::HOMESELECTSERVER){
             int input;
@@ -154,7 +156,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         self->promote();
                     }
                 });
-                homePF::setInputStatementConnectingToServer(std::get<2>(registeredServers[input]));
+                clientHomePF::setInputStatementConnectingToServer(std::get<2>(registeredServers[input]));
                 setInputType(inputType::HOMECONNECTTINGOSERVER);
             }
         }else if(inputReceivedType == inputType::HOMECONNECTTINGOSERVER){
@@ -173,7 +175,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
 
 void clientHome::CONNECTTOSERVERFail(boost::system::error_code ec){
     std::cout<<ec<<std::endl;
-    homePF::setInputStatementMAIN();
+    clientHomePF::setInputStatementMAIN();
     setInputType(inputType::HOMEMAIN);
     std::cout<<"Connect To Server Failed " <<std::endl;
 }

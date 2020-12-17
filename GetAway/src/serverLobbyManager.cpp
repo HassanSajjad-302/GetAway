@@ -3,6 +3,7 @@
 #include <utility>
 #include <cassert>
 #include "constants.h"
+#include "serverPF.hpp"
 serverLobbyManager::
 serverLobbyManager(std::shared_ptr<serverListener> serverlistener_): serverlistener(std::move(serverlistener_)){
    // nextManager = std::make_shared<serverGameManager>
@@ -32,13 +33,10 @@ join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
     }
     //Tell EveryOne SomeOne has Joined In
     managementJoin(id);
+
     if(gameData.size() == 2){
-        //TODO
-        //max players allowed will be 10, because many invariants will get broken otherwise
-        net::post(std::get<1>(gameData.begin()->second)->sock.get_executor(), [self = this](){self->startGame();});
-        //gameTimer.async_wait([self= this](errorCode ec){
-            //self->startGame();
-       // });
+        sati::getInstance()->setBase(this, appState::LOBBY);
+        serverPF::setLobbyMainTwoOrMorePlayers();
     }
     return id;
 }
@@ -47,9 +45,18 @@ void
 serverLobbyManager::
 leave(int id)
 {
-    sendPLAYERLEFTToAllExceptOne(id);
-    std::cout << "Player Left: " << std::get<0>(gameData.find(id)->second) << std::endl;
-    gameData.erase(gameData.find(id));
+    if(!gameStarted){
+        sendPLAYERLEFTToAllExceptOne(id);
+        std::cout << "Player Left: " << std::get<0>(gameData.find(id)->second) << std::endl;
+        gameData.erase(gameData.find(id));
+        if(gameData.size() == 1){
+            goBackToServerListener();
+        }
+    }else{
+        std::cout<<"Player Left During The Game\r\n";
+        exit(-1);
+    }
+
 }
 
 void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
@@ -629,4 +636,46 @@ bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
         }
     }
     return false;
+}
+
+void serverLobbyManager::input(std::string inputString, inputType inputReceivedType){
+    if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
+        if(inputString != "1"){
+            //Exit The Game Here
+            //TODO
+        }else{
+            std::cout<<"Wrong Input\r\n";
+            sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+        }
+    }
+    else if(inputReceivedType == inputType::SERVERLOBBYTWOORMOREPLAYERS){
+        if(inputString == "1"){
+            //Start The Game
+            //TODO
+            sati::getInstance()->setInputType(inputType::GAMEINT);
+            sati::getInstance()->setBase(this, appState::GAME);
+        }else if(inputString == "2"){
+            //Exit The Game Here
+            //TODO
+        }else{
+            std::cout<<"Wrong Input\r\n";
+            sati::getInstance()->setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+        }
+    }
+    else if(inputReceivedType == inputType::GAMEINT){
+        if(inputString == "1"){
+            //Exit The Game Here
+            //TODO
+        }else{
+            std::cout<<"Wrong Input\r\n";
+            sati::getInstance()->setInputType(inputType::GAMEINT);
+        }
+    }
+    else{
+        std::cout<<"Unexpected input type input received\r\n";
+    }
+}
+
+void serverLobbyManager::goBackToServerListener(){
+    serverlistener->registerForInputReceival();
 }

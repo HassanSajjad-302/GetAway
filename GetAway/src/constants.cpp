@@ -10,7 +10,7 @@ int constants::cardsCount(const std::map<deckSuit, std::set<int>> &cards) {
     for(auto & cardPair: cards){
         count += cardPair.second.size();
     }
-    assert(cards.size() < DECKSIZE && "cardSize has been passed more than DECKSIZE");
+    assert(count < DECKSIZE && "cardSize has been passed more than DECKSIZE");
     return count;
 }
 

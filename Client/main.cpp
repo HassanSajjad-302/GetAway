@@ -34,7 +34,7 @@ main(int argc, char* argv[])
 
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
-    spdlog::set_default_logger(logger);
+    spdlog::set_default_logger(logger); main
     logger->flush_on(spdlog::level::info);
     spdlog::info("Hassan Sajjad");
 #define LOG
@@ -42,7 +42,7 @@ main(int argc, char* argv[])
     net::io_context io;
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
-    /*
+
     tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
@@ -59,9 +59,12 @@ main(int argc, char* argv[])
             std::move(sock),
             std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();
 
-     */
-    clientHome h(io);
-    h.run();
+
+
+
+
+    /*clientHome h(io);
+    h.run();*/
 
 
    /* // Capture SIGINT and SIGTERM to perform a clean shutdown
