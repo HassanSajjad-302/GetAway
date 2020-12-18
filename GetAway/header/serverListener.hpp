@@ -32,7 +32,11 @@ public:
 
     // Start accepting incoming connections
     void run();
+    void runAgain();
     void registerForInputReceival();
+    void shutdown();
+
+    void shutdownAcceptor();
 };
 
 #endif //GETAWAY_SERVERLISTENER_HPP

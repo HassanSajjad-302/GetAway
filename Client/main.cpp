@@ -34,7 +34,7 @@ main(int argc, char* argv[])
 
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
-    spdlog::set_default_logger(logger); main
+    spdlog::set_default_logger(logger);
     logger->flush_on(spdlog::level::info);
     spdlog::info("Hassan Sajjad");
 #define LOG
@@ -81,8 +81,5 @@ main(int argc, char* argv[])
     // Run the I/O service on the main thread
     io.run();
 
-    spdlog::info("Reached Here");
-    // (If we get here, it means we got a SIGINT or SIGTERM)
     inputThread.detach();
-    return EXIT_SUCCESS;
 }

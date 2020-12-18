@@ -11,6 +11,7 @@
 #include <vector>
 #include <queue>
 #include <boost/asio.hpp>
+#include "boost/system/error_code.hpp"
 
 #define LOG
 namespace net = boost::asio;
@@ -227,13 +228,8 @@ void
 session<T, true>::
 fail(errorCode ec, char const* what)
 {
-    //TODO
-    //Currently On Operation Aborted I call the leave of manager to unregister
-    //the session but I believe I should call the leave on any sort of error
-    //Currently Not Sure On That Because I don't know meaning of boost system
-    //error codes
-    // Don't report on canceled operations
-
+    if(ec == net::error::operation_aborted)
+        return;
     std::cerr << what << ": " << ec.message() << "\n";
     managerPtr->leave(id);
 }

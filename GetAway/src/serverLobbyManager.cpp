@@ -37,6 +37,7 @@ join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
     if(gameData.size() == 2){
         sati::getInstance()->setBase(this, appState::LOBBY);
         serverPF::setLobbyMainTwoOrMorePlayers();
+        setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
     }
     return id;
 }
@@ -212,13 +213,13 @@ void serverLobbyManager::managementJoin(int excitedSessionId) {
     playerSession->sendMessage(&serverLobbyManager::uselessWriteFunction);
 
     sendPLAYERJOINEDToAllExceptOne(excitedSessionId);
-    std::cout << "Player Joined: " << std::get<0>(gameData.find(excitedSessionId)->second) << std::endl;
+    std::cout << "Player Joined: " << std::get<0>(gameData.find(excitedSessionId)->second) << "\r\n";
 }
 
 
 void serverLobbyManager::managementCHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId) {
     sendCHATMESSAGEIDToAllExceptOne(chatMessageReceived, excitedSessionId);
-    std::cout<<"Message Sent To All Clients " << std::endl;
+    std::cout<<"Message Sent To All Clients\r\n" << std::endl;
 }
 void serverLobbyManager::uselessWriteFunction(int id){
 
@@ -231,15 +232,11 @@ void serverLobbyManager::setPlayerNameAdvanced(std::string advancedPlayerName) {
 void serverLobbyManager::startGame(){
     //At this point playerGameCards is ready to be distributed.
     errorCode ec;
-    serverlistener->sock.shutdown(tcp::socket::shutdown_both, ec);
-    serverlistener->sock.close();
+    serverlistener->shutdownAcceptor();
     initializeGame();
     doFirstTurnOfFirstRound();
     gameStarted = true;
     firstRound = true;
-    if(roundTurns.size() == gamePlayersData.size()){
-
-    }
 }
 
 void serverLobbyManager::initializeGame(){
@@ -291,7 +288,6 @@ void serverLobbyManager::initializeGame(){
                 p.insertCard(Card(suit, cardNumber));
                 ++cardsCount;
             }
-            debug.push_back(&p.cards);
         }
         gamePlayersData.emplace_back(std::move(p));
     }
@@ -380,8 +376,8 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
 //whether badranga is coming or the spade card because client had more than one spade card.
 //Following function should not be called if there is one player left i.e gamePlayersData.size() >1
 
-void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
 #ifndef NDEBUG
+void serverLobbyManager::checkForCardsCount(){
     int cardsCount = 0;
     cardsCount += constants::cardsCount(flushedCards);
     cardsCount += roundTurns.size();
@@ -397,6 +393,11 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
     }
     assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
 
+}
+#endif
+void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
+#ifndef NDEBUG
+    checkForCardsCount();
 #endif
 
     spdlog::info("Game Turn Client Received From{}", std::get<0>(gameData.find(sessionId)->second));
@@ -437,21 +438,9 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
     }
 
 #ifndef NDEBUG
-    cardsCount = 0;
-    cardsCount += constants::cardsCount(flushedCards);
-    cardsCount += roundTurns.size();
-    for(auto& p: gamePlayersData){
-        cardsCount += constants::cardsCount(p.cards);
+    if(gameStarted) {
+        checkForCardsCount();
     }
-    if(cardsCount != constants::DECKSIZE){
-        std::cout<< "Flushed Cards " << constants::cardsCount(flushedCards) << std::endl;
-        std::cout<< "Round Turns " <<roundTurns.size() << std::endl;
-        for(auto& p: gamePlayersData){
-            std::cout<< "Player Id " << p.id << "  Player Cards Size " <<constants::cardsCount(p.cards)<< std::endl;
-        }
-    }
-    assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
-
 #endif
 }
 
@@ -464,10 +453,10 @@ serverLobbyManager::doTurnReceivedOfFirstRound(
         return;
     }
     firstRound = false;
+    for(auto& rt: roundTurns){
+        flushedCards.find(std::get<1>(rt).suit)->second.emplace(std::get<1>(rt).cardNumber);
+    }
     for(auto t: roundTurns){
-        for(auto& rt: roundTurns){
-            flushedCards.find(std::get<1>(rt).suit)->second.emplace(std::get<1>(rt).cardNumber);
-        }
         if(std::get<1>(t).suit == deckSuit::SPADE && std::get<1>(t).cardNumber == 0){
             //This is ace of spade
             for(auto it = gamePlayersData.begin(); it!=gamePlayersData.end(); ++it){
@@ -571,24 +560,22 @@ void serverLobbyManager::performLastOrThullaTurn(
 
     gamePlayersData.erase(std::remove_if(gamePlayersData.begin(), gamePlayersData.end(),
                                          [](playerData& s){
-                                             return s.cards.empty();
+                                             return constants::cardsCount(s.cards) == 0;
                                          }), gamePlayersData.end());
 
+    roundTurns.clear();
     if(gamePlayersData.empty()){
         //match drawn
-        //exit
-        //TODO
-        assert(false && "Match Drawn");
+        //exit Game
+        gameExitFinished();
         return;
     }
     if(gamePlayersData.size() == 1){
         //That id left player has lost
-        //exit
-        //TODO
-        assert(true && "A Player Lost The Match");
+        //exit Game
+        gameExitFinished();
         return;
     }
-    roundTurns.clear();
     newRoundTurn(roundKing);
 }
 
@@ -609,7 +596,7 @@ std::vector<playerData>::iterator serverLobbyManager::roundKingGamePlayerDataIte
     int highestCardNumber = std::get<1>(*roundTurns.begin()).cardNumber;
     for(auto turns: roundTurns){
         int cardNumber = std::get<1>(turns).cardNumber;
-        assert((cardNumber >= 0 && cardNumber < constants::SUITSIZE) && "Card-Number not in range");
+        assert((cardNumber >= 0 && cardNumber < constants::SUITSIZE) && "Card-Number not in range\r\n");
         if(cardNumber == 0 ){
             highestCardHolderId = std::get<0>(turns);
             break;
@@ -625,7 +612,7 @@ std::vector<playerData>::iterator serverLobbyManager::roundKingGamePlayerDataIte
             return it;
         }
     }
-    throw(std::logic_error("HighestCardHolder Id not present in gamePlayerData"));
+    throw(std::logic_error("HighestCardHolder Id not present in gamePlayerData\r\n"));
 }
 
 bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
@@ -639,43 +626,87 @@ bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
 }
 
 void serverLobbyManager::input(std::string inputString, inputType inputReceivedType){
-    if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
-        if(inputString != "1"){
-            //Exit The Game Here
-            //TODO
-        }else{
-            std::cout<<"Wrong Input\r\n";
-            sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+    if(inputReceivedType == inputTypeExpected){
+        //There should not be handler for one player in this file. It should be only in listener.
+        /*
+        if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
+            if(inputString != "1"){
+                //Exit The Game Here
+                //TODO
+            }else{
+                std::cout<<"Wrong Input\r\n";
+                setInputType(inputType::SERVERLOBBYONEPLAYER);
+            }
+        }*/
+        if(inputReceivedType == inputType::SERVERLOBBYTWOORMOREPLAYERS){
+            if(inputString == "1"){
+                //Start The Game
+                startGame();
+                setInputType(inputType::GAMEINT);
+                sati::getInstance()->setBase(this, appState::GAME);
+                serverPF::setGameMain();
+            }else if(inputString == "2"){
+                //Exit The Application Here
+                applicationExit();
+            }else{
+                std::cout<<"Wrong Input\r\n";
+                setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+            }
         }
-    }
-    else if(inputReceivedType == inputType::SERVERLOBBYTWOORMOREPLAYERS){
-        if(inputString == "1"){
-            //Start The Game
-            //TODO
-            sati::getInstance()->setInputType(inputType::GAMEINT);
-            sati::getInstance()->setBase(this, appState::GAME);
-        }else if(inputString == "2"){
-            //Exit The Game Here
-            //TODO
+        else if(inputReceivedType == inputType::GAMEINT){
+            if(inputString == "1"){
+                //Exit The Application Here Amid Game
+                //TODO
+            }else{
+                std::cout<<"Wrong Input\r\n";
+                setInputType(inputType::GAMEINT);
+            }
         }else{
-            std::cout<<"Wrong Input\r\n";
-            sati::getInstance()->setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+            std::cout<<"No Handler For This InputType\r\n";
         }
-    }
-    else if(inputReceivedType == inputType::GAMEINT){
-        if(inputString == "1"){
-            //Exit The Game Here
-            //TODO
-        }else{
-            std::cout<<"Wrong Input\r\n";
-            sati::getInstance()->setInputType(inputType::GAMEINT);
-        }
-    }
-    else{
-        std::cout<<"Unexpected input type input received\r\n";
+    }else{
+        std::cout<<"Message Of Unexpected Input Type Received\r\n";
     }
 }
 
 void serverLobbyManager::goBackToServerListener(){
     serverlistener->registerForInputReceival();
+}
+
+void serverLobbyManager::setInputType(inputType type){
+    sati::getInstance()->setInputType(type);
+    inputTypeExpected = type;
+}
+
+void serverLobbyManager::applicationExit() {
+    serverlistener->shutdown();
+    //exit(EXIT_SUCCESS);
+}
+
+void serverLobbyManager::gameExitFinished(){
+#ifndef NDEBUG
+    checkForCardsCount();
+#endif
+    flushedCards.clear();
+
+    gameStarted = false;
+    gamePlayersData.clear();
+    serverlistener->runAgain();
+
+    sati::getInstance()->setBase(this, appState::LOBBY);
+    serverPF::setLobbyMainTwoOrMorePlayers();
+    setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+}
+
+void serverLobbyManager::shutDown() {
+    spdlog::info("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
+    serverlistener.reset();
+    spdlog::info("UseCount of GameManager from serverLobbyManager {}", nextManager.use_count());
+    nextManager.reset();
+    for(auto &p: gameData){
+        std::get<1>(p.second)->sock.shutdown(net::socket_base::shutdown_both);
+        std::get<1>(p.second)->sock.close();
+        spdlog::info("UseCount of serverLobbySession from serverLobbyManager {}", std::get<1>(p.second).use_count());
+        std::get<1>(p.second).reset();
+    }
 }

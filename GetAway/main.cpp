@@ -46,4 +46,5 @@ main(int argc, char* argv[])
         "password")->run();
 */
     io.run();
+    inputThread.detach();
 }

@@ -46,7 +46,6 @@ class clientLobbyManager : inputRead {
 
     std::vector<std::tuple<int, Card>> roundTurns; //id and Card
 
-    bool badranga = false;
     deckSuit suitOfTheRound = static_cast<deckSuit>(-1);
     int turnPlayerIdExpected; //used only if firstRound = false
     //
@@ -64,13 +63,15 @@ public:
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 
-    void managementLobbyReceived();
+    void SELFANDSTATEReceived();
+
+    void PLAYERJOINEDOrPLAYERLEFTReceived();
 
     void managementGAMEFIRSTTURNSERVERReceived();
 
     void uselessWriteFunctionCHATMESSAGE();
 
-    void exitGame();
+    void exitApplication();
 
     inline void setInputType(inputType inputType);
 
@@ -100,6 +101,8 @@ public:
     void assignToTurnAbleCards(deckSuit suit);
 
     void firstRoundTurnHelper(int playerId, Card card, whoTurned who);
+
+    void gameExitFinished();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

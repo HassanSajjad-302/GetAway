@@ -15,6 +15,7 @@ int constants::cardsCount(const std::map<deckSuit, std::set<int>> &cards) {
 }
 
 void constants::initializeCards(std::map<deckSuit, std::set<int>>& cards){
+    cards.clear();
     std::set<int> s;
     for(int i=0;i<4;++i){
         cards.emplace(static_cast<deckSuit>(i), s);

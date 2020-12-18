@@ -26,6 +26,7 @@ public:
     //connections before starting game.
     explicit
     serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_);
+    void shutDown();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

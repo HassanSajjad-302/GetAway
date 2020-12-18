@@ -55,7 +55,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                     playerName = std::string(arr);
                     gamePlayers.emplace(playersId, playerName);
                 }
-                managementLobbyReceived();
+                SELFANDSTATEReceived();
                 break;
             }
                 //STEP 1;
@@ -67,14 +67,14 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 //STEP 3;
                 in.getline(arr, 61);
                 gamePlayers.emplace(playerId, std::string(arr));
-                managementLobbyReceived();
+                PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
             case lobbyMessageType::PLAYERLEFT:{
                 int playerId = 0;
                 in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
                 gamePlayers.erase(gamePlayers.find(playerId));
-                managementLobbyReceived();
+                PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
                 //STEP 1;
@@ -189,7 +189,7 @@ void clientLobbyManager::uselessWriteFunctionGAMETURNCLIENT(){
     //sati::getInstance()->addMessageAccumulatePrint(gamePlayers.find(chatMessageInt)->second, chatMessageString);
 }
 
-void clientLobbyManager::managementLobbyReceived(){
+void clientLobbyManager::SELFANDSTATEReceived(){
     messageTypeExpected.clear();
     messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
     messageTypeExpected.emplace_back(lobbyMessageType::PLAYERJOINED);
@@ -201,7 +201,12 @@ void clientLobbyManager::managementLobbyReceived(){
     lobbyPF::setInputStatementHomeAccumulate();
 }
 
-void clientLobbyManager::exitGame(){
+void clientLobbyManager::PLAYERJOINEDOrPLAYERLEFTReceived(){
+    lobbyPF::addOrRemovePlayer(gamePlayers);
+    lobbyPF::setInputStatementHomeAccumulate();
+}
+
+void clientLobbyManager::exitApplication(){
     clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
     clientLobbySession->sock.close();
     clientLobbySession.reset();
@@ -243,7 +248,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                         setInputType(inputType::MESSAGESTRING);
                     }
                     if(input== 2){
-                        exitGame();
+                        exitApplication();
                     }
                 }
                 break;
@@ -292,7 +297,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                         setInputType(inputType::MESSAGESTRING);
                     }
                     if(input == 2){
-                        exitGame();
+                        exitApplication();
                     }
                     if(input == 3){
                         //perform turn
@@ -325,20 +330,22 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
 }
 
 void clientLobbyManager::setInputTypeGameInt(){
-    if(firstRound){
-        if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
-            gamePF::setInputStatementHome2Accumulate();
+    if(gameStarted){
+        if(firstRound){
+            if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
+                gamePF::setInputStatementHome2Accumulate();
+            }else{
+                gamePF::setInputStatementHome3Accumulate();
+            }
         }else{
-            gamePF::setInputStatementHome3Accumulate();
+            if(turnPlayerIdExpected != id){
+                gamePF::setInputStatementHome2Accumulate();
+            }else{
+                gamePF::setInputStatementHome3Accumulate();
+            }
         }
-    }else{
-        if(turnPlayerIdExpected != id){
-            gamePF::setInputStatementHome2Accumulate();
-        }else{
-            gamePF::setInputStatementHome3Accumulate();
-        }
+        setInputType(inputType::GAMEINT);
     }
-    setInputType(inputType::GAMEINT);
 }
 void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned who){
     spdlog::info("firstRoundTurnHelper Called");
@@ -462,6 +469,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
     }
     roundTurns.clear();
 
+    std::vector<int> removalIds;
     //Anyone whose cards are ended is removed from turnSequence.
     for(auto p: numberOfCards){
         int id1 = std::get<0>(p);
@@ -478,22 +486,31 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
             }
             turnSequence.erase(
                     std::find(turnSequence.begin(), turnSequence.end(),std::get<0>(p)));
+            removalIds.emplace_back(std::get<0>(p));
         }
     }
-    gamePF::setTurnSequence(gamePlayers, turnSequence);
-
-    if(turnSequence.empty()){
-        //game drawn
-        //move back to lobby
-    }else if(turnSequence.size() == 1){
-        int loosingId = *turnSequence.begin();
-        //move back to lobby
-    }else{
-        //game continues
+    for(auto removalId: removalIds){
+        numberOfCards.erase(numberOfCards.find(removalId));
     }
 
-    if(turnPlayerIdExpected == id){
-        assignToTurnAbleCards();
+    if(turnSequence.empty()){
+        //game drawn. move back to lobby
+        std::cout<<"Game Drawn\r\n";
+        gameExitFinished();
+        return;
+    }else if(turnSequence.size() == 1){
+        int loosingId = *turnSequence.begin();
+        //player lost. move back to lobby
+        std::cout<<"Player " << gamePlayers.find(loosingId)->second << " Lost\r\n";
+        gameExitFinished();
+        return;
+    }else{
+        //game continues
+        gamePF::setTurnSequence(gamePlayers, turnSequence);
+
+        if(turnPlayerIdExpected == id){
+            assignToTurnAbleCards();
+        }
     }
 }
 
@@ -595,4 +612,22 @@ void clientLobbyManager::assignToTurnAbleCards(deckSuit suit) {
     for(auto c: myCards.find(suit)->second){
         turnAbleCards.emplace_back(suit, c);
     }
+}
+
+void clientLobbyManager::gameExitFinished(){
+    constants::initializeCards(myCards);
+    gameStarted = false;
+    turnSequence.clear();
+    turnAbleCards.clear();
+    waitingForTurn.clear();
+    numberOfCards.clear();
+    messageTypeExpected.clear();
+    messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
+    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERJOINED);
+    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERLEFT);
+    messageTypeExpected.emplace_back(lobbyMessageType::GAMEFIRSTTURNSERVER);
+    sati::getInstance()->setBase(this, appState::LOBBY);
+    lobbyPF::addOrRemovePlayer(gamePlayers);
+    lobbyPF::setInputStatementHomeAccumulate();
+    setInputType(inputType::LOBBYINT);
 }

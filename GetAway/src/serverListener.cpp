@@ -40,6 +40,16 @@ run()
     sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
 }
 
+void serverListener::runAgain(){
+    // Start accepting a connection
+    acceptor.async_accept(
+            sock,
+            [self = shared_from_this()](errorCode ec)
+            {
+                self->onAccept(ec);
+            });
+}
+
 // Report a failure
 void
 serverListener::
@@ -94,4 +104,15 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
 void serverListener::registerForInputReceival() {
     serverPF::setLobbyMainOnePlayer();
     sati::getInstance()->setBase(this, appState::LOBBY);
+}
+
+void serverListener::shutdown() {
+    acceptor.cancel();
+    nextManager->shutDown();
+    spdlog::info("UseCount of nextManager from serverListener {}", nextManager.use_count());
+    nextManager.reset();
+}
+
+void serverListener::shutdownAcceptor(){
+    acceptor.cancel();
 }

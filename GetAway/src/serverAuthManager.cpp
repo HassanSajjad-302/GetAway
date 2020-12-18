@@ -50,3 +50,15 @@ void serverAuthManager::packetReceivedFromNetwork(std::istream &in, int received
 void serverAuthManager::leave(int id) {
     serverAuthSessions.erase(serverAuthSessions.find(id));
 }
+
+void serverAuthManager::shutDown() {
+    spdlog::info("UseCount of nextManager from serverAuthManager {}", nextManager.use_count());
+    nextManager->shutDown();
+    spdlog::info("UseCount of serverlistener from serverAuthManager {}", serverlistener.use_count());
+    serverlistener.reset();
+    nextManager.reset();
+    for(auto& p: serverAuthSessions){
+        spdlog::info("UseCount of serverAuthSessions from serverAuthManager {}", std::get<1>(p).use_count());
+        std::get<1>(p).reset();
+    }
+}

@@ -22,10 +22,9 @@
 
 class serverLobbyManager : inputRead
 {
-    typedef typeof(playerData::cards) cardType;
-    std::vector<cardType *> debug;
     std::map<int, std::tuple<const std::string,
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
+    inputType inputTypeExpected;
 
     //Following are used for game management only.
     bool gameStarted = false;
@@ -40,10 +39,13 @@ class serverLobbyManager : inputRead
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
     std::shared_ptr<serverGameManager> nextManager;
 
+    //Following Used By ServerAuthManager and in initial setting up of the game.
     std::string playerNameAdvanced;
     std::string playerNameFinal;
 public:
     void setPlayerNameAdvanced(std::string advancedPlayerName);
+
+    void shutDown();
 
 public:
     explicit
@@ -70,7 +72,9 @@ public:
     void startGame();
 
     void doFirstTurnOfFirstRound();
-
+#ifndef NDEBUG
+    void checkForCardsCount();
+#endif
     void initializeGame();
 
     void managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived);
@@ -94,9 +98,15 @@ public:
 
     std::vector<playerData>::iterator roundKingGamePlayerDataIterator();
 
+    void applicationExit();
 private:
     void input(std::string inputString, inputType inputReceivedType) override;
 
     void goBackToServerListener();
+
+    void gameExitFinished();
+
+    void setInputType(inputType type);
+
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

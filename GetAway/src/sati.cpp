@@ -93,10 +93,10 @@ void sati::accumulateBuffersAndPrint(bool lock) {
         toPrint = inputStatementBuffer;
     }
     if(currentAppState == appState::LOBBY) {
-
+        toPrint = inputStatementBuffer;
     }
     if(currentAppState == appState::GAME){
-
+        toPrint = inputStatementBuffer;
     }
     if(lock){
         std::lock_guard lockGuard(m.get());

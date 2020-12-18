@@ -10,7 +10,7 @@
 #include "deckSuit.hpp"
 
 namespace constants{
-    constexpr int SUITSIZE = 1;
+    constexpr int SUITSIZE = 2;
     constexpr int DECKSIZE = SUITSIZE * 4;
 
     int cardsCount(const std::map<deckSuit, std::set<int>>& cards);
