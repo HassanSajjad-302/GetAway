@@ -83,10 +83,17 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 in.read(reinterpret_cast<char*>(&chatMessageInt), sizeof(chatMessageInt));
                 assert(chatMessageInt != id);
                 int arrSize = (receivedPacketSize - 8) + 1; //4 for packety type enum and 4 for the id and 1 for getline
+#if defined(_WIN32) || defined(_WIN64)
+                char* arr = new char[arrSize];
+#endif
+#ifdef __linux__
                 char arr[arrSize];
-                //STEP 3;
+#endif                //STEP 3;
                 in.getline(arr, receivedPacketSize - 8);
                 chatMessageString = std::string(arr);
+#if defined(_WIN32) || defined(_WIN64)
+                delete[] arr;
+#endif
                 messagePF::addAccumulate(gamePlayers.find(chatMessageInt)->second,
                                          chatMessageString);
                 break;

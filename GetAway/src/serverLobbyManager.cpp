@@ -71,10 +71,18 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
         //STEP 2;
         in.read(reinterpret_cast<char*>(&senderId), sizeof(senderId));
         assert(senderId == sessionId);
-        char arr[receivedPacketSize - 4];
+#if defined(_WIN32) || defined(_WIN64)
+        char* arr = new char[receivedPacketSize - 4];
+#endif
+#ifdef __linux__
+		char arr[receivedPacketSize - 4];
+#endif
         //STEP 3;
         in.getline(arr, receivedPacketSize -4);
         managementCHATMESSAGEReceived(std::string(arr), sessionId);
+#if defined(_WIN32) || defined(_WIN64)
+        delete[] arr;
+#endif
     }
     else if(messageTypeReceived == lobbyMessageType::GAMETURNCLIENT && gameStarted){
         spdlog::info("GAMETURNCLIENT received");
@@ -269,7 +277,7 @@ void serverLobbyManager::initializeGame(){
     int normalNumberOfCards = constants::DECKSIZE/gameData.size();
 
     int cardsCount = 0;
-    for(int i=0; i<playersIdList.size(); ++i){
+    for(u_int i=0; i<playersIdList.size(); ++i){
         auto p = playerData(playersIdList[i]);
         if(std::find(playerWithExtraCardIdsList.begin(),playerWithExtraCardIdsList.end(),gameData.find(i)->first) !=
            playerWithExtraCardIdsList.end()){
@@ -321,7 +329,7 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
     }
 
     //first turn message sending
-    for(int i=0; i<gamePlayersData.size(); ++i){
+    for(u_int i=0; i<gamePlayersData.size(); ++i){
         auto& player = gamePlayersData[i];
         int currentIndexGamePlayersData = i;
 
@@ -616,7 +624,7 @@ std::vector<playerData>::iterator serverLobbyManager::roundKingGamePlayerDataIte
 }
 
 bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
-    for(int i=0; i < gamePlayersData.size(); ++i){
+    for(u_int i=0; i < gamePlayersData.size(); ++i){
         if(gamePlayersData[i].id == id){
             index = i;
             return true;

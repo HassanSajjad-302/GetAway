@@ -1,25 +1,11 @@
 //Server
 
 #include "sati.hpp"
-#include "serverListener.hpp"
 #include "serverAuthManager.hpp"
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include "clientAuthManager.hpp"
-#include <boost/asio/signal_set.hpp>
 #include <iostream>
-#include <boost/config.hpp>
 #include <memory>
 #include "serverHome.hpp"
-
-std::string getCompileVersion()
-{
-     char buffer[sizeof(BOOST_PLATFORM) + sizeof(BOOST_COMPILER) +sizeof(__DATE__ )+ 5];
-     sprintf(buffer, "[%s/%s](%s)", BOOST_PLATFORM, BOOST_COMPILER, __DATE__);
-     std::string compileinfo(buffer);
-     return compileinfo;
-}
 
 int
 main(int argc, char* argv[])

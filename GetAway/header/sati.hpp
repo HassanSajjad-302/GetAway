@@ -8,7 +8,6 @@
 #include <set>
 #include <mutex>
 #include <thread>
-#include "boost/asio.hpp"
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
 #include "appState.hpp"
@@ -16,9 +15,10 @@
 #include "gamePF.hpp"
 #include "messagePF.hpp"
 #include "clientHomePF.hpp"
+#include "boost/asio/io_context.hpp"
+
 
 namespace net = boost::asio;
-using namespace net::ip;
 
 class inputRead{
 public:

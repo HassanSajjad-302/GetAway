@@ -5,10 +5,9 @@
 #ifndef GETAWAY_LOBBYPF_HPP
 #define GETAWAY_LOBBYPF_HPP
 
-#include <set>
+#include <map>
 #include <mutex>
 #include <thread>
-#include "boost/asio.hpp"
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
 

@@ -10,8 +10,11 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include <boost/asio.hpp>
 #include "boost/system/error_code.hpp"
+#include "boost/asio/streambuf.hpp"
+#include "boost/asio/ip/tcp.hpp"
+#include "boost/asio/write.hpp"
+#include "boost/asio/read.hpp"
 
 #define LOG
 namespace net = boost::asio;

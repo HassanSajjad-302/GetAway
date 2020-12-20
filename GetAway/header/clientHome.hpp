@@ -5,7 +5,7 @@
 #ifndef GETAWAY_CLIENTHOME_HPP
 #define GETAWAY_CLIENTHOME_HPP
 
-#include "boost/asio.hpp"
+#include "boost/asio/ip/tcp.hpp"
 #include "sati.hpp"
 
 namespace net = boost::asio;

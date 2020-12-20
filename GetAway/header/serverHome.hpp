@@ -6,8 +6,9 @@
 #define GETAWAY_SERVERHOME_HPP
 
 
-#include "boost/asio.hpp"
 #include "sati.hpp"
+#include "boost/asio/io_context.hpp"
+#include "boost/asio/ip/tcp.hpp"
 
 namespace net = boost::asio;
 using namespace net::ip;

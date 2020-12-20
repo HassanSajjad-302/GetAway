@@ -7,7 +7,6 @@
 #include "serverAuthManager.hpp"
 #include "serverPF.hpp"
 namespace net = boost::asio;
-using namespace net::ip;
 using errorCode = boost::system::error_code;
 
 

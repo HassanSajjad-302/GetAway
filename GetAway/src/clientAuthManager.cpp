@@ -2,6 +2,8 @@
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "session.hpp"
+#include "boost/asio/ip/tcp.hpp"
+
 clientAuthManager::clientAuthManager(std::string playerName_, std::string password_) :
 playerName(std::move(playerName_)), password(std::move(password_))
 {

@@ -5,8 +5,8 @@
 #include <iostream>
 #include <utility>
 #include "sati.hpp"
-#include <functional>
 #include "deckSuit.hpp"
+#include "boost/asio/post.hpp"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <conio.h>
@@ -51,7 +51,7 @@ void sati::operator()() {
 
     while(true){
 #if defined(_WIN32) || defined(_WIN64)
-        int c = getch();
+        int c = _getch();
 #endif
 #ifdef __linux__
         int c = getchar();
@@ -62,13 +62,26 @@ void sati::operator()() {
             system("stty cooked");
 #endif
             exit(0);
-        }else if( c == 127){
+        }
+#ifdef __linux__
+            else if( c == 127){
             std::lock_guard<std::mutex> lok(m.get());
             if(!userIncomingInput.empty()){
                 userIncomingInput.pop_back();
             }
             accumulateBuffersAndPrint(false);
-        }else if(c == 10 || c == 13){ //cr pressed
+        }
+#endif
+#if defined(_WIN32) || defined(_WIN64)
+        else if( c == 8){
+            std::lock_guard<std::mutex> lok(m.get());
+            if(!userIncomingInput.empty()){
+                userIncomingInput.pop_back();
+            }
+            accumulateBuffersAndPrint(false);
+        }
+#endif
+        else if(c == 10 || c == 13){ //cr pressed
             std::lock_guard<std::mutex> lok(m.get());
             if(handlerAssigned && (base != nullptr)){
                 net::post(io, [handler = base, expectedInput = receiveInputType,

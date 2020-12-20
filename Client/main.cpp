@@ -1,25 +1,15 @@
 //Client
 
+#include "clientHome.hpp"
 #include "sati.hpp"
 #include "session.hpp"
 #include "clientAuthManager.hpp"
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #include <fstream>
-#include <boost/asio.hpp>
 #include <iostream>
 #include <memory>
 #include <random>
-#include <clientHome.hpp>
-
-
-std::string getCompileVersion()
-{
-     char buffer[sizeof(BOOST_PLATFORM) + sizeof(BOOST_COMPILER) +sizeof(__DATE__ )+ 5];
-     sprintf(buffer, "[%s/%s](%s)", BOOST_PLATFORM, BOOST_COMPILER, __DATE__);
-     std::string compileInfo(buffer);
-     return compileInfo;
-}
 
 //Following link can be helpful
 //https://www.tutorialspoint.com/Read-a-character-from-standard-input-without-waiting-for-a-newline-in-Cplusplus
@@ -30,8 +20,6 @@ using namespace net::ip;
 int
 main(int argc, char* argv[])
 {
-    system("clear");
-
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
     spdlog::set_default_logger(logger);
@@ -43,7 +31,7 @@ main(int argc, char* argv[])
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
 
-    tcp::endpoint endpoint(tcp::v4(),3000);
+    /*tcp::endpoint endpoint(tcp::v4(),3000);
     tcp::socket sock(io);
     sock.connect(endpoint);
     sock.set_option(boost::asio::ip::tcp::no_delay(true));   // enable PSH
@@ -57,14 +45,14 @@ main(int argc, char* argv[])
     name += std::to_string(dist(mt));
     std::make_shared<session<clientAuthManager>>(
             std::move(sock),
-            std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();
+            std::make_shared<clientAuthManager>(std::move(name), "password"))->registerSessionToManager();*/
 
 
 
 
 
-    /*clientHome h(io);
-    h.run();*/
+    clientHome h(io);
+    h.run();
 
 
    /* // Capture SIGINT and SIGTERM to perform a clean shutdown

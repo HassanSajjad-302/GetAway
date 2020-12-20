@@ -7,7 +7,6 @@
 #include <vector>
 #include <chrono>
 #include <iostream>
-#include "boost/asio.hpp"
 #include "session.hpp"
 namespace net = boost::asio;
 using namespace net::ip;

@@ -5,9 +5,9 @@
 #ifndef GETAWAY_GAMEPF_HPP
 #define GETAWAY_GAMEPF_HPP
 #include <set>
+#include <vector>
 #include <mutex>
 #include <thread>
-#include "boost/asio.hpp"
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
 

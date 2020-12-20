@@ -5,7 +5,7 @@
 #ifndef GETAWAY_REPLACEMENTSTREAMBUFF_HPP
 #define GETAWAY_REPLACEMENTSTREAMBUFF_HPP
 
-#include "boost/asio.hpp"
+#include "boost/asio/streambuf.hpp"
 #include <iostream>
 namespace net = boost::asio;
 
