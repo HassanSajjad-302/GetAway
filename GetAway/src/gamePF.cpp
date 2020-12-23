@@ -4,7 +4,11 @@
 
 #include "constants.h"
 #include "gamePF.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
+#endif
 
 
 //For Game
@@ -16,7 +20,7 @@ void gamePF::setInputStatementHome2() {
 
 void gamePF::setInputStatementHome2Accumulate() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setInputStatementHome3() {
@@ -25,7 +29,7 @@ void gamePF::setInputStatementHome3() {
 
 void gamePF::setInputStatementHome3Accumulate() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_) {
@@ -57,7 +61,7 @@ void gamePF::setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_) {
 
 void gamePF::setInputStatementHome3R3Accumulate(const std::vector<Card>& turnAbleCards_) {
     setInputStatementHome3R3(turnAbleCards_);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 //other
 void gamePF::setTurnSequence(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
@@ -70,7 +74,7 @@ void gamePF::setTurnSequence(const std::map<int, std::string> &gamePlayer_, cons
 
 void gamePF::setTurnSequenceAccumulate(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
     setTurnSequence(gamePlayer_, turnSequence_);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setRoundTurns(
@@ -88,7 +92,7 @@ void gamePF::setRoundTurns(
 void gamePF::setRoundTurnsAccumulate(
         const std::vector<std::tuple<int, Card>>& roundTurns, const std::map<int, std::string>& gamePlayers) {
     setRoundTurns(roundTurns, gamePlayers);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::clearTurn() {
@@ -97,7 +101,7 @@ void gamePF::clearTurn() {
 
 void gamePF::clearTurnAccumulate() {
     sati::getInstance()->turns.clear();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setWaitingForTurn(const std::vector<int> &waitingplayersId,
@@ -111,7 +115,7 @@ void gamePF::setWaitingForTurn(const std::vector<int> &waitingplayersId,
 void gamePF::setWaitingForTurnAccumulate(const std::vector<int> &waitingPlayersId,
                                                   const std::map<int, std::string> &gamePlayers) {
     setWaitingForTurn(waitingPlayersId, gamePlayers);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setTimeLeft(int seconds) {
@@ -120,7 +124,7 @@ void gamePF::setTimeLeft(int seconds) {
 
 void gamePF::setTimeLeftAccumulate(int seconds) {
     sati::getInstance()->timeLeft = "Time Left" + std::to_string(seconds) + "s\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setCards(const std::map<deckSuit, std::set<int>> &cards) {
@@ -143,7 +147,7 @@ void gamePF::setCards(const std::map<deckSuit, std::set<int>> &cards) {
 
 void gamePF::setCardsAccumulate(const std::map<deckSuit, std::set<int>> &cards) {
     setCards(cards);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 

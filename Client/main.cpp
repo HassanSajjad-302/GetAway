@@ -4,30 +4,26 @@
 #include "sati.hpp"
 #include "session.hpp"
 #include "clientAuthManager.hpp"
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
+#include "constants.h"
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <random>
 
 //Following link can be helpful
 //https://www.tutorialspoint.com/Read-a-character-from-standard-input-without-waiting-for-a-newline-in-Cplusplus
 
-namespace net = boost::asio;
-using namespace net::ip;
-
-int
-main(int argc, char* argv[])
-{
+#ifdef ANDROID
+void run(){
+#else
+int main(){
+#endif
+#if !defined(NDEBUG) && !defined(ANDROID)
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
     spdlog::set_default_logger(logger);
     logger->flush_on(spdlog::level::info);
-    spdlog::info("Hassan Sajjad");
-#define LOG
-
-    net::io_context io;
+#endif
+    asio::io_context io;
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
 

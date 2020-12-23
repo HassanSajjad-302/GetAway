@@ -2,17 +2,16 @@
 // Created by hassan on 11/6/20.
 //
 
-#include <iostream>
 #include <utility>
 #include "sati.hpp"
 #include "deckSuit.hpp"
-#include "boost/asio/post.hpp"
-
+#include "asio/post.hpp"
+#include "resourceStrings.hpp"
 #if defined(_WIN32) || defined(_WIN64)
 #include <conio.h>
 #endif
 
-sati& sati::getInstanceFirstTime(net::io_context& io_, std::mutex& mut) {
+sati& sati::getInstanceFirstTime(asio::io_context& io_, std::mutex& mut) {
     static sati s{io_, mut};
     oneInstanceOnly = &s;
     return s;
@@ -22,7 +21,7 @@ sati* sati::getInstance(){
     return oneInstanceOnly;
 }
 
-sati::sati(net::io_context &io_, std::mutex& mut) : io{io_}, m{mut}{
+sati::sati(asio::io_context &io_, std::mutex& mut) : io{io_}, m{mut}{
 
 }
 
@@ -35,7 +34,7 @@ void sati::setInputType(inputType nextReceiveInputType) {
 
 void sati::printExitMessage(const std::string& message) {
     std::lock_guard<std::mutex> lockGuard(m);
-    std::cout<<message<<std::endl;
+    resourceStrings::print(message + "\r\n");
 }
 
 void sati::setBase(inputRead *base_, appState currentAppState_) {
@@ -44,26 +43,18 @@ void sati::setBase(inputRead *base_, appState currentAppState_) {
     base = base_;
 }
 
-void sati::operator()() {
+//external
 #ifdef __linux__
-    system("stty raw");
-#endif
 
+void sati::operator()() {
+    system("stty raw");
     while(true){
-#if defined(_WIN32) || defined(_WIN64)
-        int c = _getch();
-#endif
-#ifdef __linux__
         int c = getchar();
-#endif
         if(c == 3) //ctrl + c
         {
-#ifdef __linux__
             system("stty cooked");
-#endif
             exit(0);
         }
-#ifdef __linux__
             else if( c == 127){
             std::lock_guard<std::mutex> lok(m.get());
             if(!userIncomingInput.empty()){
@@ -71,20 +62,10 @@ void sati::operator()() {
             }
             accumulateBuffersAndPrint(false);
         }
-#endif
-#if defined(_WIN32) || defined(_WIN64)
-        else if( c == 8){
-            std::lock_guard<std::mutex> lok(m.get());
-            if(!userIncomingInput.empty()){
-                userIncomingInput.pop_back();
-            }
-            accumulateBuffersAndPrint(false);
-        }
-#endif
         else if(c == 10 || c == 13){ //cr pressed
             std::lock_guard<std::mutex> lok(m.get());
             if(handlerAssigned && (base != nullptr)){
-                net::post(io, [handler = base, expectedInput = receiveInputType,
+                asio::post(io, [handler = base, expectedInput = receiveInputType,
                         str = std::move(userIncomingInput)](){
                     handler->input(str, expectedInput);
                 });
@@ -97,6 +78,51 @@ void sati::operator()() {
             accumulateBuffersAndPrint(true);
         }
     }
+}
+#endif
+
+//External
+#if defined(_WIN32) || defined(_WIN64)
+
+void sati::operator()() {
+    while(true){
+        int c = _getch();
+        if(c == 3) //ctrl + c
+        {
+            exit(0);
+        }
+        else if( c == 8){
+            std::lock_guard<std::mutex> lok(m.get());
+            if(!userIncomingInput.empty()){
+                userIncomingInput.pop_back();
+            }
+            accumulateBuffersAndPrint(false);
+        }
+        else if(c == 10 || c == 13){ //cr pressed
+            std::lock_guard<std::mutex> lok(m.get());
+            if(handlerAssigned && (base != nullptr)){
+                asio::post(io, [handler = base, expectedInput = receiveInputType,
+                        str = std::move(userIncomingInput)](){
+                    handler->input(str, expectedInput);
+                });
+                handlerAssigned = false;
+                userIncomingInput.clear();
+            }
+        }
+        else{
+            userIncomingInput += c;
+            accumulateBuffersAndPrint(true);
+        }
+    }
+}
+#endif
+
+void sati::accumulateBuffersAndPrint() {
+    accumulateBuffersAndPrint(true);
+}
+
+void sati::accumulatePrint(){
+    accumulateBuffersAndPrint(true);
 }
 
 void sati::accumulateBuffersAndPrint(bool lock) {
@@ -144,15 +170,6 @@ void sati::accumulateBuffersAndPrint(bool lock) {
         toPrint += userIncomingInput;
     }
 #endif
-#ifdef __linux__
-    system("clear");
-#endif
-#if defined(_WIN32) || defined(_WIN64)
-    system("cls");
-#endif
-    std::cout<<toPrint;
-}
 
-void sati::accumulatePrint(){
-    accumulateBuffersAndPrint(true);
+    resourceStrings::clearAndPrint(toPrint);
 }

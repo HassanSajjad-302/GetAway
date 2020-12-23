@@ -5,11 +5,9 @@
 #ifndef GETAWAY_REPLACEMENTSTREAMBUFF_HPP
 #define GETAWAY_REPLACEMENTSTREAMBUFF_HPP
 
-#include "boost/asio/streambuf.hpp"
-#include <iostream>
-namespace net = boost::asio;
+#include "asio/streambuf.hpp"
 
-class replacementStreamBuff : public net::streambuf {
+class replacementStreamBuff : public asio::streambuf {
 public:
     void evaluatePointers();
     replacementStreamBuff();

@@ -6,10 +6,7 @@
 #include <unordered_set>
 #include <vector>
 #include <chrono>
-#include <iostream>
 #include "session.hpp"
-namespace net = boost::asio;
-using namespace net::ip;
 
 //class clientAuthenticationManager;
 class clientAuthManager

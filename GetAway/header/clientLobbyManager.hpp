@@ -7,11 +7,13 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include <iostream>
 #include "session.hpp"
 #include "messageTypeEnums.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
-#include "deckSuit.hpp"
+#endif#include "deckSuit.hpp"
 
 enum whoTurned{
     CLIENT,
@@ -31,7 +33,7 @@ class clientLobbyManager : inputRead {
     void input(std::string inputString, inputType inputReceivedType) override;
 
     //TODO
-    //Following two are used for print by sati.cpp
+    //Following two are used for clearAndPrint by sati.cpp
     //Should be part of some other struct
     std::string chatMessageString;
     int chatMessageInt{};

@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <vector>
 #include <chrono>
-#include <iostream>
 #include "serverLobbyManager.hpp"
 #include "serverListener.hpp"
 // Represents the shared server state

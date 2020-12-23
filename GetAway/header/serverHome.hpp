@@ -6,17 +6,19 @@
 #define GETAWAY_SERVERHOME_HPP
 
 
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
-#include "boost/asio/io_context.hpp"
-#include "boost/asio/ip/tcp.hpp"
+#endif#include "asio/io_context.hpp"
+#include "asio/ip/tcp.hpp"
 
-namespace net = boost::asio;
-using namespace net::ip;
+using namespace asio::ip;
 
 class serverHome :inputRead, public std::enable_shared_from_this<serverHome>{
 
-    net::io_context& io;
-    net::executor_work_guard<decltype(io.get_executor())> guard;
+    asio::io_context& io;
+    asio::executor_work_guard<decltype(io.get_executor())> guard;
     tcp::socket sock;
     inputType inputTypeExpected;
     std::string myName = "Player";
@@ -24,7 +26,7 @@ class serverHome :inputRead, public std::enable_shared_from_this<serverHome>{
     unsigned short int port = 3000;
     std::vector<std::tuple<std::string, std::string, std::string>> registeredServers;//ip-address, port-number, server-name
 public:
-    explicit serverHome(net::io_context& io_);
+    explicit serverHome(asio::io_context& io_);
     void run();
     void input(std::string inputString, inputType inputReceivedType) override;
     bool inputHelper(const std::string& inputString, int lower, int upper, inputType notInRange_,

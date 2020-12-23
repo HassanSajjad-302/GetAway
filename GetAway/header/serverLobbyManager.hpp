@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <vector>
 #include <chrono>
-#include <iostream>
 #include <map>
 #include <tuple>
 #include "session.hpp"
@@ -18,7 +17,11 @@
 #include "messageTypeEnums.hpp"
 #include "playerData.hpp"
 #include "deckSuit.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
+#endif
 
 class serverLobbyManager : inputRead
 {

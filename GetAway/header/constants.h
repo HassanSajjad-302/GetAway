@@ -9,6 +9,10 @@
 #include <set>
 #include "deckSuit.hpp"
 
+#if !defined(NDEBUG) && !defined(ANDROID)
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#endif
 namespace constants{
     constexpr int SUITSIZE = 2;
     constexpr int DECKSIZE = SUITSIZE * 4;
@@ -16,12 +20,13 @@ namespace constants{
     int cardsCount(const std::map<deckSuit, std::set<int>>& cards);
 
     void initializeCards(std::map<deckSuit, std::set<int>>& cards);
+
+    template<typename... T>
+    inline void Log(const char*p, T... args){
+#if !defined(NDEBUG) && !defined(ANDROID)
+        spdlog::info(p, args...);
+#endif
+    }
 }
 
-#define LOG
-#endif //GETAWAY_LOG_MACRO_HPP
-
-#ifdef LOG
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
-#endif //GETAWAY_CONSTANTS_H
+#endif

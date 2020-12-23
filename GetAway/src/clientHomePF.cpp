@@ -2,7 +2,11 @@
 // Created by hassan on 12/7/20.
 //
 
-#include <sati.hpp>
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
+#include "sati.hpp"
+#endif
 #include "clientHomePF.hpp"
 
 void clientHomePF::setInputStatementHome7() {
@@ -12,7 +16,7 @@ void clientHomePF::setInputStatementHome7() {
 
 void clientHomePF::setInputStatementMAIN() {
     setInputStatementHome7();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementHome7R1() {
@@ -21,7 +25,7 @@ void clientHomePF::setInputStatementHome7R1() {
 
 void clientHomePF::setInputStatementIPADDRESS() {
     setInputStatementHome7R1();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string, std::string>>& servers) {
@@ -37,7 +41,7 @@ void clientHomePF::setInputStatementHome7R2(const std::vector<std::tuple<std::st
 
 void clientHomePF::setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string, std::string>>& servers){
     setInputStatementHome7R2(servers);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setErrorMessageWrongIpAddress() {
@@ -46,7 +50,7 @@ void clientHomePF::setErrorMessageWrongIpAddress() {
 
 void clientHomePF::setErrorMessageWrongIpAddressAccumulate() {
     setErrorMessageWrongIpAddress();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementHome7R1R() {
@@ -55,7 +59,7 @@ void clientHomePF::setInputStatementHome7R1R() {
 
 void clientHomePF::setInputStatementPORTNUMBER() {
     setInputStatementHome7R1R();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementHome7R1RR() {
@@ -64,7 +68,7 @@ void clientHomePF::setInputStatementHome7R1RR() {
 
 void clientHomePF::setInputStatementASSIGNSERVERNAME() {
     setInputStatementHome7R1RR();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setErrorMessageWrongPortNumber() {
@@ -73,10 +77,10 @@ void clientHomePF::setErrorMessageWrongPortNumber() {
 
 void clientHomePF::setErrorMessageWrongPortnNumberAccumulate() {
     setErrorMessageWrongPortNumber();
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementConnectingToServer(const std::string& serverName){
     sati::getInstance()->inputStatementBuffer = "Connecting To Server " + serverName + ". To Cancel Connection Press 1\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }

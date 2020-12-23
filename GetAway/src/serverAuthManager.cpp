@@ -1,7 +1,8 @@
 #include "serverAuthManager.hpp"
-
 #include <utility>
 #include "messageTypeEnums.hpp"
+#include "constants.h"
+
 serverAuthManager::
 serverAuthManager(std::string password_, std::shared_ptr<serverListener> listener):
 password(std::move(password_)),
@@ -52,13 +53,13 @@ void serverAuthManager::leave(int id) {
 }
 
 void serverAuthManager::shutDown() {
-    spdlog::info("UseCount of nextManager from serverAuthManager {}", nextManager.use_count());
+    constants::Log("UseCount of nextManager from serverAuthManager {}", nextManager.use_count());
     nextManager->shutDown();
-    spdlog::info("UseCount of serverlistener from serverAuthManager {}", serverlistener.use_count());
+    constants::Log("UseCount of serverlistener from serverAuthManager {}", serverlistener.use_count());
     serverlistener.reset();
     nextManager.reset();
     for(auto& p: serverAuthSessions){
-        spdlog::info("UseCount of serverAuthSessions from serverAuthManager {}", std::get<1>(p).use_count());
+        constants::Log("UseCount of serverAuthSessions from serverAuthManager {}", std::get<1>(p).use_count());
         std::get<1>(p).reset();
     }
 }

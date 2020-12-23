@@ -2,14 +2,14 @@
 // Created by hassan on 12/9/20.
 //
 
+#include "resourceStrings.hpp"
 #include "serverHome.hpp"
 #include "serverPF.hpp"
-#include "iostream"
 #include "serverAuthManager.hpp"
 #include <memory>
 #include <regex>
 
-serverHome::serverHome(net::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
+serverHome::serverHome(asio::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
 
 }
 
@@ -38,7 +38,7 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                 }else if(input == 3){
                     //Exit
                     if(sock.is_open()){
-                        boost::system::error_code ec;
+                        asio::error_code ec;
                         sock.shutdown(tcp::socket::shutdown_both, ec);
                         sock.close();
                     }
@@ -55,13 +55,13 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                 serverPF::setHomeMain();
                 setInputType(inputType::HOMEMAIN);
             }else{
-                std::cout<<"Please enter valid port number"<<std::endl;
+                resourceStrings::print("Please enter valid port number\r\n");
                 setInputType(inputType::HOMEPORTNUMBER);
                 serverPF::setErrorMessageWrongPortNumber();
             }
         }
     }else{
-        std::cout<<"Unexpected input type input received\r\n";
+        resourceStrings::print("Unexpected input type input received\r\n");
     }
 }
 
@@ -75,14 +75,14 @@ bool serverHome::inputHelper(const std::string& inputString, int lower, int uppe
         }else{
             sati::getInstance()->accumulatePrint();
             sati::getInstance()->setInputType(notInRange_);
-            std::cout<<"Please enter integer in range \r"<<std::endl;
+            resourceStrings::print("Please enter integer in range\r\n");
             return false;
         }
     }
     catch (std::invalid_argument& e) {
         sati::getInstance()->accumulatePrint();
         sati::getInstance()->setInputType(invalidInput_);
-        std::cout<<"Invalid Input. \r"<<std::endl;
+        resourceStrings::print("Invalid Input\r\n");
         return false;
     }
 }

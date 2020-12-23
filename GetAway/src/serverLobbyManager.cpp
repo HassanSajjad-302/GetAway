@@ -4,6 +4,7 @@
 #include <cassert>
 #include "constants.h"
 #include "serverPF.hpp"
+#include "resourceStrings.hpp"
 serverLobbyManager::
 serverLobbyManager(std::shared_ptr<serverListener> serverlistener_): serverlistener(std::move(serverlistener_)){
    // nextManager = std::make_shared<serverGameManager>
@@ -48,13 +49,13 @@ leave(int id)
 {
     if(!gameStarted){
         sendPLAYERLEFTToAllExceptOne(id);
-        std::cout << "Player Left: " << std::get<0>(gameData.find(id)->second) << std::endl;
+        resourceStrings::print("Player Left: " + std::get<0>(gameData.find(id)->second) + "\r\n");
         gameData.erase(gameData.find(id));
         if(gameData.size() == 1){
             goBackToServerListener();
         }
     }else{
-        std::cout<<"Player Left During The Game\r\n";
+        resourceStrings::print("Player Left During The Game\r\n");
         exit(-1);
     }
 
@@ -85,27 +86,27 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
 #endif
     }
     else if(messageTypeReceived == lobbyMessageType::GAMETURNCLIENT && gameStarted){
-        spdlog::info("GAMETURNCLIENT received");
+        constants::Log("GAMETURNCLIENT received");
         int index;
         if(indexGamePlayerDataFromId(sessionId, index)){
             if(gamePlayersData[index].turnExpected) {
-                spdlog::info("Turn Expected from this GameTurnClient");
+                constants::Log("Turn Expected from this GameTurnClient");
                 deckSuit suit;
                 int receivedCardNumber;
                 in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
                 in.read(reinterpret_cast<char *>(&receivedCardNumber), sizeof(receivedCardNumber));
                 managementGAMETURNCLIENTReceived(sessionId, Card(suit, receivedCardNumber));
             }else{
-                spdlog::info("Turn Not Expected From This Client");
+                constants::Log("Turn Not Expected From This Client");
             }
         }else{
-            std::cout<<"playerData with this id could not be found in the gamePlayersData. "
-                       "Most likely it was removed because it's game ended. But still receieved"
-                       "a GAMETURNCLIENT message from it"<<std::endl;
+            resourceStrings::print("playerData with this id could not be found in the gamePlayersData. "
+                                   "Most likely it was removed because it's game ended. But still receieved"
+                                   "a GAMETURNCLIENT message from it\r\n");
         }
     }
     else{
-        std::cout<<"Unexpected Packet Type Received in class serverLobbyManager"<<std::endl;
+        resourceStrings::print("Unexpected Packet Type Received in class serverLobbyManager\r\n");
     }
     std::get<1>(gameData.find(sessionId)->second)->receiveMessage();
 }
@@ -172,8 +173,8 @@ void serverLobbyManager::sendCHATMESSAGEIDToAllExceptOne(const std::string &chat
 }
 
 void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
-    spdlog::info("Sending GameTurnServerToAllExceptOne to all. Called By Session-Id {}", sessionId);
-    spdlog::info("Sending Card {} {}", deckSuitValue::displaySuitType[(int) card.suit],
+    constants::Log("Sending GameTurnServerToAllExceptOne to all. Called By Session-Id {}", sessionId);
+    constants::Log("Sending Card {} {}", deckSuitValue::displaySuitType[(int) card.suit],
                  deckSuitValue::displayCards[card.cardNumber]);
     for(auto& player: gameData){
         if(player.first != sessionId){
@@ -221,13 +222,14 @@ void serverLobbyManager::managementJoin(int excitedSessionId) {
     playerSession->sendMessage(&serverLobbyManager::uselessWriteFunction);
 
     sendPLAYERJOINEDToAllExceptOne(excitedSessionId);
-    std::cout << "Player Joined: " << std::get<0>(gameData.find(excitedSessionId)->second) << "\r\n";
+    resourceStrings::print("Player Joined: " + std::get<0>(gameData.find(excitedSessionId)->second) + "\r\n");
+
 }
 
 
 void serverLobbyManager::managementCHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId) {
     sendCHATMESSAGEIDToAllExceptOne(chatMessageReceived, excitedSessionId);
-    std::cout<<"Message Sent To All Clients\r\n" << std::endl;
+    resourceStrings::print("Message Sent To All Clients\r\n");
 }
 void serverLobbyManager::uselessWriteFunction(int id){
 
@@ -393,10 +395,11 @@ void serverLobbyManager::checkForCardsCount(){
         cardsCount += constants::cardsCount(p.cards);
     }
     if(cardsCount != constants::DECKSIZE){
-        std::cout<< "Flushed Cards " << constants::cardsCount(flushedCards) << std::endl;
-        std::cout<< "Round Turns " <<roundTurns.size() << std::endl;
+        resourceStrings::print("Flushed Cards " + std::to_string(constants::cardsCount(flushedCards)) + "\r\n");
+        resourceStrings::print("Round Turns " + std::to_string(roundTurns.size()) + "\r\n");
         for(auto& p: gamePlayersData){
-            std::cout<< "Player Id " << p.id << "  Player Cards Size " <<constants::cardsCount(p.cards) << std::endl;
+            resourceStrings::print("Player Id " + std::to_string(p.id) + "  Player Cards Size " +
+            std::to_string(constants::cardsCount(p.cards)) + "\r\n");
         }
     }
     assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
@@ -408,8 +411,8 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
     checkForCardsCount();
 #endif
 
-    spdlog::info("Game Turn Client Received From{}", std::get<0>(gameData.find(sessionId)->second));
-    spdlog::info("Card Received Is {} {}", deckSuitValue::displaySuitType[(int)cardReceived.suit],
+    constants::Log("Game Turn Client Received From{}", std::get<0>(gameData.find(sessionId)->second));
+    constants::Log("Card Received Is {} {}", deckSuitValue::displaySuitType[(int)cardReceived.suit],
                  deckSuitValue::displayCards[cardReceived.cardNumber]);
     //iterating over gamePlayerData
     auto turnReceivedPlayer = std::find_if(gamePlayersData.begin(), gamePlayersData.end(),
@@ -419,25 +422,25 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
     assert(turnReceivedPlayer != gamePlayersData.end() && "no gamePlayerData id matches with sessionId");
     auto iterSuit = turnReceivedPlayer->cards.find(cardReceived.suit);
     if(iterSuit == turnReceivedPlayer->cards.end()) {
-        std::cout << "A Client Turn Received But Not Acted Upon. Card Number not in card list user.\r\n";
+        resourceStrings::print("A Client Turn Received But Not Acted Upon. Card Number not in card list user.\r\n");
         return;
     }
     auto iter = iterSuit->second.find(cardReceived.cardNumber);
     if(iter == iterSuit->second.end()) {
-        std::cout << "A Client Turn Received But Not Acted Upon. Card Number not in card list user.\r\n";
+        resourceStrings::print("A Client Turn Received But Not Acted Upon. Card Number not in card list user.\r\n");
         return;
     }
     if(firstRound){
         if(turnReceivedPlayer->turnTypeExpected == turnType::FIRSTROUNDANY){
-            spdlog::info("First Round Any was expected from this user");
+            constants::Log("First Round Any was expected from this user");
             doTurnReceivedOfFirstRound(turnReceivedPlayer, cardReceived);
         }else{
             if(cardReceived.suit != deckSuit::SPADE) {
-                std::cout << "A Turn Received But Not Acted Upon. In First Turn Client"
-                             "Turned Other Card When It Had The Spade\r\n";
+                resourceStrings::print("A Turn Received But Not Acted Upon. In First Turn Client"
+                                       "Turned Other Card When It Had The Spade\r\n");
                 return;
             }
-            spdlog::info("First Round SPADE was expected from this user");
+            constants::Log("First Round SPADE was expected from this user");
             doTurnReceivedOfFirstRound(turnReceivedPlayer, cardReceived);//paste that code after this line
         }
 
@@ -499,18 +502,19 @@ void serverLobbyManager::Turn(std::vector<playerData>::iterator currentTurnPlaye
 void serverLobbyManager::performFirstOrMiddleTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool firstTurn){
 
-    spdlog::info("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(firstTurn));
+    constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(firstTurn));
 
     if(firstTurn){
         assert(roundTurns.empty() && "If it is first turn then roundTurns should be empty");
-        spdlog::info("First Turn Of The Round Is Received. Suit Set For The Round {}",
+        constants::Log("First Turn Of The Round Is Received. Suit Set For The Round {}",
                      deckSuitValue::displaySuitType[(int) card.suit]);
         //First Turn Was Expected
         suitOfTheRound = card.suit;
     }else{
         assert(!roundTurns.empty() && "If it is not first turn then roundTurns should not be empty");
         if(card.suit != suitOfTheRound){
-            std::cout<<"A Turn Received But Not Acted Upon Because Card is not of the required suit"<<std::endl;
+            resourceStrings::print("A Turn Received But Not Acted Upon Because"
+                                   " Card is not of the required suit\r\n");
         }
     }
 
@@ -529,27 +533,28 @@ void serverLobbyManager::performFirstOrMiddleTurn(
     if(nextGamePlayerIterator->cards.find(suitOfTheRound)->second.empty()) {
         nextGamePlayerIterator->turnTypeExpected = turnType::THULLA;
         nextGamePlayerIterator->turnExpected = true;
-        spdlog::info("nextGamePlayerIterator Thulla Expected. Id {}", nextGamePlayerIterator->id);
+        constants::Log("nextGamePlayerIterator Thulla Expected. Id {}", nextGamePlayerIterator->id);
     }else{
         if(roundTurns.size() == gamePlayersData.size() -1){
-            spdlog::info("nextGamePlayerIterator ROUNDLASTTURN Expected. Id {}", nextGamePlayerIterator->id);
+            constants::Log("nextGamePlayerIterator ROUNDLASTTURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDLASTTURN;
         }else{
-            spdlog::info("nextGamePlayerIterator ROUNDMIDDLETURN Expected. Id {}", nextGamePlayerIterator->id);
+            constants::Log("nextGamePlayerIterator ROUNDMIDDLETURN Expected. Id {}", nextGamePlayerIterator->id);
             nextGamePlayerIterator->turnTypeExpected = turnType::ROUNDMIDDLETURN;
         }
-        spdlog::info("Waiting For Turn. Turn Expected Called");
+        constants::Log("Waiting For Turn. Turn Expected Called");
         nextGamePlayerIterator->turnExpected = true;
     }
 }
 
 void serverLobbyManager::performLastOrThullaTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool lastTurn){
-    spdlog::info("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(lastTurn));
+    constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(lastTurn));
     std::vector<playerData>::iterator roundKing;
     if(lastTurn){
         if(card.suit != suitOfTheRound){
-            std::cout<<"A Turn Received But Not Acted Upon Because Card is not of the required suit"<<std::endl;
+            resourceStrings::print("A Turn Received But Not Acted Upon"
+                                   " Because Card is not of the required suit\r\n");
             return;
         }
         roundTurns.emplace_back(currentTurnPlayer->id, card);
@@ -657,7 +662,7 @@ void serverLobbyManager::input(std::string inputString, inputType inputReceivedT
                 //Exit The Application Here
                 applicationExit();
             }else{
-                std::cout<<"Wrong Input\r\n";
+                resourceStrings::print("Wrong Input\r\n");
                 setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
             }
         }
@@ -666,14 +671,14 @@ void serverLobbyManager::input(std::string inputString, inputType inputReceivedT
                 //Exit The Application Here Amid Game
                 //TODO
             }else{
-                std::cout<<"Wrong Input\r\n";
+                resourceStrings::print("Wrong Input\r\n");
                 setInputType(inputType::GAMEINT);
             }
         }else{
-            std::cout<<"No Handler For This InputType\r\n";
+            resourceStrings::print("No Handler For This InputType\r\n");
         }
     }else{
-        std::cout<<"Message Of Unexpected Input Type Received\r\n";
+        resourceStrings::print("Message Of Unexpected Input Type Received\r\n");
     }
 }
 
@@ -707,14 +712,14 @@ void serverLobbyManager::gameExitFinished(){
 }
 
 void serverLobbyManager::shutDown() {
-    spdlog::info("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
+    constants::Log("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
     serverlistener.reset();
-    spdlog::info("UseCount of GameManager from serverLobbyManager {}", nextManager.use_count());
+    constants::Log("UseCount of GameManager from serverLobbyManager {}", nextManager.use_count());
     nextManager.reset();
     for(auto &p: gameData){
-        std::get<1>(p.second)->sock.shutdown(net::socket_base::shutdown_both);
+        std::get<1>(p.second)->sock.shutdown(asio::socket_base::shutdown_both);
         std::get<1>(p.second)->sock.close();
-        spdlog::info("UseCount of serverLobbySession from serverLobbyManager {}", std::get<1>(p.second).use_count());
+        constants::Log("UseCount of serverLobbySession from serverLobbyManager {}", std::get<1>(p.second).use_count());
         std::get<1>(p.second).reset();
     }
 }

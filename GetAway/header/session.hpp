@@ -5,33 +5,32 @@
 #ifndef GETAWAY_SESSION_HPP
 #define GETAWAY_SESSION_HPP
 
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 #include <queue>
-#include "boost/system/error_code.hpp"
-#include "boost/asio/streambuf.hpp"
-#include "boost/asio/ip/tcp.hpp"
-#include "boost/asio/write.hpp"
-#include "boost/asio/read.hpp"
+#include "asio/error_code.hpp"
+#include "asio/streambuf.hpp"
+#include "asio/ip/tcp.hpp"
+#include "asio/write.hpp"
+#include "asio/read.hpp"
+#include "resourceStrings.hpp"
 
-#define LOG
-namespace net = boost::asio;
-using namespace net::ip;
-using errorCode = boost::system::error_code;
+
+using namespace asio::ip;
+using errorCode = asio::error_code;
 
 template <typename T, bool ID = false>
 class session : public std::enable_shared_from_this<session<T, false>>
 {
     std::shared_ptr<T> managerPtr;
-    boost::asio::streambuf sessionStreamBuffInput;
+    asio::streambuf sessionStreamBuffInput;
     std::istream in{&sessionStreamBuffInput};
-    net::streambuf sessionStreamBuffOutput;
+    asio::streambuf sessionStreamBuffOutput;
 public:
     std::ostream out{&sessionStreamBuffOutput};
 private:
-    std::queue<std::vector<net::const_buffer>> sendingMessagesQueue;
+    std::queue<std::vector<asio::const_buffer>> sendingMessagesQueue;
     bool allPacketsReceived = true;
 
     static void fail(errorCode ec, char const* what);
@@ -72,11 +71,12 @@ void
 session<T, ID>::
 fail(errorCode ec, char const* what)
 {
-    // Don't report on canceled operations
-    if(ec == net::error::operation_aborted)
-        return;
 
-    std::cerr << what << ": " << ec.message() << "\n";
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\n");
+
+    // Don't report on canceled operations
+    if(ec == asio::error::operation_aborted)
+        return;
 }
 
 
@@ -87,14 +87,14 @@ sendMessage(void (T::*func)()) {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
-    std::vector<net::const_buffer> vec;
+    std::vector<asio::const_buffer> vec;
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
     vec.emplace_back(sessionStreamBuffOutput.data());
 
     sendingMessagesQueue.emplace(std::move(vec));
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
-    net::async_write(sock, sendingMessagesQueue.front(),
+    asio::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
 
@@ -146,7 +146,7 @@ readMore(errorCode ec, int firstRead) {
         } else if (packetSize > waitingForServiceBody) {
             //if it has come here then it means that consumeSize is firstRead plus 1500 which is standard read.
             int remainingPacket = packetSize - waitingForServiceBody;
-            net::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
+            asio::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
                             [self = this->shared_from_this(), waitingForServiceBody, firstRead, remainingPacket](
                                     errorCode ec, std::size_t secondRead) {
                                 if (ec)
@@ -176,14 +176,14 @@ class session<T, true> : public std::enable_shared_from_this<session<T,true>>
 {
     int id= 0;
     std::shared_ptr<T> managerPtr;
-    boost::asio::streambuf sessionStreamBuffInput;
+    asio::streambuf sessionStreamBuffInput;
     std::istream in{&sessionStreamBuffInput};
-    boost::asio::streambuf sessionStreamBuffOutput;
+    asio::streambuf sessionStreamBuffOutput;
 public:
     std::ostream out{&sessionStreamBuffOutput};
 
 private:
-    std::queue<std::vector<net::const_buffer>> sendingMessagesQueue;
+    std::queue<std::vector<asio::const_buffer>> sendingMessagesQueue;
 
     void fail(errorCode ec, char const* what);
     void readMore(errorCode ec, int bytes);
@@ -200,11 +200,6 @@ public:
     ~session();
 
 };
-
-namespace net = boost::asio;
-using namespace net::ip;
-using errorCode = boost::system::error_code;
-//------------------------------------------------------------------------------
 
 template <typename T>
 session<T, true>::
@@ -231,9 +226,9 @@ void
 session<T, true>::
 fail(errorCode ec, char const* what)
 {
-    if(ec == net::error::operation_aborted)
+    if(ec == asio::error::operation_aborted)
         return;
-    std::cerr << what << ": " << ec.message() << "\n";
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\n");
     managerPtr->leave(id);
 }
 
@@ -244,14 +239,14 @@ sendMessage(void (T::*func)(int id)) {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
-    std::vector<net::const_buffer> vec;
+    std::vector<asio::const_buffer> vec;
     vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
     vec.emplace_back(sessionStreamBuffOutput.data());
 
     sendingMessagesQueue.emplace(std::move(vec));
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
-    net::async_write(sock, sendingMessagesQueue.front(),
+    asio::async_write(sock, sendingMessagesQueue.front(),
                      [self = this->shared_from_this(), func](
                              errorCode ec, std::size_t bytes) {
                          if(ec){
@@ -300,7 +295,7 @@ readMore(errorCode ec, int firstRead) {
         } else if (packetSize > waitingForServiceBody) {
             //if it has come here then it means that consumeSize is firstRead plus 1500 which is standard read.
             int remainingPacket = packetSize - waitingForServiceBody;
-            net::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
+            asio::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
                             [self = this->shared_from_this(), waitingForServiceBody, firstRead, remainingPacket](
                                     errorCode ec, std::size_t secondRead) {
                                 if (ec)

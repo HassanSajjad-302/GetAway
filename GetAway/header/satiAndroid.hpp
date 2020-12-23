@@ -1,12 +1,7 @@
-//
-// Created by hassan on 11/6/20.
-//
-
 #ifndef GETAWAY_SATI_HPP
 #define GETAWAY_SATI_HPP
 
 #include <set>
-#include <mutex>
 #include <thread>
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
@@ -26,13 +21,9 @@ public:
 class sati {
 private:
     asio::io_context& io;
-    std::reference_wrapper<std::mutex> m; //This mutex needs to be locked when this class members changes.
-    // Or some other thread wants to clearAndPrint on screen.
     appState currentAppState;
-    //Buffers For Holding And RePrinting
-    std::string userIncomingInput;
-    void accumulateBuffersAndPrint(bool lock);
 public:
+    //Buffers For Holding And RePrinting
     std::string inputStatementBuffer;
 
 #ifdef CLIENTMACRO
@@ -60,7 +51,7 @@ public:
 
     void accumulateBuffersAndPrint();
 
-    explicit sati(asio::io_context& io_, std::mutex& mut);
+    explicit sati(asio::io_context& io_);
     static inline sati* oneInstanceOnly;
 
     friend class lobbyPF;
@@ -68,12 +59,12 @@ public:
     friend class gamePF;
     friend class messagePF;
 
-    static sati& getInstanceFirstTime(asio::io_context& io_, std::mutex& mut);
+    static sati& getInstanceFirstTime(asio::io_context& io_);
     static sati* getInstance();
     void setInputType(inputType nextReceiveInputType);
     void printExitMessage(const std::string& message);
     void setBase(inputRead* base_, appState currentAppState_);
-    void operator()();
+    void operator()(std::string userIncomingInput);
 
     inputType receiveInputType;
     void accumulatePrint();

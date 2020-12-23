@@ -3,7 +3,11 @@
 //
 
 #include "lobbyPF.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
+#endif
 
 //USED ONLY FOR LOBBY
 //input-statement functions
@@ -12,7 +16,7 @@ void lobbyPF::setInputStatementHome() {
 }
 void lobbyPF::setInputStatementHomeAccumulate() {
     sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 //others
@@ -27,5 +31,5 @@ void lobbyPF::addOrRemovePlayer(const std::map<int, std::string> &gamePlayer_) {
 
 void lobbyPF::addOrRemovePlayerAccumulate(const std::map<int, std::string> &gamePlayer_) {
     addOrRemovePlayer(gamePlayer_);
-    sati::getInstance()->accumulateBuffersAndPrint(true);
+    sati::getInstance()->accumulateBuffersAndPrint();
 }

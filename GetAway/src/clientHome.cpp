@@ -3,11 +3,12 @@
 //
 
 #include "clientHome.hpp"
-#include "iostream"
 #include "clientAuthManager.hpp"
 #include <memory>
 #include <regex>
-clientHome::clientHome(net::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
+#include "resourceStrings.hpp"
+
+clientHome::clientHome(asio::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
 
 }
 
@@ -92,7 +93,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     //Join Server
                     if(registeredServers.empty()){
                         setInputType(inputType::HOMEMAIN);
-                        std::cout<<"No Registered Servers\r\n";
+                        resourceStrings::print("No Registered Servers\r\n");
                     }else{
                         clientHomePF::setInputStatementSELECTSERVER(registeredServers);
                         setInputType(inputType::HOMESELECTSERVER);
@@ -108,7 +109,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                 }else if(input == 7){
                     //Exit
                     if(sock.is_open()){
-                        boost::system::error_code ec;
+                        asio::error_code ec;
                         sock.shutdown(tcp::socket::shutdown_both, ec);
                         sock.close();
                     }
@@ -124,7 +125,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                 clientHomePF::setInputStatementPORTNUMBER();
                 setInputType(inputType::HOMEPORTNUMBER);
             }else{
-                std::cout<<"Please enter valid ip address"<<std::endl;
+                resourceStrings::print("Please enter valid ip address\r\n");
                 setInputType(inputType::HOMEIPADDRESS);
             }
         }else if(inputReceivedType == inputType::HOMEPORTNUMBER){
@@ -134,7 +135,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                 clientHomePF::setInputStatementASSIGNSERVERNAME();
                 setInputType(inputType::HOMEASSIGNSERVERNAME);
             }else{
-                std::cout<<"Please enter valid port number"<<std::endl;
+                resourceStrings::print("Please enter valid port number\r\n");
                 setInputType(inputType::HOMEPORTNUMBER);
             }
         }else if(inputReceivedType == inputType::HOMEASSIGNSERVERNAME){
@@ -149,7 +150,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                 --input;
                 sock.async_connect(tcp::endpoint(make_address_v4(std::get<0>(registeredServers[input])),
                                                  std::stoi(std::get<1>(registeredServers[input]))),
-                                                 [self = this](boost::system::error_code ec){
+                                                 [self = this](asio::error_code ec){
                     if(ec){
                         self->CONNECTTOSERVERFail(ec);
                     }else{
@@ -163,21 +164,21 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             int input;
             if(inputHelper(inputString, 1, 1,inputType::HOMECONNECTTINGOSERVER,
                            inputType::HOMECONNECTTINGOSERVER,input)){
-                boost::system::error_code ec;
+                asio::error_code ec;
                 sock.shutdown(tcp::socket::shutdown_both, ec);
                 sock.close();
             }
         }
     }else{
-        std::cout<<"Unexpected input type input received"<<std::endl;
+        resourceStrings::print("Unexpected input type input received\r\n");
     }
 }
 
-void clientHome::CONNECTTOSERVERFail(boost::system::error_code ec){
-    std::cout<<ec<<std::endl;
+void clientHome::CONNECTTOSERVERFail(asio::error_code ec){
+    resourceStrings::print(ec.message() + "\r\n");
     clientHomePF::setInputStatementMAIN();
     setInputType(inputType::HOMEMAIN);
-    std::cout<<"Connect To Server Failed " <<std::endl;
+    resourceStrings::print("Connect To Server Failed\r\n");
 }
 
 bool clientHome::inputHelper(const std::string& inputString, int lower, int upper, inputType notInRange_,
@@ -190,14 +191,14 @@ bool clientHome::inputHelper(const std::string& inputString, int lower, int uppe
         }else{
             sati::getInstance()->accumulatePrint();
             sati::getInstance()->setInputType(notInRange_);
-            std::cout<<"Please enter integer in range \r"<<std::endl;
+            resourceStrings::print("Please enter integer in range\r\n");
             return false;
         }
     }
     catch (std::invalid_argument& e) {
         sati::getInstance()->accumulatePrint();
         sati::getInstance()->setInputType(invalidInput_);
-        std::cout<<"Invalid Input. \r"<<std::endl;
+        resourceStrings::print("Invalid Input\r\n");
         return false;
     }
 }

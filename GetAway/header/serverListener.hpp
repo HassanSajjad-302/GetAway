@@ -4,11 +4,14 @@
 #include <memory>
 #include <string>
 
-#include<boost/asio/ip/tcp.hpp>
+#include"asio/ip/tcp.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
-namespace net = boost::asio;
-using namespace net::ip;
-using errorCode = boost::system::error_code;
+#endif
+using namespace asio::ip;
+using errorCode = asio::error_code;
 // Forward declaration
 class serverAuthManager;
 
@@ -26,7 +29,7 @@ class serverListener : public std::enable_shared_from_this<serverListener>, inpu
 public:
     tcp::socket sock;
     serverListener(
-        net::io_context& ioc,
+        asio::io_context& ioc,
         const tcp::endpoint& endpoint,
         std::string password_);
 

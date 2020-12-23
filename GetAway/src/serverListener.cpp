@@ -1,18 +1,17 @@
-#include<iostream>
 #include<memory>
-#include<system_error>
 #include <utility>
 #include "serverListener.hpp"
 #include "session.hpp"
 #include "serverAuthManager.hpp"
 #include "serverPF.hpp"
-namespace net = boost::asio;
-using errorCode = boost::system::error_code;
+#include "resourceStrings.hpp"
+#include "constants.h"
+using errorCode = asio::error_code;
 
 
 serverListener::
 serverListener(
-    net::io_context& ioc,
+    asio::io_context& ioc,
     const tcp::endpoint& endpoint,
     std::string password_)
     : acceptor(ioc, endpoint)
@@ -54,10 +53,11 @@ void
 serverListener::
 fail(errorCode ec, char const* what)
 {
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\r\n");
+
     // Don't report on canceled operations
-    if(ec == net::error::operation_aborted)
+    if(ec == asio::error::operation_aborted)
         return;
-    std::cerr << what << ": " << ec.message() << "\n";
 }
 
 // Handle a connection
@@ -68,7 +68,7 @@ onAccept(errorCode ec)
     if(ec)
         return fail(ec, "accept");
     else{
-        sock.set_option(boost::asio::ip::tcp::no_delay(true));   // enable PSH
+        sock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
         std::make_shared<session<serverAuthManager,true>>(
                 std::move(sock),
@@ -91,12 +91,12 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
             //Exit The Game Here
             //TODO
         }else{
-            std::cout<<"Wrong Input\r\n";
+            resourceStrings::print("Wrong Input\r\n");
             sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
         }
     }
     else{
-        std::cout<<"Unexpected input type input received\r\n";
+        resourceStrings::print("Unexpected input type input received\r\n");
     }
 }
 
@@ -108,7 +108,7 @@ void serverListener::registerForInputReceival() {
 void serverListener::shutdown() {
     acceptor.cancel();
     nextManager->shutDown();
-    spdlog::info("UseCount of nextManager from serverListener {}", nextManager.use_count());
+    constants::Log("UseCount of nextManager from serverListener {}", nextManager.use_count());
     nextManager.reset();
 }
 

@@ -2,10 +2,16 @@
 #include <utility>
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #include "sati.hpp"
+#endif
+
 #include "constants.h"
 #include "gamePF.hpp"
 #include "messagePF.hpp"
+#include "resourceStrings.hpp"
 
 clientLobbyManager::clientLobbyManager(){
     //TODO
@@ -27,8 +33,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
     lobbyMessageType messageTypeReceived;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(lobbyMessageType));
     if(std::find(messageTypeExpected.begin(), messageTypeExpected.end(), messageTypeReceived) == messageTypeExpected.end()){
-        std::cout<<"Unexpected Packet Type Received in class clientLobbyManager"<<std::endl;
-
+        resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager\r\n");
     }else{
         switch(messageTypeReceived){
             //STEP 1;
@@ -149,7 +154,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
                 //STEP 4;
                 in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-                spdlog::info("GameTurnServerReceived From Id {}. Card Is {} {}",
+                constants::Log("GameTurnServerReceived From Id {}. Card Is {} {}",
                              senderId, deckSuitValue::displaySuitType[(int) suit], deckSuitValue::displayCards[cardNumber]);
                 Turn(senderId, Card(suit, cardNumber), whoTurned::RECEIVED);
                 break;
@@ -175,7 +180,7 @@ void clientLobbyManager::sendCHATMESSAGE(){
 void clientLobbyManager::sendGAMETURNCLIENT(Card card){
     //STEP 1;
     lobbyMessageType t = lobbyMessageType::GAMETURNCLIENT;
-    spdlog::info("Seding Card Message To Server. Suit {} {}",
+    constants::Log("Seding Card Message To Server. Suit {} {}",
                  deckSuitValue::displaySuitType[(int)card.suit], deckSuitValue::displayCards[card.cardNumber]);
     clientLobbySession->out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //TODO
@@ -214,7 +219,7 @@ void clientLobbyManager::PLAYERJOINEDOrPLAYERLEFTReceived(){
 }
 
 void clientLobbyManager::exitApplication(){
-    clientLobbySession->sock.shutdown(net::socket_base::shutdown_both);
+    clientLobbySession->sock.shutdown(asio::socket_base::shutdown_both);
     clientLobbySession->sock.close();
     clientLobbySession.reset();
 }
@@ -229,14 +234,14 @@ bool clientLobbyManager::inputHelper(const std::string& inputString, int lower, 
         }else{
             sati::getInstance()->accumulatePrint();
             sati::getInstance()->setInputType(notInRange_);
-            std::cout<<"Please enter integer in range \r"<<std::endl;
+            resourceStrings::print("Please enter integer in range \r\n");
             return false;
         }
     }
     catch (std::invalid_argument& e) {
         sati::getInstance()->accumulatePrint();
         sati::getInstance()->setInputType(invalidInput_);
-        std::cout<<"Invalid Input. \r"<<std::endl;
+        resourceStrings::print("Invalid Input \r\n");
         return false;
     }
 }
@@ -332,7 +337,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
         }
     }
     else{
-        std::cout<<"InputReceived Type not same as Input Received Type Expected"<<std::endl;
+        resourceStrings::print("InputReceived Type not same as Input Received Type Expected\r\n");
     }
 }
 
@@ -355,7 +360,7 @@ void clientLobbyManager::setInputTypeGameInt(){
     }
 }
 void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned who){
-    spdlog::info("firstRoundTurnHelper Called");
+    constants::Log("firstRoundTurnHelper Called");
     waitingForTurn.erase(std::find(waitingForTurn.begin(), waitingForTurn.end(), playerId));
     if(who == whoTurned::CLIENT){
         myCards.find(card.suit)->second.erase(card.cardNumber);
@@ -375,7 +380,7 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
                 turnPlayerIdExpected = std::get<0>(t);
                 firstRound = false;
                 //Here I am auto turning. So, here I have to check whether auto turn is possible and if yes then
-                //auto turn but do not send it to the server and just print it to the screen.
+                //auto turn but do not send it to the server and just clearAndPrint it to the screen.
                 if(id == turnPlayerIdExpected){
                     assignToTurnAbleCards();
                     setInputTypeGameInt();
@@ -404,15 +409,15 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
         }
         setInputTypeGameInt();
     }else{
-        spdlog::info("No Message Was Expected From This User");
+        constants::Log("No Message Was Expected From This User");
     }
 }
 
 void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, bool firstTurn, whoTurned who) {
-    spdlog::info("FirstTurnAndMiddleTurn Called. firstTurn value is {}", std::to_string(firstTurn));
+    constants::Log("FirstTurnAndMiddleTurn Called. firstTurn value is {}", std::to_string(firstTurn));
     if(firstTurn){
         suitOfTheRound = card.suit;
-        spdlog::info("Suit Of The Round is {}", deckSuitValue::displaySuitType[(int)suitOfTheRound]);
+        constants::Log("Suit Of The Round is {}", deckSuitValue::displaySuitType[(int)suitOfTheRound]);
     }
     roundTurns.emplace_back(playerId, card);
     gamePF::setRoundTurns(roundTurns, gamePlayers);
@@ -424,7 +429,7 @@ void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, b
 
 
     turnPlayerIdExpected = nextInTurnSequence(playerId);
-    spdlog::info("turnPlayerIdExpected is {}", turnPlayerIdExpected);
+    constants::Log("turnPlayerIdExpected is {}", turnPlayerIdExpected);
     if(turnPlayerIdExpected == id){
         if(myCards.find(card.suit)->second.empty()){
             assignToTurnAbleCards();
@@ -435,10 +440,10 @@ void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, b
 }
 
 void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bool thullaTurn, whoTurned who) {
-    spdlog::info("helperLastTurnAndThullaTurn Called. thullaTurn is {}", thullaTurn);
+    constants::Log("helperLastTurnAndThullaTurn Called. thullaTurn is {}", thullaTurn);
     if(thullaTurn){
         turnPlayerIdExpected = roundKing();
-        spdlog::info("Thulla Receival Id is {}", turnPlayerIdExpected);
+        constants::Log("Thulla Receival Id is {}", turnPlayerIdExpected);
         //There are two possibilities and we are interested in both. roundking may be our id or the
         //playerId may be our Id.
         assert(turnPlayerIdExpected != playerId && "Why we are performing thulla turn if we have already performed our turn in the round");
@@ -449,7 +454,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
             myCards.find(card.suit)->second.erase(card.cardNumber);
             gamePF::setCards(myCards);
         }else if(turnPlayerIdExpected == id){
-            spdlog::info("I received a thulla");
+            constants::Log("I received a thulla");
             for(auto thullaCards: roundTurns){
                 myCards.find(std::get<1>(thullaCards).suit)->second.emplace(std::get<1>(thullaCards).cardNumber);
             }
@@ -482,7 +487,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         int id1 = std::get<0>(p);
         int numOfCards = std::get<1>(p);
         if(numOfCards == 0){
-            spdlog::info("numberOfCards of id {} are 0", id1);
+            constants::Log("numberOfCards of id {} are 0", id1);
             if(id1 == turnPlayerIdExpected){
                 auto it = std::find(turnSequence.begin(), turnSequence.end(), id1);
                 if(it == turnSequence.end()){
@@ -502,13 +507,13 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
 
     if(turnSequence.empty()){
         //game drawn. move back to lobby
-        std::cout<<"Game Drawn\r\n";
+        resourceStrings::print("Game Drawn\r\n");
         gameExitFinished();
         return;
     }else if(turnSequence.size() == 1){
         int loosingId = *turnSequence.begin();
         //player lost. move back to lobby
-        std::cout<<"Player " << gamePlayers.find(loosingId)->second << " Lost\r\n";
+        resourceStrings::print("Player " + gamePlayers.find(loosingId)->second + " Lost\r\n");
         gameExitFinished();
         return;
     }else{
@@ -573,7 +578,7 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
     gamePF::setCards(myCards);
 
     sati::getInstance()->setBase(this, appState::GAME);
-    //set input statement and print all this
+    //set input statement and clearAndPrint all this
 
     if(myCards.find(deckSuit::SPADE)->second.empty()){
         //badranga
