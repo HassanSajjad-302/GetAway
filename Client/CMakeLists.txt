@@ -13,7 +13,7 @@ target_include_directories(Client PRIVATE "../GetAway/header")
 if (WIN32)
   target_compile_options(Client PRIVATE -DASIO_STANDALONE -D_WIN32_WINNT=0x0A00)
 
-  target_include_directories(Client PRIVATE D:/Files/Check/asio-asio-1-18-0/asio/include)
+  target_include_directories(Client PRIVATE ../asio/asio/include)
 
   find_package(spdlog REQUIRED
          PATHS "D:/Files/spdlog_Installed_make/lib/cmake/spdlog"

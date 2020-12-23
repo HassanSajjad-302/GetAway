@@ -28,7 +28,8 @@ int main(){
 
 #ifdef ANDROID
     sati::getInstanceFirstTime(io);
-#elif
+#else
+    int a;
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
 #endif
