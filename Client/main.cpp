@@ -27,7 +27,7 @@ int main(){
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
 
-    /*tcp::endpoint endpoint(tcp::v4(),3000);
+    /*tcp::endpoint endpoint(tcp::v4(),constants::PORT);
     tcp::socket sock(io);
     sock.connect(endpoint);
     sock.set_option(boost::asio::ip::tcp::no_delay(true));   // enable PSH

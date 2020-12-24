@@ -38,11 +38,10 @@ int main(){
 
 
 /*
-    unsigned short port = 3000;
     // Create and launch a listening port
     std::make_shared<serverListener>(
         io,
-        tcp::endpoint{tcp::v4(), port},
+        tcp::endpoint{tcp::v4(), constants::PORT},
         "password")->run();
 */
     io.run();

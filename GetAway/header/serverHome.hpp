@@ -23,7 +23,6 @@ class serverHome :inputRead, public std::enable_shared_from_this<serverHome>{
     inputType inputTypeExpected;
     std::string myName = "Player";
     std::string ipAddress;
-    unsigned short int port = 3000;
     std::vector<std::tuple<std::string, std::string, std::string>> registeredServers;//ip-address, port-number, server-name
 public:
     explicit serverHome(asio::io_context& io_);

@@ -11,13 +11,17 @@ using errorCode = asio::error_code;
 
 serverListener::
 serverListener(
-    asio::io_context& ioc,
-    const tcp::endpoint& endpoint,
-    std::string password_)
-    : acceptor(ioc, endpoint)
-    , sock(ioc)
-    , password(std::move(password_))
+        asio::io_context& ioc,
+        const tcp::endpoint& endpoint,
+        const std::string& serverName_,
+        std::string password_)
+        : acceptor(ioc, endpoint)
+        , tcpSock(ioc)
+        , udpSock(ioc)
+        , serverName(std::move(serverName_))
+        , password(std::move(password_))
 {
+    hostEndpoint = udp::endpoint(udp::v4(), constants::PORT);
 }
 
 void
@@ -27,12 +31,20 @@ run()
     nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this());
     // Start accepting a connection
     acceptor.async_accept(
-            sock,
+            tcpSock,
             [self = shared_from_this()](errorCode ec)
         {
             self->onAccept(ec);
         });
 
+    udpSock.open(udp::v4());
+    udpSock.bind(hostEndpoint);
+    udpSock.async_receive_from(
+            asio::buffer(recieveBuffer), remoteEndpoint,
+            [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
+    {
+        self->broadcastReceivalHandler(ec, bytesReceived);
+    });
     serverPF::setLobbyMainOnePlayer();
     sati::getInstance()->setBase(this, appState::LOBBY);
     sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
@@ -41,11 +53,21 @@ run()
 void serverListener::runAgain(){
     // Start accepting a connection
     acceptor.async_accept(
-            sock,
+            tcpSock,
             [self = shared_from_this()](errorCode ec)
             {
                 self->onAccept(ec);
             });
+
+    udpSock.open(udp::v4());
+    udpSock.bind(hostEndpoint);
+    udpSock.async_receive_from(
+            asio::buffer(recieveBuffer), remoteEndpoint,
+            [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
+            {
+                self->broadcastReceivalHandler(ec, bytesReceived);
+            });
+
 }
 
 // Report a failure
@@ -68,17 +90,17 @@ onAccept(errorCode ec)
     if(ec)
         return fail(ec, "accept");
     else{
-        sock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
+        tcpSock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
         std::make_shared<session<serverAuthManager,true>>(
-                std::move(sock),
+                std::move(tcpSock),
                 nextManager)->registerSessionToManager();
     }
 
 
     // Accept another connection
     acceptor.async_accept(
-            sock,
+            tcpSock,
             [self = shared_from_this()](errorCode ec)
         {
             self->onAccept(ec);
@@ -114,4 +136,28 @@ void serverListener::shutdown() {
 
 void serverListener::shutdownAcceptor(){
     acceptor.cancel();
+}
+
+void serverListener::broadcastReceivalHandler(asio::error_code ec, int size) {
+    if(ec)
+        return fail(ec, "broadcastRecivalHandler");
+    else{
+        asio::error_code error;
+        asio::ip::udp::socket sock(acceptor.get_executor());
+
+        sock.open(asio::ip::udp::v4(), error);
+        if (!error)
+        {
+            sock.send_to(asio::const_buffer(serverName.c_str(), serverName.size()), remoteEndpoint);
+            sock.close(error);
+        }
+    }
+
+    //For Another broadcast
+    udpSock.async_receive_from(
+            asio::buffer(recieveBuffer), remoteEndpoint,
+            [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
+            {
+                self->broadcastReceivalHandler(ec, bytesReceived);
+            });
 }

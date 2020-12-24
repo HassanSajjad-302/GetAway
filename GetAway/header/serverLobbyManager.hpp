@@ -110,6 +110,5 @@ private:
     void gameExitFinished();
 
     void setInputType(inputType type);
-
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP

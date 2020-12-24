@@ -15,22 +15,17 @@ public:
     static void setInputStatementHome7R1();
     static void setInputStatementIPADDRESS();
 
-    static void setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string, std::string>>& servers);
-    static void setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string, std::string>>& servers);
+    static void setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string>>& servers);
+    static void setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string>>& servers);
 
+    static void setInputStatementHome7R3(const std::vector<std::tuple<std::string, std::string>>& probeReply);
 
 
     static void setErrorMessageWrongIpAddress();
     static void setErrorMessageWrongIpAddressAccumulate();
 
-    static  void setInputStatementHome7R1R();
-    static void setInputStatementPORTNUMBER();
-
     static  void setInputStatementHome7R1RR();
     static void setInputStatementASSIGNSERVERNAME();
-
-    static void setErrorMessageWrongPortNumber();
-    static void setErrorMessageWrongPortnNumberAccumulate();
 
     static void setInputStatementConnectingToServer(const std::string& serverName);
 };

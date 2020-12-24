@@ -16,6 +16,7 @@
 namespace constants{
     constexpr int SUITSIZE = 2;
     constexpr int DECKSIZE = SUITSIZE * 4;
+    constexpr int PORT = 3000;
 
     int cardsCount(const std::map<deckSuit, std::set<int>>& cards);
 

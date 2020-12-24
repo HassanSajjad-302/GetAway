@@ -26,15 +26,9 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
             if(inputHelper(inputString,
                            1, 3, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
-                    std::make_shared<serverListener>(
-                            io,
-                            tcp::endpoint{tcp::v4(), port},
-                            "password")->run();
-                    guard.reset();
-                }else if(input == 2){
-                    //Change Port
-                    serverPF::setHomeChangePort();
-                    setInputType(inputType::HOMEPORTNUMBER);
+                    //Change Server Name
+                    serverPF::setHomeChangeServerName();
+                    setInputType(inputType::HOMESTARTSERVER);
                 }else if(input == 3){
                     //Exit
                     if(sock.is_open()){
@@ -48,17 +42,13 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
 #endif
                 }
             }
-        }else if(inputReceivedType == inputType::HOMEPORTNUMBER){
-            std::regex rg("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
-            if(std::regex_match(inputString, rg)){
-                port = static_cast<unsigned short>(std::stoi(inputString));
-                serverPF::setHomeMain();
-                setInputType(inputType::HOMEMAIN);
-            }else{
-                resourceStrings::print("Please enter valid port number\r\n");
-                setInputType(inputType::HOMEPORTNUMBER);
-                serverPF::setErrorMessageWrongPortNumber();
-            }
+        }if(inputReceivedType == inputType::HOMESTARTSERVER){
+            std::make_shared<serverListener>(
+                    io,
+                    tcp::endpoint{tcp::v4(), constants::PORT},
+                    inputString,
+                    "password")->run();
+            guard.reset();
         }
     }else{
         resourceStrings::print("Unexpected input type input received\r\n");

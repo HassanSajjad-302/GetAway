@@ -10,17 +10,12 @@
 #endif
 
 void serverPF::setHomeMain() {
-    sati::getInstance()->inputStatementBuffer = "1)Start Server 2)Change Port 3)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Start Server 3)Exit\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void serverPF::setHomeChangePort(){
-    sati::getInstance()->inputStatementBuffer = "Enter Port Number\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
-}
-
-void serverPF::setErrorMessageWrongPortNumber() {
-    sati::getInstance()->inputStatementBuffer = "Entered Port Number Could Not Be Validated\r\n";
+void serverPF::setHomeChangeServerName(){
+    sati::getInstance()->inputStatementBuffer = "Enter Server Number\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 

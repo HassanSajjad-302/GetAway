@@ -6,6 +6,7 @@
 #define GETAWAY_CLIENTHOME_HPP
 
 #include "asio/ip/tcp.hpp"
+#include "asio/ip/udp.hpp"
 #ifdef ANDROID
 #include "satiAndroid.hpp"
 #else
@@ -17,12 +18,18 @@ class clientHome :inputRead, public std::enable_shared_from_this<clientHome>{
 
     asio::io_context& io;
     asio::executor_work_guard<decltype(io.get_executor())> guard;
-    tcp::socket sock;
+    tcp::socket tcpSock;
     inputType inputTypeExpected;
     std::string myName = "Player";
     std::string ipAddress;
-    std::string portNumber;
-    std::vector<std::tuple<std::string, std::string, std::string>> registeredServers;//ip-address, port-number, server-name
+    std::vector<std::tuple<std::string, std::string>> registeredServers;//server-name, ip-address
+
+    //Following Are Used For broadcast server finding
+    std::vector<std::tuple<std::string, std::string>> broadcastServersObtained;//server-name, ip-address
+    udp::socket udpSock;
+    udp::endpoint remoteEndpoint{};
+    char receiveBuffer[512];
+
 public:
     explicit clientHome(asio::io_context& io_);
     void run();
@@ -34,6 +41,8 @@ public:
 
     void CONNECTTOSERVERFail(asio::error_code ec);
     void promote();
+
+    void broadcastResponseRecieved(std::error_code ec, size_t bytes);
 };
 
 

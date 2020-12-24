@@ -3,12 +3,13 @@
 //
 
 #include "clientHome.hpp"
+#include "constants.h"
 #include "clientAuthManager.hpp"
 #include <memory>
 #include <regex>
 #include "resourceStrings.hpp"
 
-clientHome::clientHome(asio::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
+clientHome::clientHome(asio::io_context &io_): io(io_), guard(io.get_executor()), tcpSock(io_), udpSock(io_){
 
 }
 
@@ -99,19 +100,52 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         setInputType(inputType::HOMESELECTSERVER);
                     }
                 }else if(input == 3){
-                    //Change Name
-                }else if(input == 4){
                     //Find Local Server
+                    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+                    //BroadCast
+                    asio::error_code error;
+                    asio::ip::udp::socket broadcastudpSock(io);
+
+                    broadcastudpSock.open(asio::ip::udp::v4(), error);
+                    if (!error)
+                    {
+                        broadcastudpSock.bind(udp::endpoint(udp::v4(), constants::PORT));
+                        broadcastudpSock.set_option(asio::socket_base::broadcast(true));
+                        asio::ip::udp::endpoint senderEndpoint(asio::ip::address_v4::broadcast(), constants::PORT);
+
+                        std::string str = "";
+                        broadcastudpSock.send_to(asio::const_buffer(str.c_str(), str.size()), senderEndpoint);
+                        broadcastudpSock.close(error);
+                    }
+                    //udp server for response recording of the udp broadcast
+                    udp::endpoint host_endpoint{udp::v4(), constants::PORT};
+                    udpSock.open(udp::v4());
+                    udpSock.bind(host_endpoint);
+                    udpSock.async_receive_from(
+                            asio::buffer(receiveBuffer), remoteEndpoint,
+                            [self = this](errorCode ec, std::size_t bytesReceived)
+                            {
+                                if(ec)
+                                    resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
+                                    ": " + ec.message() + "\r\n");
+                                else{
+                                    self->broadcastResponseRecieved(ec, bytesReceived);
+                                }
+                            });
+                    setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
+                    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+                }else if(input == 4){
+                    //Change Name
                 }else if(input == 5){
                     //Game Rules
                 }else if(input == 6){
                     //Liscence
                 }else if(input == 7){
                     //Exit
-                    if(sock.is_open()){
+                    if(tcpSock.is_open()){
                         asio::error_code ec;
-                        sock.shutdown(tcp::socket::shutdown_both, ec);
-                        sock.close();
+                        tcpSock.shutdown(tcp::socket::shutdown_both, ec);
+                        tcpSock.close();
                     }
                     guard.reset();
 #ifdef __linux__
@@ -122,24 +156,14 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
         }else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(isValidIp4(inputString.c_str())){
                 ipAddress = std::move(inputString);
-                clientHomePF::setInputStatementPORTNUMBER();
-                setInputType(inputType::HOMEPORTNUMBER);
+                setInputType(inputType::HOMEASSIGNSERVERNAME);
+                clientHomePF::setInputStatementASSIGNSERVERNAME();
             }else{
                 resourceStrings::print("Please enter valid ip address\r\n");
                 setInputType(inputType::HOMEIPADDRESS);
             }
-        }else if(inputReceivedType == inputType::HOMEPORTNUMBER){
-            std::regex rg("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
-            if(std::regex_match(inputString, rg)){
-                portNumber = std::move(inputString);
-                clientHomePF::setInputStatementASSIGNSERVERNAME();
-                setInputType(inputType::HOMEASSIGNSERVERNAME);
-            }else{
-                resourceStrings::print("Please enter valid port number\r\n");
-                setInputType(inputType::HOMEPORTNUMBER);
-            }
         }else if(inputReceivedType == inputType::HOMEASSIGNSERVERNAME){
-            registeredServers.emplace_back(std::move(ipAddress), std::move(portNumber), std::move(inputString));
+            registeredServers.emplace_back(std::move(ipAddress), std::move(inputString));
             clientHomePF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
         }else if(inputReceivedType == inputType::HOMESELECTSERVER){
@@ -148,25 +172,55 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             if(inputHelper(inputString, 1, registeredServers.size(), inputType::HOMESELECTSERVER,
                            inputType::HOMESELECTSERVER, input)){
                 --input;
-                sock.async_connect(tcp::endpoint(make_address_v4(std::get<0>(registeredServers[input])),
-                                                 std::stoi(std::get<1>(registeredServers[input]))),
-                                                 [self = this](asio::error_code ec){
+                tcpSock.async_connect(tcp::endpoint(make_address_v4(std::get<0>(registeredServers[input])),
+                                                    constants::PORT),
+                                      [self = this](asio::error_code ec){
                     if(ec){
                         self->CONNECTTOSERVERFail(ec);
                     }else{
                         self->promote();
                     }
                 });
-                clientHomePF::setInputStatementConnectingToServer(std::get<2>(registeredServers[input]));
-                setInputType(inputType::HOMECONNECTTINGOSERVER);
+                clientHomePF::setInputStatementConnectingToServer(std::get<0>(registeredServers[input]));
+                setInputType(inputType::HOMECONNECTTINGTOSERVER);
             }
-        }else if(inputReceivedType == inputType::HOMECONNECTTINGOSERVER){
+        }else if(inputReceivedType == inputType::HOMECONNECTTINGTOSERVER){
             int input;
-            if(inputHelper(inputString, 1, 1,inputType::HOMECONNECTTINGOSERVER,
-                           inputType::HOMECONNECTTINGOSERVER,input)){
+            if(inputHelper(inputString, 1, 1,inputType::HOMECONNECTTINGTOSERVER,
+                           inputType::HOMECONNECTTINGTOSERVER,input)){
                 asio::error_code ec;
-                sock.shutdown(tcp::socket::shutdown_both, ec);
-                sock.close();
+                tcpSock.shutdown(tcp::socket::shutdown_both, ec);
+                tcpSock.close();
+            }
+        }else if(inputReceivedType == inputType::HOMECONNECTTOPROBEREPLYSERVER){
+            if(inputString == ""){
+                //move back
+                setInputType(inputType::HOMEMAIN);
+                clientHomePF::setInputStatementHome7();
+                //close udpSock server
+                udpSock.shutdown(asio::socket_base::shutdown_both);
+                udpSock.close();
+                broadcastServersObtained.clear();
+            }else{
+                int input;
+                if(inputHelper(inputString, 1, broadcastServersObtained.size(),inputType::HOMECONNECTTOPROBEREPLYSERVER,
+                               inputType::HOMECONNECTTOPROBEREPLYSERVER,input)){
+                    --input;
+                    tcpSock.async_connect(tcp::endpoint(make_address_v4(std::get<1>(broadcastServersObtained[input])),
+                                                        constants::PORT),
+                                          [self = this](asio::error_code ec){
+                                              if(ec){
+                                                  self->CONNECTTOSERVERFail(ec);
+                                              }else{
+                                                  self->promote();
+                                              }
+                                          });
+                    clientHomePF::setInputStatementConnectingToServer(std::get<0>(broadcastServersObtained[input]));
+                    setInputType(inputType::HOMECONNECTTINGTOSERVER);
+                    udpSock.shutdown(asio::socket_base::shutdown_both);
+                    udpSock.close();
+                    broadcastServersObtained.clear();
+                }
             }
         }
     }else{
@@ -209,7 +263,25 @@ void clientHome::setInputType(inputType type) {
 }
 
 void clientHome::promote() {
-    std::make_shared<session<clientAuthManager>>(std::move(sock),std::make_shared<clientAuthManager>(
+    std::make_shared<session<clientAuthManager>>(std::move(tcpSock), std::make_shared<clientAuthManager>(
             std::move(myName), "password"))->registerSessionToManager();
     guard.reset();
+}
+
+void clientHome::broadcastResponseRecieved(errorCode ec, std::size_t bytes){
+    broadcastServersObtained.emplace_back(std::string(receiveBuffer, receiveBuffer + bytes), remoteEndpoint.address().to_string());
+    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+    //
+    udp::endpoint host_endpoint{udp::v4(), constants::PORT};
+    udpSock.async_receive_from(
+            asio::buffer(receiveBuffer), remoteEndpoint,
+            [self = this](errorCode ec, std::size_t bytesReceived)
+            {
+                if(ec)
+                    resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
+                                           ": " + ec.message() + "\r\n");
+                else{
+                    self->broadcastResponseRecieved(ec, bytesReceived);
+                }
+            });
 }

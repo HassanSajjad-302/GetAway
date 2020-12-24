@@ -9,8 +9,7 @@
 class serverPF {
 public:
     static void setHomeMain();
-    static void setHomeChangePort();
-    static void setErrorMessageWrongPortNumber();
+    static void setHomeChangeServerName();
     static void setLobbyMainOnePlayer();
     static void setLobbyMainTwoOrMorePlayers();
     static void setGameMain();
