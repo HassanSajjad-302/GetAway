@@ -7,6 +7,7 @@
 #include <vector>
 #include <chrono>
 #include "session.hpp"
+#include "asio/io_context.hpp"
 
 //class clientAuthenticationManager;
 class clientAuthManager
@@ -14,10 +15,10 @@ class clientAuthManager
     std::string password;
     std::string playerName;
     std::shared_ptr<session<clientAuthManager>> authSession;
-
+    asio::io_context& io;
 public:
     explicit
-    clientAuthManager(std::string playerName, std::string password);
+    clientAuthManager(std::string playerName, std::string password, asio::io_context& io_);
     ~clientAuthManager();
     void join(std::shared_ptr<session<clientAuthManager>> authSession_);
     void starting();

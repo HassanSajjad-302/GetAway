@@ -11,6 +11,7 @@
 // Represents the shared server state
 class serverAuthManager
 {
+    asio::io_context& io;
     std::string password;
     int classSendSize =0;
     std::map<int, std::shared_ptr<session<serverAuthManager, true>>> serverAuthSessions;
@@ -24,7 +25,7 @@ public:
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int excitedSessionId);
     //connections before starting game.
     explicit
-    serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_);
+    serverAuthManager(std::string password, std::shared_ptr<serverListener> serverlistener_, asio::io_context& io_);
     void shutDown();
 };
 

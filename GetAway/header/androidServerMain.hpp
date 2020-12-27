@@ -1,12 +1,10 @@
-//
-// Created by hassan on 12/21/2020.
-//
 
+
+#ifdef ANDROID
 #ifndef MY_APPLICATION_ANDROIDSERVERMAIN_HPP
 #define MY_APPLICATION_ANDROIDSERVERMAIN_HPP
 
 #include "asio/io_context.hpp"
-#include <functional>
 #include <thread>
 
 class androidServerMain {
@@ -20,3 +18,4 @@ public:
 
 
 #endif //MY_APPLICATION_ANDROIDSERVERMAIN_HPP
+#endif

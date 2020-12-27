@@ -1,10 +1,9 @@
-//
-// Created by hassan on 12/21/2020.
-//
-
+#ifdef ANDROID
 #include "../header/androidServerMain.hpp"
-#include "satiAndroid.hpp"
+#include "sati.hpp"
 #include "serverHome.hpp"
+#include <functional>
+
 androidServerMain::androidServerMain(asio::io_context &io_): io{io_} {}
 
 void androidServerMain::run() {
@@ -23,3 +22,4 @@ void androidServerMain::run() {
 androidServerMain::~androidServerMain() {
 
 }
+#endif

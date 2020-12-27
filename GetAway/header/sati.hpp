@@ -1,7 +1,4 @@
-//
-// Created by hassan on 11/6/20.
-//
-
+#ifndef ANDROID
 #ifndef GETAWAY_SATI_HPP
 #define GETAWAY_SATI_HPP
 
@@ -16,11 +13,8 @@
 #include "messagePF.hpp"
 #include "clientHomePF.hpp"
 #include "asio/io_context.hpp"
-
-class inputRead{
-public:
-    virtual void input(std::string inputString, inputType inputReceivedType) =0;
-};
+#include "inputType.h"
+#include "terminalInputBase.hpp"
 
 //singleton for asynchronous terminal input
 class sati {
@@ -56,7 +50,7 @@ public:
 #endif
 
     bool handlerAssigned = false;
-    inputRead* base = nullptr;
+    terminalInputBase* base = nullptr;
 
     void accumulateBuffersAndPrint();
 
@@ -72,7 +66,7 @@ public:
     static sati* getInstance();
     void setInputType(inputType nextReceiveInputType);
     void printExitMessage(const std::string& message);
-    void setBase(inputRead* base_, appState currentAppState_);
+    void setBase(terminalInputBase* base_, appState currentAppState_);
     void operator()();
 
     inputType receiveInputType;
@@ -80,3 +74,6 @@ public:
 };
 
 #endif //GETAWAY_SATI_HPP
+#else
+#include "satiAndroid.hpp"
+#endif

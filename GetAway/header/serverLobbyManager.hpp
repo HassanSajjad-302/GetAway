@@ -13,18 +13,14 @@
 #include <tuple>
 #include "session.hpp"
 #include "serverListener.hpp"
-#include "serverGameManager.hpp"
 #include "messageTypeEnums.hpp"
 #include "playerData.hpp"
 #include "deckSuit.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
-#include "sati.hpp"
-#endif
+#include "asio/io_context.hpp"
 
-class serverLobbyManager : inputRead
+class serverLobbyManager : terminalInputBase
 {
+    asio::io_context& io;
     std::map<int, std::tuple<const std::string,
     std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
     inputType inputTypeExpected;
@@ -40,7 +36,6 @@ class serverLobbyManager : inputRead
     //
 
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
-    std::shared_ptr<serverGameManager> nextManager;
 
     //Following Used By ServerAuthManager and in initial setting up of the game.
     std::string playerNameAdvanced;
@@ -52,7 +47,7 @@ public:
 
 public:
     explicit
-    serverLobbyManager(std::shared_ptr<serverListener> serverlistener_);
+    serverLobbyManager(std::shared_ptr<serverListener> serverlistener_, asio::io_context& io_);
     void uselessWriteFunction(int id);
 
     //Used-By-Session
@@ -72,7 +67,7 @@ public:
 
     void managementCHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId);
 
-    void startGame();
+    void closeLobbySocketsAndStartGame();
 
     void doFirstTurnOfFirstRound();
 #ifndef NDEBUG
@@ -84,7 +79,7 @@ public:
 
     void doTurnReceivedOfFirstRound(std::vector<playerData>::iterator turnReceivedPlayer, Card cardReceived);
 
-    void newRoundTurn(std::vector<playerData>::iterator currentGamePlayer);
+    static void newRoundTurn(std::vector<playerData>::iterator currentGamePlayer);
 
     void Turn(std::vector<playerData>::iterator currentTurnPlayer, Card card);
 

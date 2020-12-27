@@ -15,7 +15,7 @@
 #include "asio/write.hpp"
 #include "asio/read.hpp"
 #include "resourceStrings.hpp"
-
+#include "constants.h"
 
 using namespace asio::ip;
 using errorCode = asio::error_code;
@@ -111,9 +111,7 @@ void
 session<T, ID>::
 receiveMessage() {
     if(allPacketsReceived){
-        //TODO
-        //1500 is TCP MTU size. Provide it from somewhere else.
-        sock.async_receive(sessionStreamBuffInput.prepare(1500), [self = this->shared_from_this()](
+        sock.async_receive(sessionStreamBuffInput.prepare(constants::TCP_PACKET_MTU), [self = this->shared_from_this()](
                 errorCode ec, std::size_t bytes)
         {
             self->readMore(ec, bytes);
@@ -260,9 +258,7 @@ void
 session<T, true>::
 receiveMessage() {
     if(allPacketsReceived){
-        //TODO
-        //1500 is TCP MTU size. Provide it from somewhere else.
-        sock.async_receive(sessionStreamBuffInput.prepare(40), [self = this->shared_from_this()](
+        sock.async_receive(sessionStreamBuffInput.prepare(constants::TCP_PACKET_MTU), [self = this->shared_from_this()](
                 errorCode ec, std::size_t bytes)
         {
             self->readMore(ec, bytes);

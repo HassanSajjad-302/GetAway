@@ -2,12 +2,15 @@
 #include <serverLobbyManager.hpp>
 #include <utility>
 #include <cassert>
+#include "serverHome.hpp"
 #include "constants.h"
 #include "serverPF.hpp"
 #include "resourceStrings.hpp"
+#include "sati.hpp"
 serverLobbyManager::
-serverLobbyManager(std::shared_ptr<serverListener> serverlistener_): serverlistener(std::move(serverlistener_)){
-   // nextManager = std::make_shared<serverGameManager>
+serverLobbyManager(std::shared_ptr<serverListener> serverlistener_, asio::io_context& io_):
+serverlistener(std::move(serverlistener_)), io{io_}{
+    // nextManager = std::make_shared<serverGameManager>
 }
 
 int
@@ -15,7 +18,7 @@ serverLobbyManager::
 join(std::shared_ptr<session<serverLobbyManager, true>> lobbySession)
 {
     lobbySession->receiveMessage();
-    auto tup = std::tuple(playerNameAdvanced, std::move(lobbySession));
+    std::tuple<std::string, std::shared_ptr<session<serverLobbyManager, true>>> tup(playerNameAdvanced, std::move(lobbySession));
     int id;
     if(gameData.empty())
     {
@@ -62,10 +65,10 @@ leave(int id)
 }
 
 void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
-    lobbyMessageType messageTypeReceived;
+    messageType messageTypeReceived;
     //STEP 1;
-    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(lobbyMessageType));
-    if(messageTypeReceived == lobbyMessageType::CHATMESSAGE){
+    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
+    if(messageTypeReceived == messageType::CHATMESSAGE){
         int senderId;
         //TODO
         //This is an extra read, delete it.
@@ -85,7 +88,7 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
         delete[] arr;
 #endif
     }
-    else if(messageTypeReceived == lobbyMessageType::GAMETURNCLIENT && gameStarted){
+    else if(messageTypeReceived == messageType::GAMETURNCLIENT && gameStarted){
         constants::Log("GAMETURNCLIENT received");
         int index;
         if(indexGamePlayerDataFromId(sessionId, index)){
@@ -119,7 +122,7 @@ void serverLobbyManager::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            lobbyMessageType t = lobbyMessageType::PLAYERJOINED;
+            messageType t = messageType::PLAYERJOINED;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             auto mapPtr = gameData.find(excitedSessionId);
@@ -139,7 +142,7 @@ void serverLobbyManager::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
             auto playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
-            lobbyMessageType t = lobbyMessageType::PLAYERLEFT;
+            messageType t = messageType::PLAYERLEFT;
             //STEP 1;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             auto mapPtr = gameData.find(excitedSessionId);
@@ -160,7 +163,7 @@ void serverLobbyManager::sendCHATMESSAGEIDToAllExceptOne(const std::string &chat
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            lobbyMessageType t = lobbyMessageType::CHATMESSAGEID;
+            messageType t = messageType::CHATMESSAGEID;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
@@ -182,7 +185,7 @@ void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card ca
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            lobbyMessageType t = lobbyMessageType::GAMETURNSERVER;
+            messageType t = messageType::GAMETURNSERVER;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             out.write(reinterpret_cast<char *>(&sessionId), sizeof(sessionId));
@@ -203,7 +206,7 @@ void serverLobbyManager::managementJoin(int excitedSessionId) {
     std::ostream& out = playerSession->out;
 
     //STEP 1;
-    lobbyMessageType t = lobbyMessageType::SELFANDSTATE;
+    messageType t = messageType::SELFANDSTATE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
     out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
@@ -239,10 +242,10 @@ void serverLobbyManager::setPlayerNameAdvanced(std::string advancedPlayerName) {
 }
 
 //Game Functions
-void serverLobbyManager::startGame(){
+void serverLobbyManager::closeLobbySocketsAndStartGame(){
     //At this point playerGameCards is ready to be distributed.
     errorCode ec;
-    serverlistener->shutdownAcceptor();
+    serverlistener->shutdownAcceptorAndProbe();
     initializeGame();
     doFirstTurnOfFirstRound();
     gameStarted = true;
@@ -250,7 +253,7 @@ void serverLobbyManager::startGame(){
 }
 
 void serverLobbyManager::initializeGame(){
-    auto rd = std::random_device {};
+    std::random_device rd{};
     //todo
     //providing a same value to random engine for testing
     auto rng = std::default_random_engine { 1 };
@@ -338,7 +341,7 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
         auto playerSession = std::get<1>(gameData.find(gamePlayersData[i].id)->second);
         std::ostream& out = playerSession->out;
 
-        lobbyMessageType t = lobbyMessageType::GAMEFIRSTTURNSERVER;
+        messageType t = messageType::GAMEFIRSTTURNSERVER;
         //STEP 1;
         out.write(reinterpret_cast<char*>(&t), sizeof(t));
         auto &p = gamePlayersData[currentIndexGamePlayersData];
@@ -640,36 +643,43 @@ bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
 
 void serverLobbyManager::input(std::string inputString, inputType inputReceivedType){
     if(inputReceivedType == inputTypeExpected){
-        //There should not be handler for one player in this file. It should be only in listener.
-        /*
-        if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
-            if(inputString != "1"){
-                //Exit The Game Here
-                //TODO
-            }else{
-                std::cout<<"Wrong Input\r\n";
-                setInputType(inputType::SERVERLOBBYONEPLAYER);
-            }
-        }*/
         if(inputReceivedType == inputType::SERVERLOBBYTWOORMOREPLAYERS){
-            if(inputString == "1"){
-                //Start The Game
-                startGame();
-                setInputType(inputType::GAMEINT);
-                sati::getInstance()->setBase(this, appState::GAME);
-                serverPF::setGameMain();
-            }else if(inputString == "2"){
-                //Exit The Application Here
-                applicationExit();
-            }else{
-                resourceStrings::print("Wrong Input\r\n");
-                setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+            int input;
+            if(constants::inputHelper(inputString, 1, 3,inputType::SERVERLOBBYTWOORMOREPLAYERS,
+                                      inputType::SERVERLOBBYTWOORMOREPLAYERS, input)){
+                if(input == 1){
+                    //Start The Game
+                    closeLobbySocketsAndStartGame();
+                    setInputType(inputType::GAMEINT);
+                    sati::getInstance()->setBase(this, appState::GAME);
+                    serverPF::setGameMain();
+                }else if(input == 2){
+                    //Close Server
+                    applicationExit();
+                    std::make_shared<serverHome>(serverHome(io))->run();
+                }else{
+                    //Exit
+                    applicationExit();
+                }
             }
         }
         else if(inputReceivedType == inputType::GAMEINT){
+            //TODO
+            //Early-End-Game. input 1 for early ending game. send early ending game message to all players.
+            int input;
+            if(constants::inputHelper(inputString,2,3,inputType::GAMEINT,
+                                      inputType::GAMEINT, input)){
+                if(input == 2){
+                    applicationExit();
+                }else{
+                    applicationExit();
+                    std::make_shared<serverHome>(serverHome(io))->run();
+                }
+            }
             if(inputString == "1"){
                 //Exit The Application Here Amid Game
                 //TODO
+                //Ending Is Not Good Here. It is When Game is Occuring.
             }else{
                 resourceStrings::print("Wrong Input\r\n");
                 setInputType(inputType::GAMEINT);
@@ -714,8 +724,6 @@ void serverLobbyManager::gameExitFinished(){
 void serverLobbyManager::shutDown() {
     constants::Log("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
     serverlistener.reset();
-    constants::Log("UseCount of GameManager from serverLobbyManager {}", nextManager.use_count());
-    nextManager.reset();
     for(auto &p: gameData){
         std::get<1>(p.second)->sock.shutdown(asio::socket_base::shutdown_both);
         std::get<1>(p.second)->sock.close();

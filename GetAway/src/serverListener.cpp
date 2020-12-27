@@ -1,34 +1,38 @@
 #include<memory>
 #include <utility>
+#include <serverHome.hpp>
 #include "serverListener.hpp"
 #include "session.hpp"
 #include "serverAuthManager.hpp"
 #include "serverPF.hpp"
 #include "resourceStrings.hpp"
 #include "constants.h"
+#include "sati.hpp"
+
 using errorCode = asio::error_code;
 
 
 serverListener::
 serverListener(
-        asio::io_context& ioc,
+        asio::io_context& io_,
         const tcp::endpoint& endpoint,
         const std::string& serverName_,
         std::string password_)
-        : acceptor(ioc, endpoint)
-        , tcpSock(ioc)
-        , udpSock(ioc)
+        : acceptor(io_, endpoint)
+        , tcpSock(io_)
+        , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
         , password(std::move(password_))
+        , io{io_}
 {
-    hostEndpoint = udp::endpoint(udp::v4(), constants::PORT);
+    probeListenerEndpoint = udp::endpoint(udp::v4(), constants::PORT_PROBE_LISTENER);
 }
 
 void
 serverListener::
 run()
 {
-    nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this());
+    nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this(), io);
     // Start accepting a connection
     acceptor.async_accept(
             tcpSock,
@@ -37,13 +41,13 @@ run()
             self->onAccept(ec);
         });
 
-    udpSock.open(udp::v4());
-    udpSock.bind(hostEndpoint);
-    udpSock.async_receive_from(
+    probeListenerUdpSock.open(udp::v4());
+    probeListenerUdpSock.bind(probeListenerEndpoint);
+    probeListenerUdpSock.async_receive_from(
             asio::buffer(recieveBuffer), remoteEndpoint,
             [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
     {
-        self->broadcastReceivalHandler(ec, bytesReceived);
+        self->probeReply(ec, bytesReceived);
     });
     serverPF::setLobbyMainOnePlayer();
     sati::getInstance()->setBase(this, appState::LOBBY);
@@ -59,13 +63,13 @@ void serverListener::runAgain(){
                 self->onAccept(ec);
             });
 
-    udpSock.open(udp::v4());
-    udpSock.bind(hostEndpoint);
-    udpSock.async_receive_from(
+    probeListenerUdpSock.open(udp::v4());
+    probeListenerUdpSock.bind(probeListenerEndpoint);
+    probeListenerUdpSock.async_receive_from(
             asio::buffer(recieveBuffer), remoteEndpoint,
             [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
             {
-                self->broadcastReceivalHandler(ec, bytesReceived);
+                self->probeReply(ec, bytesReceived);
             });
 
 }
@@ -109,12 +113,16 @@ onAccept(errorCode ec)
 
 void serverListener::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
-        if(inputString != "1"){
-            //Exit The Game Here
-            //TODO
-        }else{
-            resourceStrings::print("Wrong Input\r\n");
-            sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+        int input;
+        if(constants::inputHelper(inputString, 2, 3, inputType::SERVERLOBBYONEPLAYER, inputType::SERVERLOBBYONEPLAYER, input)){
+            if(input == 2){
+                //close server
+                shutdown();
+                std::make_shared<serverHome>(serverHome(io))->run();
+            }else{
+                //exit application
+                shutdown();
+            }
         }
     }
     else{
@@ -129,18 +137,20 @@ void serverListener::registerForInputReceival() {
 
 void serverListener::shutdown() {
     acceptor.cancel();
+    probeListenerUdpSock.close();
     nextManager->shutDown();
     constants::Log("UseCount of nextManager from serverListener {}", nextManager.use_count());
     nextManager.reset();
 }
 
-void serverListener::shutdownAcceptor(){
+void serverListener::shutdownAcceptorAndProbe(){
     acceptor.cancel();
+    probeListenerUdpSock.close();
 }
 
-void serverListener::broadcastReceivalHandler(asio::error_code ec, int size) {
+void serverListener::probeReply(asio::error_code ec, int size) {
     if(ec)
-        return fail(ec, "broadcastRecivalHandler");
+        return fail(ec, "probeReply");
     else{
         asio::error_code error;
         asio::ip::udp::socket sock(acceptor.get_executor());
@@ -148,16 +158,17 @@ void serverListener::broadcastReceivalHandler(asio::error_code ec, int size) {
         sock.open(asio::ip::udp::v4(), error);
         if (!error)
         {
-            sock.send_to(asio::const_buffer(serverName.c_str(), serverName.size()), remoteEndpoint);
+            sock.send_to(asio::const_buffer(serverName.c_str(), serverName.size()),
+                         udp::endpoint{remoteEndpoint.address(), constants::PORT_PROBE_REPLY_LISTENER});
             sock.close(error);
         }
     }
 
-    //For Another broadcast
-    udpSock.async_receive_from(
+    //For Another probe
+    probeListenerUdpSock.async_receive_from(
             asio::buffer(recieveBuffer), remoteEndpoint,
             [self = shared_from_this()](errorCode ec, std::size_t bytesReceived)
             {
-                self->broadcastReceivalHandler(ec, bytesReceived);
+                self->probeReply(ec, bytesReceived);
             });
 }

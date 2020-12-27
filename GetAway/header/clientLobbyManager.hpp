@@ -9,11 +9,10 @@
 #include <chrono>
 #include "session.hpp"
 #include "messageTypeEnums.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
-#include "sati.hpp"
-#endif#include "deckSuit.hpp"
+#include "terminalInputBase.hpp"
+#include "inputType.h"
+#include "deckSuit.hpp"
+#include "asio/io_context.hpp"
 
 enum whoTurned{
     CLIENT,
@@ -21,13 +20,14 @@ enum whoTurned{
     AUTO
 };
 // Represents the shared server state
-class clientLobbyManager : inputRead {
+class clientLobbyManager : terminalInputBase {
+    asio::io_context& io;
     int * debug;
     std::string playerName;
     int id = 0;
     std::map<int, std::string> gamePlayers;
     std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
-    std::vector<lobbyMessageType> messageTypeExpected;
+    std::vector<messageType> messageTypeExpected;
     inputType inputTypeExpected;
 
     void input(std::string inputString, inputType inputReceivedType) override;
@@ -56,7 +56,7 @@ class clientLobbyManager : inputRead {
 
 public:
     explicit
-    clientLobbyManager();
+    clientLobbyManager(asio::io_context& io_);
 
     ~clientLobbyManager();
 
@@ -76,9 +76,6 @@ public:
     void exitApplication();
 
     inline void setInputType(inputType inputType);
-
-    bool inputHelper(const std::string &inputString, int lower, int upper, inputType notInRange_,
-                     inputType invalidInput_, int &input);
 
     void Turn(int playerId, Card card, whoTurned who);
 

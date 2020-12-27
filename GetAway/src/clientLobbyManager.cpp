@@ -1,21 +1,16 @@
 #include <algorithm>
 #include <utility>
+#include <clientHome.hpp>
 #include "clientLobbyManager.hpp"
 #include "messageTypeEnums.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
 #include "sati.hpp"
-#endif
 
 #include "constants.h"
 #include "gamePF.hpp"
 #include "messagePF.hpp"
 #include "resourceStrings.hpp"
 
-clientLobbyManager::clientLobbyManager(){
-    //TODO
-    //DO NOT USE RESIZE AND ELSE EMPLACE BACK
+clientLobbyManager::clientLobbyManager(asio::io_context& io_): io{io_}{
     constants::initializeCards(myCards);
 }
 
@@ -24,20 +19,20 @@ clientLobbyManager::~clientLobbyManager() = default;
 void clientLobbyManager::join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_) {
     clientLobbySession = std::move(clientLobbySession_);
     messageTypeExpected.clear();
-    messageTypeExpected.emplace_back(lobbyMessageType::SELFANDSTATE);
+    messageTypeExpected.emplace_back(messageType::SELFANDSTATE);
     clientLobbySession->receiveMessage();
 }
 
 void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
 
-    lobbyMessageType messageTypeReceived;
-    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(lobbyMessageType));
+    messageType messageTypeReceived;
+    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(std::find(messageTypeExpected.begin(), messageTypeExpected.end(), messageTypeReceived) == messageTypeExpected.end()){
         resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager\r\n");
     }else{
         switch(messageTypeReceived){
             //STEP 1;
-            case lobbyMessageType::SELFANDSTATE: {
+            case messageType::SELFANDSTATE: {
                 //STEP 2
                 in.read(reinterpret_cast<char*>(&id),sizeof(id));
                 //TODO
@@ -64,7 +59,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
                 //STEP 1;
-            case lobbyMessageType::PLAYERJOINED:{
+            case messageType::PLAYERJOINED:{
                 int playerId = 0;
                 //STEP 2;
                 in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
@@ -75,7 +70,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
-            case lobbyMessageType::PLAYERLEFT:{
+            case messageType::PLAYERLEFT:{
                 int playerId = 0;
                 in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
                 gamePlayers.erase(gamePlayers.find(playerId));
@@ -83,7 +78,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
                 //STEP 1;
-            case lobbyMessageType::CHATMESSAGEID: {
+            case messageType::CHATMESSAGEID: {
                 //STEP 2;
                 in.read(reinterpret_cast<char*>(&chatMessageInt), sizeof(chatMessageInt));
                 assert(chatMessageInt != id);
@@ -104,7 +99,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
                 //STEP 1;
-            case lobbyMessageType::GAMEFIRSTTURNSERVER:{
+            case messageType::GAMEFIRSTTURNSERVER:{
                 int handSize = 0;
                 //STEP 2;
                 in.read(reinterpret_cast<char*>(&handSize), sizeof(handSize));
@@ -143,7 +138,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
             //STEP 1;
-            case lobbyMessageType::GAMETURNSERVER:{
+            case messageType::GAMETURNSERVER:{
                 int senderId;
                 deckSuit suit;
                 int cardNumber;
@@ -167,7 +162,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
 void clientLobbyManager::sendCHATMESSAGE(){
     std::ostream& out = clientLobbySession->out;
     //STEP 1;
-    lobbyMessageType t = lobbyMessageType::CHATMESSAGE;
+    messageType t = messageType::CHATMESSAGE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
     out.write(reinterpret_cast<char *>(&id), sizeof(id));
@@ -179,7 +174,7 @@ void clientLobbyManager::sendCHATMESSAGE(){
 
 void clientLobbyManager::sendGAMETURNCLIENT(Card card){
     //STEP 1;
-    lobbyMessageType t = lobbyMessageType::GAMETURNCLIENT;
+    messageType t = messageType::GAMETURNCLIENT;
     constants::Log("Seding Card Message To Server. Suit {} {}",
                  deckSuitValue::displaySuitType[(int)card.suit], deckSuitValue::displayCards[card.cardNumber]);
     clientLobbySession->out.write(reinterpret_cast<char*>(&t), sizeof(t));
@@ -203,10 +198,10 @@ void clientLobbyManager::uselessWriteFunctionGAMETURNCLIENT(){
 
 void clientLobbyManager::SELFANDSTATEReceived(){
     messageTypeExpected.clear();
-    messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
-    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERJOINED);
-    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERLEFT);
-    messageTypeExpected.emplace_back(lobbyMessageType::GAMEFIRSTTURNSERVER);
+    messageTypeExpected.emplace_back(messageType::CHATMESSAGEID);
+    messageTypeExpected.emplace_back(messageType::PLAYERJOINED);
+    messageTypeExpected.emplace_back(messageType::PLAYERLEFT);
+    messageTypeExpected.emplace_back(messageType::GAMEFIRSTTURNSERVER);
     setInputType(inputType::LOBBYINT);
     sati::getInstance()->setBase(this, appState::LOBBY);
     lobbyPF::addOrRemovePlayer(gamePlayers);
@@ -224,28 +219,6 @@ void clientLobbyManager::exitApplication(){
     clientLobbySession.reset();
 }
 
-bool clientLobbyManager::inputHelper(const std::string& inputString, int lower, int upper, inputType notInRange_,
-                                     inputType invalidInput_, int& input_){
-    try{
-        int num = std::stoi(inputString);
-        if(num>=lower && num<=upper){
-            input_ = num;
-            return true;
-        }else{
-            sati::getInstance()->accumulatePrint();
-            sati::getInstance()->setInputType(notInRange_);
-            resourceStrings::print("Please enter integer in range \r\n");
-            return false;
-        }
-    }
-    catch (std::invalid_argument& e) {
-        sati::getInstance()->accumulatePrint();
-        sati::getInstance()->setInputType(invalidInput_);
-        resourceStrings::print("Invalid Input \r\n");
-        return false;
-    }
-}
-
 //Before refactor, lines of this function = 123;
 void clientLobbyManager::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputTypeExpected){
@@ -253,13 +226,16 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
             case inputType::LOBBYINT:
             {
                 int input;
-                if(inputHelper(inputString, 1, 2, inputType::LOBBYINT, inputType::LOBBYINT,
+                if(constants::inputHelper(inputString, 1, 3, inputType::LOBBYINT, inputType::LOBBYINT,
                                input)){
                     if(input == 1){
                         messagePF::setInputStatementAccumulate();
                         setInputType(inputType::MESSAGESTRING);
                     }
-                    if(input== 2){
+                    else if(input== 2){
+                        exitApplication();
+                        std::make_shared<clientHome>(io)->run();
+                    }else{
                         exitApplication();
                     }
                 }
@@ -286,19 +262,19 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                 if(firstRound){
                     if(std::find(waitingForTurn.begin(), waitingForTurn.end(), id) == waitingForTurn.end()){
                         //don't perform turn
-                        success = inputHelper(inputString, 1, 2, inputType::GAMEINT, inputType::GAMEINT,
+                        success = constants::inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
                                               input);
                     }else{
-                        success = inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
+                        success = constants::inputHelper(inputString, 1, 4, inputType::GAMEINT, inputType::GAMEINT,
                                               input);
                     }
                 }else{
                     if(turnPlayerIdExpected != id){
                         //don't perform turn
-                        success = inputHelper(inputString, 1, 2, inputType::GAMEINT, inputType::GAMEINT,
+                        success = constants::inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
                                               input);
                     }else{
-                        success = inputHelper(inputString, 1, 3, inputType::GAMEINT, inputType::GAMEINT,
+                        success = constants::inputHelper(inputString, 1, 4, inputType::GAMEINT, inputType::GAMEINT,
                                               input);
                     }
                 }
@@ -307,11 +283,12 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     if(input == 1){
                         messagePF::setInputStatementAccumulate();
                         setInputType(inputType::MESSAGESTRING);
-                    }
-                    if(input == 2){
+                    }else if(input == 2){
                         exitApplication();
-                    }
-                    if(input == 3){
+                        std::make_shared<clientHome>(clientHome(io))->run();
+                    }else if(input == 3){
+                        exitApplication();
+                    }else{
                         //perform turn
                         gamePF::setInputStatementHome3R3Accumulate(turnAbleCards);
                         setInputType(inputType::GAMEPERFORMTURN);
@@ -324,7 +301,7 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                     setInputTypeGameInt();
                 }else{
                     int input;
-                    if(inputHelper(inputString, 1, turnAbleCards.size(),
+                    if(constants::inputHelper(inputString, 1, turnAbleCards.size(),
                                    inputType::GAMEPERFORMTURN, inputType::GAMEPERFORMTURN,input)){
                         sendGAMETURNCLIENT(turnAbleCards[input - 1]);
                         Turn(id, turnAbleCards[input - 1], whoTurned::CLIENT);
@@ -369,6 +346,7 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
     }
     flushedCards.find(card.suit)->second.emplace(card.cardNumber);
     roundTurns.emplace_back(playerId, card);
+    gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
     gamePF::setRoundTurnsAccumulate(roundTurns, gamePlayers);
     numberOfCards.find(playerId)->second -= 1;
 
@@ -378,13 +356,15 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
             if (std::get<1>(t).suit == deckSuit::SPADE && std::get<1>(t).cardNumber == 0) {
                 //This is ace of spade
                 turnPlayerIdExpected = std::get<0>(t);
+                waitingForTurn.emplace_back(std::get<0>(t));
+                gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
                 firstRound = false;
                 //Here I am auto turning. So, here I have to check whether auto turn is possible and if yes then
                 //auto turn but do not send it to the server and just clearAndPrint it to the screen.
                 if(id == turnPlayerIdExpected){
                     assignToTurnAbleCards();
-                    setInputTypeGameInt();
                 }
+                setInputTypeGameInt();
                 break;
             }
         }
@@ -398,6 +378,7 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
     }else if(!firstRound && playerId == turnPlayerIdExpected){
         //There is no check whether card number is in range 0-51
         //client is quite dumb. It will have to believe in what it receives.
+        waitingForTurn.clear();
         if(roundTurns.empty()){
             helperFirstTurnAndMiddleTurn(playerId, card, true, who);
         }else if(card.suit != suitOfTheRound){
@@ -407,6 +388,8 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
         }else{
             helperFirstTurnAndMiddleTurn(playerId, card, false, who);
         }
+        waitingForTurn.emplace_back(turnPlayerIdExpected);
+        gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
         setInputTypeGameInt();
     }else{
         constants::Log("No Message Was Expected From This User");
@@ -566,8 +549,8 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
         waitingForTurn.emplace_back(std::get<0>(g));
     }
     messageTypeExpected.clear();
-    messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
-    messageTypeExpected.emplace_back(lobbyMessageType::GAMETURNSERVER);
+    messageTypeExpected.emplace_back(messageType::CHATMESSAGEID);
+    messageTypeExpected.emplace_back(messageType::GAMETURNSERVER);
 
     //Printing Starts
     gamePF::setTurnSequence(gamePlayers, turnSequence);
@@ -634,10 +617,10 @@ void clientLobbyManager::gameExitFinished(){
     waitingForTurn.clear();
     numberOfCards.clear();
     messageTypeExpected.clear();
-    messageTypeExpected.emplace_back(lobbyMessageType::CHATMESSAGEID);
-    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERJOINED);
-    messageTypeExpected.emplace_back(lobbyMessageType::PLAYERLEFT);
-    messageTypeExpected.emplace_back(lobbyMessageType::GAMEFIRSTTURNSERVER);
+    messageTypeExpected.emplace_back(messageType::CHATMESSAGEID);
+    messageTypeExpected.emplace_back(messageType::PLAYERJOINED);
+    messageTypeExpected.emplace_back(messageType::PLAYERLEFT);
+    messageTypeExpected.emplace_back(messageType::GAMEFIRSTTURNSERVER);
     sati::getInstance()->setBase(this, appState::LOBBY);
     lobbyPF::addOrRemovePlayer(gamePlayers);
     lobbyPF::setInputStatementHomeAccumulate();

@@ -2,16 +2,12 @@
 // Created by hassan on 12/7/20.
 //
 
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
 #include "sati.hpp"
-#endif
 #include "clientHomePF.hpp"
 
 void clientHomePF::setInputStatementHome7() {
-    sati::getInstance()->inputStatementBuffer = "1)Add Server 2)Join Server 3)Find Local Server  4)Change Name"
-                                                "5)Find Local Server 6)Game Rules 7)Liscence 8)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Add Server 2)Join Server 3)Find Local Server  4)Change Name "
+                                                "5)Game Rules 6)Liscence 7)Exit\r\n";
 }
 
 void clientHomePF::setInputStatementMAIN() {
@@ -20,7 +16,7 @@ void clientHomePF::setInputStatementMAIN() {
 }
 
 void clientHomePF::setInputStatementHome7R1() {
-    sati::getInstance()->inputStatementBuffer = "Please Enter Remote Server Ip-Address\r\n";
+    sati::getInstance()->inputStatementBuffer = "Please Enter Remote Server Ip-Address. Press Enter To Go Back.\r\n";
 }
 
 void clientHomePF::setInputStatementIPADDRESS() {
@@ -50,6 +46,21 @@ void clientHomePF::setInputStatementHome7R3(const std::vector<std::tuple<std::st
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
+void clientHomePF::setInputStatementHomeChangeName() {
+    sati::getInstance()->inputStatementBuffer = "Please Enter Your Name. Press Enter To Cancel And Go Back.\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
+}
+
+void clientHomePF::setInputStatementHomeGameRules(){
+    sati::getInstance()->inputStatementBuffer = "No Game Rules. Press Enter To Go Back.\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
+}
+
+void clientHomePF::setInputStatementHomeLiscence(){
+    sati::getInstance()->inputStatementBuffer = "No Licence. Press Enter To Go Back.\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
+}
+
 void clientHomePF::setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string>>& servers){
     setInputStatementHome7R2(servers);
     sati::getInstance()->accumulateBuffersAndPrint();
@@ -65,7 +76,7 @@ void clientHomePF::setErrorMessageWrongIpAddressAccumulate() {
 }
 
 void clientHomePF::setInputStatementHome7R1RR() {
-    sati::getInstance()->inputStatementBuffer = "Please Assign This Ip-Address A Server Name\r\n";
+    sati::getInstance()->inputStatementBuffer = "Please Assign This Ip-Address A Server Name. Press Enter To Go Back.\r\n";
 }
 
 void clientHomePF::setInputStatementASSIGNSERVERNAME() {

@@ -1,3 +1,5 @@
+#ifdef ANDROID
+
 #include <utility>
 #include "satiAndroid.hpp"
 #include "deckSuit.hpp"
@@ -31,15 +33,15 @@ void sati::printExitMessage(const std::string& message) {
     resourceStrings::print(message + "\r\n");
 }
 
-void sati::setBase(inputRead *base_, appState currentAppState_) {
+void sati::setBase(terminalInputBase *base_, appState currentAppState_) {
     currentAppState = currentAppState_;
     base = base_;
 }
 
 void sati::operator()(std::string userIncomingInput) {
     asio::post(io, [handler = base, expectedInput = receiveInputType,
-            str = std::move(userIncomingInput)](){
-        handler->input(str, expectedInput);
+            emptybroadcastMessage = std::move(userIncomingInput)](){
+        handler->input(emptybroadcastMessage, expectedInput);
     });
     handlerAssigned = false;
 }
@@ -81,3 +83,5 @@ void sati::accumulateBuffersAndPrint() {
 #endif
     resourceStrings::clearAndPrint(toPrint);
 }
+
+#endif

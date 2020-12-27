@@ -4,31 +4,27 @@
 
 #include "constants.h"
 #include "gamePF.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
 #include "sati.hpp"
-#endif
 
 
 //For Game
 
 //input statement
 void gamePF::setInputStatementHome2() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n";
 }
 
 void gamePF::setInputStatementHome2Accumulate() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void gamePF::setInputStatementHome3() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Perform Turn\r\n";
 }
 
 void gamePF::setInputStatementHome3Accumulate() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit 3)Perform Turn\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Perform Turn\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 

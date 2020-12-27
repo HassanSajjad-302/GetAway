@@ -6,27 +6,25 @@
 
 #include"asio/ip/tcp.hpp"
 #include "asio/ip/udp.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
-#include "sati.hpp"
-#endif
+#include "terminalInputBase.hpp"
+
 using namespace asio::ip;
 using errorCode = asio::error_code;
 // Forward declaration
 class serverAuthManager;
 
 // Accepts incoming connections and launches the sessions
-class serverListener : public std::enable_shared_from_this<serverListener>, inputRead
+class serverListener : public std::enable_shared_from_this<serverListener>, terminalInputBase
 {
+    asio::io_context& io;
     tcp::acceptor acceptor;
     std::shared_ptr<serverAuthManager> nextManager;
     std::string password;
     std::string serverName;
 
     //Following are used for local server find handling
-    udp::socket udpSock;
-    udp::endpoint hostEndpoint;
+    udp::socket probeListenerUdpSock;
+    udp::endpoint probeListenerEndpoint;
     udp::endpoint remoteEndpoint{};
     char recieveBuffer[512];
 
@@ -38,7 +36,7 @@ class serverListener : public std::enable_shared_from_this<serverListener>, inpu
 public:
     tcp::socket tcpSock;
     serverListener(
-            asio::io_context& ioc,
+            asio::io_context& io_,
             const tcp::endpoint& endpoint,
             const std::string& serverName_,
             std::string password_);
@@ -46,12 +44,12 @@ public:
     // Start accepting incoming connections
     void run();
     void runAgain();
-    void broadcastReceivalHandler(asio::error_code ec, int size);
+    void probeReply(asio::error_code ec, int size);
 
     void registerForInputReceival();
     void shutdown();
 
-    void shutdownAcceptor();
+    void shutdownAcceptorAndProbe();
 };
 
 #endif //GETAWAY_SERVERLISTENER_HPP

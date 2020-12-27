@@ -3,11 +3,7 @@
 //
 
 #include "messagePF.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
 #include "sati.hpp"
-#endif
 void messagePF::setInputStatement() {
     sati::getInstance()->inputStatementBuffer = "Please Type The Message \r\n";
 }

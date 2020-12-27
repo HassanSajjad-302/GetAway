@@ -1,22 +1,16 @@
 //Server
 
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
+#ifndef ANDROID
+
 #include "sati.hpp"
-#endif
 #include "serverAuthManager.hpp"
 #include <fstream>
 #include <memory>
 #include "serverHome.hpp"
 #include "constants.h"
 
-#ifdef ANDROID
-void run(){
-#else
 int main(){
-#endif
-#if !defined(NDEBUG) && !defined(ANDROID)
+#ifndef NDEBUG
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
     std::ofstream{"Logs.txt",std::ios_base::app}<<"\n\n\n\n\nNewGame";
     spdlog::set_default_logger(logger);
@@ -26,27 +20,25 @@ int main(){
 
     asio::io_context io;
 
-#ifdef ANDROID
-    sati::getInstanceFirstTime(io);
-#else
     int a;
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
-#endif
-    serverHome h(io);
-    h.run();
+
+    std::make_shared<serverHome>(serverHome(io))->run();
+    /*serverHome h(io);
+    h.run();*/
 
 
 /*
     // Create and launch a listening port
     std::make_shared<serverListener>(
         io,
-        tcp::endpoint{tcp::v4(), constants::PORT},
+        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
         "password")->run();
 */
     io.run();
-
-#ifndef ANDROID
-    //inputThread.detach();
-#endif
+    inputThread.detach();
+    constants::exitCookedTerminal();
 }
+
+#endif

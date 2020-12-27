@@ -4,11 +4,12 @@
 #include "constants.h"
 
 serverAuthManager::
-serverAuthManager(std::string password_, std::shared_ptr<serverListener> listener):
+serverAuthManager(std::string password_, std::shared_ptr<serverListener> listener, asio::io_context& io_):
 password(std::move(password_)),
-serverlistener(std::move(listener))
+serverlistener(std::move(listener)),
+io{io_}
 {
-    nextManager = std::make_shared<serverLobbyManager>(serverlistener);
+    nextManager = std::make_shared<serverLobbyManager>(serverlistener, io);
 }
 
 int serverAuthManager::join(std::shared_ptr<session<serverAuthManager, true>> authSession) {

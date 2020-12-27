@@ -3,19 +3,15 @@
 //
 
 #include "lobbyPF.hpp"
-#ifdef ANDROID
-#include "satiAndroid.hpp"
-#else
 #include "sati.hpp"
-#endif
 
 //USED ONLY FOR LOBBY
 //input-statement functions
 void lobbyPF::setInputStatementHome() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n";
 }
 void lobbyPF::setInputStatementHomeAccumulate() {
-    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
