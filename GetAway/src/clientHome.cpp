@@ -1,6 +1,3 @@
-//
-// Created by hassan on 12/8/20.
-//
 
 #include "clientHome.hpp"
 #include "constants.h"
@@ -11,7 +8,6 @@
 #include <clientHomePF.hpp>
 #include "resourceStrings.hpp"
 #include "sati.hpp"
-#include "asio/error.hpp"
 
 clientHome::clientHome(asio::io_context &io_): io(io_), guard(io_.get_executor()), tcpSock(io_), udpSock(io_),
                                                broadcastudpSock(io), broadcastTimer(io){
@@ -91,7 +87,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
         if(inputReceivedType == inputType::HOMEMAIN){
             int input;
             if(constants::inputHelper(inputString,
-                           1, 7, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
+                           1, 6, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
                     //Add Server
                     clientHomePF::setInputStatementIPADDRESS();
@@ -135,18 +131,14 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
                     clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
                 }else if(input == 4){
-                    //Change Name
-                    clientHomePF::setInputStatementHomeChangeName();
-                    setInputType(inputType::HOMECHANGENAME);
-                }else if(input == 5){
                     //Game Rules
                     clientHomePF::setInputStatementHomeGameRules();
                     setInputType(inputType::HOMEGAMERULES);
+                }else if(input == 5){
+                    //About
+                    clientHomePF::setInputStatementHomeAbout();
+                    setInputType(inputType::HOMEABOUT);
                 }else if(input == 6){
-                    //Liscence
-                    clientHomePF::setInputStatementHomeLiscence();
-                    setInputType(inputType::HOMELISCENCE);
-                }else if(input == 7){
                     //Exit
                     if(tcpSock.is_open()){
                         asio::error_code ec;
@@ -176,7 +168,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                 clientHomePF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
             }else{
-                addedServers.emplace_back(std::move(ipAddress), std::move(inputString));
+                addedServers.emplace_back(std::move(inputString), std::move(ipAddress));
                 clientHomePF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
             }
@@ -186,17 +178,9 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             if(constants::inputHelper(inputString, 1, addedServers.size(), inputType::HOMEJOINSERVER,
                                       inputType::HOMEJOINSERVER, input)){
                 --input;
-                tcpSock.async_connect(tcp::endpoint(make_address_v4(std::get<0>(addedServers[input])),
-                                                    constants::PORT_CLIENT_CONNECTOR),
-                                      [self = this](asio::error_code ec){
-                    if(ec){
-                        self->CONNECTTOSERVERFail(ec);
-                    }else{
-                        self->promote();
-                    }
-                });
-                clientHomePF::setInputStatementConnectingToServer(std::get<0>(addedServers[input]));
-                setInputType(inputType::HOMECONNECTTINGTOSERVER);
+                clientHomePF::setInputStatementClientName();
+                setInputType(inputType::HOMECLIENTNAME);
+                connectWithServer = addedServers[input];
             }
         }else if(inputReceivedType == inputType::HOMECONNECTTINGTOSERVER){
             int input;
@@ -223,27 +207,30 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     broadcastudpSock.close();
                     udpSock.close();
                     --input;
-                    tcpSock.async_connect(tcp::endpoint(make_address_v4(std::get<1>(broadcastServersObtained[input])),
-                                                        constants::PORT_CLIENT_CONNECTOR),
-                                          [self = this](asio::error_code ec){
-                                              if(ec){
-                                                  self->CONNECTTOSERVERFail(ec);
-                                              }else{
-                                                  self->promote();
-                                              }
-                                          });
-                    clientHomePF::setInputStatementConnectingToServer(std::get<0>(broadcastServersObtained[input]));
-                    broadcastServersObtained.clear();
+                    clientHomePF::setInputStatementClientName();
+                    setInputType(inputType::HOMECLIENTNAME);
+                    connectWithServer = broadcastServersObtained[input];
                 }
             }
-        }else if(inputReceivedType == inputType::HOMECHANGENAME){
-            myName = inputString;
-            clientHomePF::setInputStatementMAIN();
-            setInputType(inputType::HOMEMAIN);
+        }else if(inputReceivedType == inputType::HOMECLIENTNAME){
+            if(!inputString.empty()){
+                myName = inputString;
+            }
+            tcpSock.async_connect(tcp::endpoint(make_address_v4(std::get<1>(connectWithServer)),
+                                                constants::PORT_CLIENT_CONNECTOR),
+                                  [self = this](asio::error_code ec){
+                                      if(ec){
+                                          self->CONNECTTOSERVERFail(ec);
+                                      }else{
+                                          self->promote();
+                                      }
+                                  });
+            clientHomePF::setInputStatementConnectingToServer(std::get<0>(connectWithServer));
+            setInputType(inputType::HOMECONNECTTINGTOSERVER);
         }else if(inputReceivedType == inputType::HOMEGAMERULES){
             clientHomePF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
-        }else if(inputReceivedType == inputType::HOMELISCENCE){
+        }else if(inputReceivedType == inputType::HOMEABOUT){
             clientHomePF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
         }

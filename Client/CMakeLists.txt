@@ -1,7 +1,5 @@
-if(NOT ANDROID)
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-endif()
 
 set(srcFiles "../Client/main.cpp" "../GetAway/src/clientAuthManager.cpp"
         "../GetAway/src/clientLobbyManager.cpp"

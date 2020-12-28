@@ -6,6 +6,7 @@
 #define GETAWAY_TERMINALINPUTBASE_HPP
 
 #include "inputType.h"
+#include <string>
 class terminalInputBase{
 public:
     virtual void input(std::string inputString, inputType inputReceivedType) =0;

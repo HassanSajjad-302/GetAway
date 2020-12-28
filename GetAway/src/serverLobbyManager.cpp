@@ -256,7 +256,7 @@ void serverLobbyManager::initializeGame(){
     std::random_device rd{};
     //todo
     //providing a same value to random engine for testing
-    auto rng = std::default_random_engine { 1 };
+    auto rng = std::default_random_engine { rd() };
 
     int numberOfPlayersWithExtraCards = constants::DECKSIZE % gameData.size();
 

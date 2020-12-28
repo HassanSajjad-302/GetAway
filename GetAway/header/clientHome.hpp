@@ -23,6 +23,7 @@ class clientHome : terminalInputBase, public std::enable_shared_from_this<client
     std::string myName = "Player";
     std::string ipAddress;
     std::vector<std::tuple<std::string, std::string>> addedServers;//server-name, ip-address
+    std::tuple<std::string, std::string> connectWithServer; //server-name, ip-address
 
     //Following Are Used For broadcast server finding
     udp::socket broadcastudpSock;

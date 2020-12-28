@@ -23,12 +23,6 @@ sati::sati(asio::io_context &io_) : io{io_}{
 
 }
 
-
-void sati::setInputType(inputType nextReceiveInputType) {
-    receiveInputType = nextReceiveInputType;
-    handlerAssigned = true;
-}
-
 void sati::printExitMessage(const std::string& message) {
     resourceStrings::print(message + "\r\n");
 }
