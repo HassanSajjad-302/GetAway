@@ -1,13 +1,11 @@
-//
-// Created by hassan on 12/7/20.
-//
 
 #include "sati.hpp"
+#include "constants.h"
 #include "clientHomePF.hpp"
 
 void clientHomePF::setInputStatementHome7() {
-    sati::getInstance()->inputStatementBuffer = "1)Add Server 2)Join Server 3)Find Local Server  4)Change Name "
-                                                "5)Game Rules 6)Liscence 7)Exit\r\n";
+    sati::getInstance()->inputStatementBuffer = "1)Add Server 2)Join Server 3)Find Local Server"
+                                                " 4)Game Rules 5)About 6)Exit\r\n";
 }
 
 void clientHomePF::setInputStatementMAIN() {
@@ -29,8 +27,8 @@ void clientHomePF::setInputStatementHome7R2(const std::vector<std::tuple<std::st
     sati::getInstance()->inputStatementBuffer += "Please select one of the following\r\n";
     for(int i=0; i<servers.size(); ++i){
         sati::getInstance()->inputStatementBuffer += std::to_string(i+1) + ")\r\n";
-        sati::getInstance()->inputStatementBuffer += "Ip Address: " + std::get<0>(servers[i]) + "\r\n";
-        sati::getInstance()->inputStatementBuffer += "Server Name: " + std::get<1>(servers[i]) + "\r\n\n";
+        sati::getInstance()->inputStatementBuffer += "Server Name: " + std::get<0>(servers[i]) + "\r\n";
+        sati::getInstance()->inputStatementBuffer += "Ip Address: " + std::get<1>(servers[i]) + "\r\n\n";
     }
 }
 
@@ -46,18 +44,20 @@ void clientHomePF::setInputStatementHome7R3(const std::vector<std::tuple<std::st
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHomePF::setInputStatementHomeChangeName() {
-    sati::getInstance()->inputStatementBuffer = "Please Enter Your Name. Press Enter To Cancel And Go Back.\r\n";
+void clientHomePF::setInputStatementClientName() {
+    sati::getInstance()->inputStatementBuffer = "Please Enter Your Name. Press Enter To Use Default.\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
 void clientHomePF::setInputStatementHomeGameRules(){
-    sati::getInstance()->inputStatementBuffer = "No Game Rules. Press Enter To Go Back.\r\n";
+    sati::getInstance()->inputStatementBuffer = constants::gameRules;
+    sati::getInstance()->inputStatementBuffer += "\r\nPress Enter To Go Back\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHomePF::setInputStatementHomeLiscence(){
-    sati::getInstance()->inputStatementBuffer = "No Licence. Press Enter To Go Back.\r\n";
+void clientHomePF::setInputStatementHomeAbout(){
+    sati::getInstance()->inputStatementBuffer = constants::about;
+    sati::getInstance()->inputStatementBuffer += "\r\nPress Enter To Go Back\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 

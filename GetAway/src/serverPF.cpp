@@ -11,7 +11,7 @@ void serverPF::setHomeMain() {
 }
 
 void serverPF::setHomeChangeServerName(){
-    sati::getInstance()->inputStatementBuffer = "Enter Server Name. Press Enter To Go Back.\r\n";
+    sati::getInstance()->inputStatementBuffer = "Enter Server Name. Press Enter To Use Default.\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 

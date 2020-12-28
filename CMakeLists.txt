@@ -1,13 +1,13 @@
-if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent)
+else()
     cmake_minimum_required(VERSION 3.5)
 
     project(GetAway LANGUAGES CXX)
 endif()
 
-if(NOT ANDROID)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-endif()
 
 set(srcFiles "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
         "GetAway/src/serverAuthManager.cpp" "GetAway/src/serverLobbyManager.cpp"
@@ -52,6 +52,10 @@ else()
     target_link_libraries(GetAway PRIVATE spdlog::spdlog_header_only)
 endif()
 
-if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
+get_directory_property(hasParent PARENT_DIRECTORY)
+if(hasParent)
+    message(STATUS "Has a parent scope.")
+else()
     add_subdirectory(Client)
 endif()
+

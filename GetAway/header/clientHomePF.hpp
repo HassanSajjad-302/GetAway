@@ -20,9 +20,9 @@ public:
 
     static void setInputStatementHome7R3(const std::vector<std::tuple<std::string, std::string>>& probeReply);
 
-    static void setInputStatementHomeChangeName();
+    static void setInputStatementClientName();
     static void setInputStatementHomeGameRules();
-    static void setInputStatementHomeLiscence();
+    static void setInputStatementHomeAbout();
 
     static void setErrorMessageWrongIpAddress();
     static void setErrorMessageWrongIpAddressAccumulate();

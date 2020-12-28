@@ -1,6 +1,3 @@
-//
-// Created by hassan on 12/9/20.
-//
 
 #include "resourceStrings.hpp"
 #include "serverHome.hpp"
@@ -45,8 +42,13 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
             }
         }if(inputReceivedType == inputType::HOMESTARTSERVER){
             if(inputString.empty()){
-                serverPF::setHomeMain();
-                setInputType(inputType::HOMEMAIN);
+                std::make_shared<serverListener>(
+                        io,
+                        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                        "Server",
+                        "password")->run();
+                guard.reset();
+                ref.reset();
             }else{
                 std::make_shared<serverListener>(
                         io,
@@ -56,7 +58,6 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                 guard.reset();
                 ref.reset();
             }
-
         }
     }else{
         resourceStrings::print("Unexpected input type input received\r\n");
