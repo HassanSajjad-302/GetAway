@@ -9,7 +9,7 @@ password(std::move(password_)),
 serverlistener(std::move(listener)),
 io{io_}
 {
-    nextManager = std::make_shared<serverLobbyManager>(serverlistener, io);
+    nextManager = std::make_shared<serverRoomManager>(serverlistener, io);
 }
 
 int serverAuthManager::join(std::shared_ptr<session<serverAuthManager, true>> authSession) {
@@ -39,8 +39,8 @@ void serverAuthManager::packetReceivedFromNetwork(std::istream &in, int received
         in.getline(arr,61);
         str = std::string(arr);
         nextManager->setPlayerNameAdvanced(std::move(str));
-        std::make_shared<session<serverLobbyManager, true>>(std::move(serverAuthSessions.find(excitedSessionId)->second->sock),
-                                                            nextManager)->registerSessionToManager();
+        std::make_shared<session<serverRoomManager, true>>(std::move(serverAuthSessions.find(excitedSessionId)->second->sock),
+                                                           nextManager)->registerSessionToManager();
         serverAuthSessions.erase(serverAuthSessions.find(excitedSessionId));
     }
     else

@@ -15,7 +15,8 @@ set(srcFiles "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
         "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp"
         "GetAway/src/playerData.cpp" "GetAway/src/constants.cpp" "GetAway/src/deckSuit.cpp"
         "GetAway/src/serverHome.cpp" "GetAway/src/serverPF.cpp" "GetAway/src/resourceStrings.cpp"
-        "GetAway/src/androidServerMain.cpp" "GetAway/src/satiAndroid.cpp" "GetAway/header")
+        "GetAway/src/androidServerMain.cpp" "GetAway/src/satiAndroid.cpp" "GetAway/src/serverChatManager.cpp"
+        "GetAway/src/serverRoomManager.cpp")
 
 if(NOT ANDROID)
     add_executable(GetAway "${srcFiles}")

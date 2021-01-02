@@ -1,9 +1,6 @@
 #ifndef GETAWAY_SERVERLOBBYMANAGER_HPP
 #define GETAWAY_SERVERLOBBYMANAGER_HPP
 
-
-
-
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -17,57 +14,27 @@
 #include "playerData.hpp"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
-
-class serverLobbyManager : terminalInputBase
+class serverRoomManager;
+class serverLobbyManager
 {
-    asio::io_context& io;
-    std::map<int, std::tuple<const std::string,
-    std::shared_ptr<session<serverLobbyManager, true>>>> gameData;
-    inputType inputTypeExpected;
+    serverRoomManager& roomManager;
+    const std::map<int, std::tuple<const std::string,
+    std::shared_ptr<session<serverRoomManager, true>>>>& players;
 
-    //Following are used for game management only.
-    bool gameStarted = false;
     bool firstRound;
     std::map<deckSuit, std::set<int>> flushedCards;
     deckSuit suitOfTheRound;
-
     std::vector<playerData> gamePlayersData;
     std::vector<std::tuple<int, Card>> roundTurns; //id and Card
-    //
-
-    std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
-
-    //Following Used By ServerAuthManager and in initial setting up of the game.
-    std::string playerNameAdvanced;
-    std::string playerNameFinal;
-public:
-    void setPlayerNameAdvanced(std::string advancedPlayerName);
-
-    void shutDown();
 
 public:
     explicit
-    serverLobbyManager(std::shared_ptr<serverListener> serverlistener_, asio::io_context& io_);
-    void uselessWriteFunction(int id);
+    serverLobbyManager(    const std::map<int, std::tuple<const std::string,
+            std::shared_ptr<session<serverRoomManager, true>>>>& gameData_, serverRoomManager& roomManager_);
 
-    //Used-By-Session
-    int join  (std::shared_ptr<session<serverLobbyManager, true>> lobbySession);
-    void leave (int id);
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 
-    void sendPLAYERJOINEDToAllExceptOne(int excitedSessionId);
-
-    void sendPLAYERLEFTToAllExceptOne(int excitedSessionId);
-
-    void sendCHATMESSAGEIDToAllExceptOne(const std::string &chatMessageReceived, int excitedSessionId);
-
     void sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card);
-
-    void managementJoin(int excitedSessionId);
-
-    void managementCHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId);
-
-    void closeLobbySocketsAndStartGame();
 
     void doFirstTurnOfFirstRound();
 #ifndef NDEBUG
@@ -95,15 +62,5 @@ public:
     bool indexGamePlayerDataFromId(int id, int &index);
 
     std::vector<playerData>::iterator roundKingGamePlayerDataIterator();
-
-    void applicationExit();
-private:
-    void input(std::string inputString, inputType inputReceivedType) override;
-
-    void goBackToServerListener();
-
-    void gameExitFinished();
-
-    void setInputType(inputType type);
 };
 #endif //GETAWAY_SERVERLOBBYMANAGER_HPP
