@@ -8,8 +8,7 @@ set(srcFiles "../Client/main.cpp" "../GetAway/src/clientAuthManager.cpp"
         "../GetAway/src/lobbyPF.cpp" "../GetAway/src/gamePF.cpp" "../GetAway/src/clientHomePF.cpp"
         "../GetAway/src/messagePF.cpp" "../GetAway/src/clientHome.cpp"
         "../GetAway/src/resourceStrings.cpp" "../GetAway/src/androidClientMain.cpp"
-        "../GetAway/src/satiAndroid.cpp"
-        )
+        "../GetAway/src/satiAndroid.cpp" "../GetAway/src/clientRoomManager.cpp" "../GetAway/src/clientChatManager.cpp" )
 
 if(NOT ANDROID)
   add_executable(Client "${srcFiles}")

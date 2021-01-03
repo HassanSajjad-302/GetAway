@@ -2,9 +2,7 @@
 #include <serverLobbyManager.hpp>
 #include <utility>
 #include <cassert>
-#include "serverHome.hpp"
 #include "constants.h"
-#include "serverPF.hpp"
 #include "resourceStrings.hpp"
 #include "serverRoomManager.hpp"
 #include "sati.hpp"
@@ -392,10 +390,6 @@ void serverLobbyManager::performLastOrThullaTurn(
 
 void serverLobbyManager::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer,
                                                             Card card){
-    //send turn to every-one except one
-    //remove the card from turnReceiverPlayer.cards
-    //set TurnExpected of current = false;
-    //emplace back in roundTurns
 
     sendGAMETURNSERVERTOAllExceptOne(turnReceivedPlayer->id, card);
     turnReceivedPlayer->cards.find(card.suit)->second.erase(card.cardNumber);

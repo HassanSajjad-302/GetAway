@@ -8,9 +8,9 @@
 #include "asio/io_context.hpp"
 #include "session.hpp"
 #include "terminalInputBase.hpp"
-#include "serverChatManager.hpp"
 #include "serverLobbyManager.hpp"
 
+class serverChatManager;
 class serverRoomManager: terminalInputBase{
 
     std::map<int, std::tuple<const std::string,

@@ -13,6 +13,7 @@
 #include "inputType.h"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
+#include "clientRoomManager.hpp"
 
 enum whoTurned{
     CLIENT,
@@ -21,11 +22,11 @@ enum whoTurned{
 };
 // Represents the shared server state
 class clientLobbyManager : terminalInputBase {
-    asio::io_context& io;
-    int * debug;
-    std::string playerName;
+    clientRoomManager roomManager&;
+    //asio::io_context& io;
+    const std::string& playerName;
+    const std::map<int, std::string>& players;
     int id = 0;
-    std::map<int, std::string> gamePlayers;
     std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
     std::vector<messageType> messageTypeExpected;
     inputType inputTypeExpected;
@@ -56,7 +57,8 @@ class clientLobbyManager : terminalInputBase {
 
 public:
     explicit
-    clientLobbyManager(asio::io_context& io_);
+    clientLobbyManager(clientRoomManager &roomManager, const std::string& playerName_,
+                       const std::map<int, std::string>& players_);
 
     ~clientLobbyManager();
 
@@ -65,21 +67,12 @@ public:
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 
-    void SELFANDSTATEReceived();
-
-    void PLAYERJOINEDOrPLAYERLEFTReceived();
-
     void managementGAMEFIRSTTURNSERVERReceived();
-
-    void uselessWriteFunctionCHATMESSAGE();
-
-    void exitApplication();
 
     inline void setInputType(inputType inputType);
 
     void Turn(int playerId, Card card, whoTurned who);
 
-    void sendCHATMESSAGE();
 
     void sendGAMETURNCLIENT(Card card);
 

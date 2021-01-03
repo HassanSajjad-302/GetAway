@@ -10,7 +10,9 @@
 #include "messagePF.hpp"
 #include "resourceStrings.hpp"
 
-clientLobbyManager::clientLobbyManager(asio::io_context& io_): io{io_}{
+clientLobbyManager::clientLobbyManager(clientRoomManager &roomManager_, const std::string& playerName_, const std::map<int, std::string>& players_):
+        roomManager{roomManager_}, playerName{playerName_}, players{players_}
+{
     constants::initializeCards(myCards);
 }
 
@@ -31,80 +33,13 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
         resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager\r\n");
     }else{
         switch(messageTypeReceived){
-            //STEP 1;
-            case messageType::SELFANDSTATE: {
-                //STEP 2
-                in.read(reinterpret_cast<char*>(&id),sizeof(id));
-                //TODO
-                char arr[61]; //This constant will be fed from somewhere else but one is added.
-                //STEP 3
-                in.getline(arr, 61);
-                //TODO
-                //Action on if a new playerName is assigned.
-                playerName = std::string(arr);
-
-                int size;
-                //STEP 4
-                in.read(reinterpret_cast<char*>(&size), sizeof(size));
-                for(int i=0; i<size; ++i){
-                    int playersId = 0;
-                    //STEP 5
-                    in.read(reinterpret_cast<char*>(&playersId), sizeof(playersId));
-                    //STEP 6
-                    in.getline(arr, 61);
-                    playerName = std::string(arr);
-                    gamePlayers.emplace(playersId, playerName);
-                }
-                SELFANDSTATEReceived();
-                break;
-            }
-                //STEP 1;
-            case messageType::PLAYERJOINED:{
-                int playerId = 0;
-                //STEP 2;
-                in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
-                char arr[61];
-                //STEP 3;
-                in.getline(arr, 61);
-                gamePlayers.emplace(playerId, std::string(arr));
-                PLAYERJOINEDOrPLAYERLEFTReceived();
-                break;
-            }
-            case messageType::PLAYERLEFT:{
-                int playerId = 0;
-                in.read(reinterpret_cast<char*>(&playerId), sizeof(playerId));
-                gamePlayers.erase(gamePlayers.find(playerId));
-                PLAYERJOINEDOrPLAYERLEFTReceived();
-                break;
-            }
-                //STEP 1;
-            case messageType::CHATMESSAGEID: {
-                //STEP 2;
-                in.read(reinterpret_cast<char*>(&chatMessageInt), sizeof(chatMessageInt));
-                assert(chatMessageInt != id);
-                int arrSize = (receivedPacketSize - 8) + 1; //4 for packety type enum and 4 for the id and 1 for getline
-#if defined(_WIN32) || defined(_WIN64)
-                char* arr = new char[arrSize];
-#endif
-#ifdef __linux__
-                char arr[arrSize];
-#endif                //STEP 3;
-                in.getline(arr, receivedPacketSize - 8);
-                chatMessageString = std::string(arr);
-#if defined(_WIN32) || defined(_WIN64)
-                delete[] arr;
-#endif
-                messagePF::addAccumulate(gamePlayers.find(chatMessageInt)->second,
-                                         chatMessageString);
-                break;
-            }
                 //STEP 1;
             case messageType::GAMEFIRSTTURNSERVER:{
                 int handSize = 0;
                 //STEP 2;
                 in.read(reinterpret_cast<char*>(&handSize), sizeof(handSize));
-                assert((handSize <= ((constants::DECKSIZE / gamePlayers.size()) + 1) &&
-                        handSize >= ((constants::DECKSIZE / gamePlayers.size()) - 1)) &&
+                assert((handSize <= ((constants::DECKSIZE / players.size()) + 1) &&
+                        handSize >= ((constants::DECKSIZE / players.size()) - 1)) &&
                        "Unexpected Number Of Cards Received");
                 for(int i=0; i < handSize; ++i){
                     deckSuit suit;
@@ -117,15 +52,15 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 }
 
                 //STAGE 2;
-                for(int i=0;i<gamePlayers.size();++i){
+                for(int i=0; i < players.size(); ++i){
                     int sequenceId;
                     //STEP 5; //turn sequence
                     in.read(reinterpret_cast<char*>(&sequenceId), sizeof(sequenceId));
-                    assert(gamePlayers.find(sequenceId) != gamePlayers.end() && "turn SequenceId not present in gamePlayerid");
+                    assert(players.find(sequenceId) != players.end() && "turn SequenceId not present in gamePlayerid");
                     turnSequence.emplace_back(sequenceId);
                 }
 
-                for(int i=0; i<gamePlayers.size(); ++i){
+                for(int i=0; i < players.size(); ++i){
                     int gpId;
                     int gpSize;
                     //STEP 9;
@@ -154,22 +89,13 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
                 Turn(senderId, Card(suit, cardNumber), whoTurned::RECEIVED);
                 break;
             }
+            default:{
+                resourceStrings::print("Unexpected Packet Type Received in class serverRoomManager\r\n");
+                break;
+            }
         }
     }
     clientLobbySession->receiveMessage();
-}
-
-void clientLobbyManager::sendCHATMESSAGE(){
-    std::ostream& out = clientLobbySession->out;
-    //STEP 1;
-    messageType t = messageType::CHATMESSAGE;
-    out.write(reinterpret_cast<char*>(&t), sizeof(t));
-    //STEP 2;
-    out.write(reinterpret_cast<char *>(&id), sizeof(id));
-    //STEP 3;
-    out << chatMessageString << std::endl;
-
-    clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunctionCHATMESSAGE);
 }
 
 void clientLobbyManager::sendGAMETURNCLIENT(Card card){
@@ -189,72 +115,17 @@ void clientLobbyManager::sendGAMETURNCLIENT(Card card){
 }
 
 void clientLobbyManager::uselessWriteFunctionCHATMESSAGE(){
-    messagePF::addAccumulate(gamePlayers.find(chatMessageInt)->second, chatMessageString);
+    messagePF::addAccumulate(players.find(chatMessageInt)->second, chatMessageString);
 }
 
 void clientLobbyManager::uselessWriteFunctionGAMETURNCLIENT(){
-    //sati::getInstance()->addMessageAccumulatePrint(gamePlayers.find(chatMessageInt)->second, chatMessageString);
-}
-
-void clientLobbyManager::SELFANDSTATEReceived(){
-    messageTypeExpected.clear();
-    messageTypeExpected.emplace_back(messageType::CHATMESSAGEID);
-    messageTypeExpected.emplace_back(messageType::PLAYERJOINED);
-    messageTypeExpected.emplace_back(messageType::PLAYERLEFT);
-    messageTypeExpected.emplace_back(messageType::GAMEFIRSTTURNSERVER);
-    setInputType(inputType::LOBBYINT);
-    sati::getInstance()->setBase(this, appState::LOBBY);
-    lobbyPF::addOrRemovePlayer(gamePlayers);
-    lobbyPF::setInputStatementHomeAccumulate();
-}
-
-void clientLobbyManager::PLAYERJOINEDOrPLAYERLEFTReceived(){
-    lobbyPF::addOrRemovePlayer(gamePlayers);
-    lobbyPF::setInputStatementHomeAccumulate();
-}
-
-void clientLobbyManager::exitApplication(){
-    clientLobbySession->sock.shutdown(asio::socket_base::shutdown_both);
-    clientLobbySession->sock.close();
-    clientLobbySession.reset();
+    //sati::getInstance()->addMessageAccumulatePrint(players.find(chatMessageInt)->second, chatMessageString);
 }
 
 //Before refactor, lines of this function = 123;
 void clientLobbyManager::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputTypeExpected){
         switch (inputReceivedType) {
-            case inputType::LOBBYINT:
-            {
-                int input;
-                if(constants::inputHelper(inputString, 1, 3, inputType::LOBBYINT, inputType::LOBBYINT,
-                               input)){
-                    if(input == 1){
-                        messagePF::setInputStatementAccumulate();
-                        setInputType(inputType::MESSAGESTRING);
-                    }
-                    else if(input== 2){
-                        exitApplication();
-                        std::make_shared<clientHome>(io)->run();
-                    }else{
-                        exitApplication();
-                    }
-                }
-                break;
-            }
-            case inputType::MESSAGESTRING:
-            {
-                if(inputString.empty()){
-                    lobbyPF::setInputStatementHomeAccumulate();
-                    gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
-                }else{
-                    chatMessageString = std::move(inputString);
-                    chatMessageInt = id;
-                    sendCHATMESSAGE();
-                    lobbyPF::setInputStatementHomeAccumulate();
-                    gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
-                }
-                break;
-            }
             case inputType::GAMEINT:
             {
                 int input;
@@ -284,10 +155,9 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                         messagePF::setInputStatementAccumulate();
                         setInputType(inputType::MESSAGESTRING);
                     }else if(input == 2){
-                        exitApplication();
-                        std::make_shared<clientHome>(clientHome(io))->run();
+                        roomManager.leaveGame();
                     }else if(input == 3){
-                        exitApplication();
+                        roomManager.exitApplicationAmidGame();
                     }else{
                         //perform turn
                         gamePF::setInputStatementHome3R3Accumulate(turnAbleCards);
@@ -346,8 +216,8 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
     }
     flushedCards.find(card.suit)->second.emplace(card.cardNumber);
     roundTurns.emplace_back(playerId, card);
-    gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
-    gamePF::setRoundTurnsAccumulate(roundTurns, gamePlayers);
+    gamePF::setWaitingForTurn(waitingForTurn, players);
+    gamePF::setRoundTurnsAccumulate(roundTurns, players);
     numberOfCards.find(playerId)->second -= 1;
 
     if (roundTurns.size() == turnSequence.size()) {
@@ -357,7 +227,7 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
                 //This is ace of spade
                 turnPlayerIdExpected = std::get<0>(t);
                 waitingForTurn.emplace_back(std::get<0>(t));
-                gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
+                gamePF::setWaitingForTurn(waitingForTurn, players);
                 firstRound = false;
                 //Here I am auto turning. So, here I have to check whether auto turn is possible and if yes then
                 //auto turn but do not send it to the server and just clearAndPrint it to the screen.
@@ -389,7 +259,7 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
             helperFirstTurnAndMiddleTurn(playerId, card, false, who);
         }
         waitingForTurn.emplace_back(turnPlayerIdExpected);
-        gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
+        gamePF::setWaitingForTurn(waitingForTurn, players);
         setInputTypeGameInt();
     }else{
         constants::Log("No Message Was Expected From This User");
@@ -403,7 +273,7 @@ void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, b
         constants::Log("Suit Of The Round is {}", deckSuitValue::displaySuitType[(int)suitOfTheRound]);
     }
     roundTurns.emplace_back(playerId, card);
-    gamePF::setRoundTurns(roundTurns, gamePlayers);
+    gamePF::setRoundTurns(roundTurns, players);
 
     if(playerId == id){
         myCards.find(card.suit)->second.erase(card.cardNumber);
@@ -431,7 +301,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         //playerId may be our Id.
         assert(turnPlayerIdExpected != playerId && "Why we are performing thulla turn if we have already performed our turn in the round");
         roundTurns.emplace_back(playerId, card);
-        gamePF::setRoundTurns(roundTurns, gamePlayers);
+        gamePF::setRoundTurns(roundTurns, players);
 
         if(playerId == id){
             myCards.find(card.suit)->second.erase(card.cardNumber);
@@ -450,7 +320,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         numberOfCards.find(turnPlayerIdExpected)->second += roundTurns.size();
     }else{
         roundTurns.emplace_back(playerId, card);
-        gamePF::setRoundTurns(roundTurns, gamePlayers);
+        gamePF::setRoundTurns(roundTurns, players);
 
         turnPlayerIdExpected = roundKing();
         if(playerId == id){
@@ -496,12 +366,12 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
     }else if(turnSequence.size() == 1){
         int loosingId = *turnSequence.begin();
         //player lost. move back to lobby
-        resourceStrings::print("Player " + gamePlayers.find(loosingId)->second + " Lost\r\n");
+        resourceStrings::print("Player " + players.find(loosingId)->second + " Lost\r\n");
         gameExitFinished();
         return;
     }else{
         //game continues
-        gamePF::setTurnSequence(gamePlayers, turnSequence);
+        gamePF::setTurnSequence(players, turnSequence);
 
         if(turnPlayerIdExpected == id){
             assignToTurnAbleCards();
@@ -545,7 +415,7 @@ int clientLobbyManager::roundKing() {
 
 void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
     constants::initializeCards(flushedCards);
-    for(auto&g: gamePlayers){
+    for(auto&g: players){
         waitingForTurn.emplace_back(std::get<0>(g));
     }
     messageTypeExpected.clear();
@@ -553,11 +423,11 @@ void clientLobbyManager::managementGAMEFIRSTTURNSERVERReceived(){
     messageTypeExpected.emplace_back(messageType::GAMETURNSERVER);
 
     //Printing Starts
-    gamePF::setTurnSequence(gamePlayers, turnSequence);
+    gamePF::setTurnSequence(players, turnSequence);
 
-    gamePF::setRoundTurns(roundTurns, gamePlayers);
+    gamePF::setRoundTurns(roundTurns, players);
 
-    gamePF::setWaitingForTurn(waitingForTurn, gamePlayers);
+    gamePF::setWaitingForTurn(waitingForTurn, players);
     gamePF::setCards(myCards);
 
     sati::getInstance()->setBase(this, appState::GAME);
@@ -622,7 +492,7 @@ void clientLobbyManager::gameExitFinished(){
     messageTypeExpected.emplace_back(messageType::PLAYERLEFT);
     messageTypeExpected.emplace_back(messageType::GAMEFIRSTTURNSERVER);
     sati::getInstance()->setBase(this, appState::LOBBY);
-    lobbyPF::addOrRemovePlayer(gamePlayers);
+    lobbyPF::addOrRemovePlayer(players);
     lobbyPF::setInputStatementHomeAccumulate();
     setInputType(inputType::LOBBYINT);
 }

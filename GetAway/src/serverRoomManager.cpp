@@ -3,7 +3,7 @@
 #include <sati.hpp>
 #include <serverHome.hpp>
 #include "serverRoomManager.hpp"
-
+#include "serverChatManager.hpp"
 serverRoomManager::serverRoomManager(std::shared_ptr <serverListener> serverlistener_, asio::io_context &io_):
         serverlistener(std::move(serverlistener_)), io{io_} {
     chatManager = std::make_shared<serverChatManager>(players);

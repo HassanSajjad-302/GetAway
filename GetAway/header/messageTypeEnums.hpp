@@ -10,16 +10,14 @@ enum class mtc{
     GAME
 };
 
-enum class adf{
-
-};
-namespace adf{
-
-}
-enum class messageType{
+//message type room
+enum class mtr{
     SELFANDSTATE ,
     PLAYERJOINED ,
-    PLAYERLEFT ,
+    PLAYERLEFT
+};
+
+enum class messageType{
     CHATMESSAGE ,
     CHATMESSAGEID ,
     GAMEFIRSTTURNSERVER ,
