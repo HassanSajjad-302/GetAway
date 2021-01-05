@@ -17,12 +17,16 @@ enum class mtr{
     PLAYERLEFT
 };
 
-enum class messageType{
-    CHATMESSAGE ,
-    CHATMESSAGEID ,
+//message type game
+enum class mtg{
     GAMEFIRSTTURNSERVER ,
     GAMETURNCLIENT ,
     GAMETURNSERVER ,
+};
+
+enum class messageType{
+    CHATMESSAGE ,
+    CHATMESSAGEID ,
     ENUMSIZE = 8
 };
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

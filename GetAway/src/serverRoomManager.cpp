@@ -185,7 +185,7 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                     //Start The Game
                     serverlistener->shutdownAcceptorAndProbe();
                     lobbyManager = std::make_shared<serverLobbyManager>(players, *this);
-                    setInputType(inputType::GAMEINT);
+                    setInputType(inputType::OPTIONSELECTIONINPUTGAME);
                     sati::getInstance()->setBase(this, appState::GAME);
                     serverPF::setGameMain();
                 }else if(input == 2){
@@ -198,12 +198,12 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                 }
             }
         }
-        else if(inputReceivedType == inputType::GAMEINT){
+        else if(inputReceivedType == inputType::OPTIONSELECTIONINPUTGAME){
             //TODO
             //Early-End-Game. input 1 for early ending game. send early ending game message to all players.
             int input;
-            if(constants::inputHelper(inputString,2,3,inputType::GAMEINT,
-                                      inputType::GAMEINT, input)){
+            if(constants::inputHelper(inputString, 2, 3, inputType::OPTIONSELECTIONINPUTGAME,
+                                      inputType::OPTIONSELECTIONINPUTGAME, input)){
                 if(input == 2){
                     serverlistener->shutdown();
                 }else{
@@ -217,7 +217,7 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                 //Ending Is Not Good Here. It is When Game is Occuring.
             }else{
                 resourceStrings::print("Wrong Input\r\n");
-                setInputType(inputType::GAMEINT);
+                setInputType(inputType::OPTIONSELECTIONINPUTGAME);
             }
         }else{
             resourceStrings::print("No Handler For This InputType\r\n");

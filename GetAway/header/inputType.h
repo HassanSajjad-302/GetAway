@@ -1,15 +1,12 @@
-//
-// Created by hassan on 12/24/2020.
-//
 
 #ifndef GETAWAY_INPUTTYPE_H
 #define GETAWAY_INPUTTYPE_H
 
 
 enum class inputType{
-    LOBBYINT = 0,
+    OPTIONSELECTIONINPUTLOBBY = 0,
     MESSAGESTRING = 1,
-    GAMEINT = 2,
+    OPTIONSELECTIONINPUTGAME = 2,
     GAMEPERFORMTURN = 4,
     HOMEMAIN = 5,
     HOMEIPADDRESS = 6,

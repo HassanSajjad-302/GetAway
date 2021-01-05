@@ -65,6 +65,6 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
 }
 
 void serverHome::setInputType(inputType type) {
-    sati::getInstance()->setInputType(type);
+    sati::getInstance()->setInputType(std::make_tuple(ith::HOME, type));
     inputTypeExpected = type;
 }

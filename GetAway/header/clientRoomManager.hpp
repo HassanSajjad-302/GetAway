@@ -8,19 +8,27 @@
 #include <clientChatManager.hpp>
 #include <clientLobbyManager.hpp>
 #include "terminalInputBase.hpp"
+#include "asio/io_context.hpp"
+class clientRoomManager: public terminalInputBase {
 
-class clientRoomManager:terminalInputBase {
-
+    asio::io_context& io;
     std::string playerName;
     std::map<int, std::string> players;
-    int myId;
 
+    inputType inputTypeExpected;
+    std::vector<mtr> messageTypeExpected;
+
+public:
+    int myId;
+    std::shared_ptr<session<clientRoomManager>> clientRoomSession;
     std::shared_ptr<clientChatManager> chatManager;
     std::shared_ptr<clientLobbyManager> lobbyManager;
     bool gameStarted = false;
-    inputType inputTypeExpected;
 
-public:
+    clientRoomManager(asio::io_context& io_);
+
+    void join(std::shared_ptr<session<clientRoomManager>> clientRoomSession_);
+
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 
     void SELFANDSTATEReceived();

@@ -12,7 +12,7 @@ void clientAuthManager::starting() {
     tcp::socket tmp = std::move(authSession->sock);
     authSession.reset();
     std::make_shared<session<clientLobbyManager>>(std::move(tmp),
-                                                 std::make_shared<clientLobbyManager>(io))->registerSessionToManager();
+                                                 std::make_shared<clientRoomManager>(io))->registerSessionToManager();
 }
 
 void clientAuthManager::join(std::shared_ptr<session<clientAuthManager>> authSession_) {

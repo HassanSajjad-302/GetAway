@@ -71,6 +71,8 @@ public:
 
     inputType receiveInputType;
     void accumulatePrint();
+
+    void setBaseAndInputType(terminalInputBase *base_, inputType nextReceiveInputType);
 };
 
 #endif //GETAWAY_SATI_HPP

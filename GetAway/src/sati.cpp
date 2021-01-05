@@ -41,6 +41,13 @@ void sati::setBase(terminalInputBase *base_, appState currentAppState_) {
     base = base_;
 }
 
+void sati::setBaseAndInputType(terminalInputBase* base_, inputType nextReceiveInputType){
+    std::lock_guard<std::mutex> lock{m.get()};
+    base = base_;
+    receiveInputType = nextReceiveInputType;
+    handlerAssigned = true;
+}
+
 //external
 #ifdef __linux__
 

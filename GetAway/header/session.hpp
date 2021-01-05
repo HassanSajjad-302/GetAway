@@ -38,7 +38,8 @@ private:
 
 public:
     tcp::socket sock;
-    void sendMessage(void (T::*func)());
+    void sendMessage(void (*func)());
+    void sendMessage();
     void receiveMessage();
     void registerSessionToManager();
     session(tcp::socket socket, std::shared_ptr<T> state);
@@ -83,7 +84,7 @@ fail(errorCode ec, char const* what)
 template <typename T, bool ID>
 void
 session<T, ID>::
-sendMessage(void (T::*func)()) {
+sendMessage(void (*func)()) {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -101,8 +102,32 @@ sendMessage(void (T::*func)()) {
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
-                         (*(self->managerPtr).*func)();
+                         func();
                      });
+    sendingMessagesQueue.pop();
+}
+
+template <typename T, bool ID>
+void
+session<T, ID>::
+sendMessage(){
+
+    int msSize = sessionStreamBuffOutput.data().size();
+
+    std::vector<asio::const_buffer> vec;
+    vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
+    vec.emplace_back(sessionStreamBuffOutput.data());
+
+    sendingMessagesQueue.emplace(std::move(vec));
+    sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
+
+    asio::async_write(sock, sendingMessagesQueue.front(),
+                      [self = this->shared_from_this()](
+                              errorCode ec, std::size_t bytes) {
+                          if(ec){
+                              return self->fail(ec, "sendMessage");
+                          }
+                      });
     sendingMessagesQueue.pop();
 }
 
@@ -190,7 +215,8 @@ private:
     //friend T;
 public:
     tcp::socket sock;
-    void sendMessage(void (T::*func)(int id));
+    void sendMessage(void (*func)(int id));
+    void sendMessage();
     void receiveMessage();
     void registerSessionToManager();
 
@@ -233,7 +259,7 @@ fail(errorCode ec, char const* what)
 template <typename T>
 void
 session<T, true>::
-sendMessage(void (T::*func)(int id)) {
+sendMessage(void (*func)(int id)) {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -245,14 +271,40 @@ sendMessage(void (T::*func)(int id)) {
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     asio::async_write(sock, sendingMessagesQueue.front(),
-                     [self = this->shared_from_this(), func](
+                     [self = this->shared_from_this(), func, id = id](
                              errorCode ec, std::size_t bytes) {
                          if(ec){
                              return self->fail(ec, "sendMessage");
                          }
+                         func(id);
                      });
     sendingMessagesQueue.pop();
 }
+
+template <typename T>
+void
+session<T, true>::
+sendMessage() {
+
+    int msSize = sessionStreamBuffOutput.data().size();
+
+    std::vector<asio::const_buffer> vec;
+    vec.emplace_back(reinterpret_cast<char *>(&msSize), sizeof(msSize));
+    vec.emplace_back(sessionStreamBuffOutput.data());
+
+    sendingMessagesQueue.emplace(std::move(vec));
+    sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
+
+    asio::async_write(sock, sendingMessagesQueue.front(),
+                      [self = this->shared_from_this()](
+                              errorCode ec, std::size_t bytes) {
+                          if(ec){
+                              return self->fail(ec, "sendMessage");
+                          }
+                      });
+    sendingMessagesQueue.pop();
+}
+
 template <typename T>
 void
 session<T, true>::

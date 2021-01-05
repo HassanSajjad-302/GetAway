@@ -3,9 +3,10 @@
 #include <cassert>
 #include "lobbyPF.hpp"
 #include "clientChatManager.hpp"
+#include "sati.hpp"
 
-clientChatManager::clientChatManager(const std::map<int, std::string>& players_, const std::string& playerName_, int id):
-        playerName{playerName_}, players{players_}, myId{id}
+clientChatManager::clientChatManager(clientRoomManager& roomManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int id):
+        roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{id}
 {
 }
 
@@ -33,25 +34,44 @@ void clientChatManager::packetReceivedFromNetwork(std::istream &in, int received
 void clientChatManager::input(const std::string& inputString){
     if(inputString.empty()){
         lobbyPF::setInputStatementHomeAccumulate();
-        gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
+        if(roomManager.gameStarted){
+            roomManager.lobbyManager->setBaseAndInputTypeFromclientChatMessage();
+        }else{
+            sati::getInstance()->setBaseAndInputType(&roomManager,
+                                                     inputType::OPTIONSELECTIONINPUTLOBBY);
+        }
     }else{
         chatMessageString = std::move(inputString);
-        chatMessageInt = id;
+        chatMessageInt = myId;
         sendCHATMESSAGE();
         lobbyPF::setInputStatementHomeAccumulate();
-        gameStarted ? setInputTypeGameInt() : setInputType(inputType::LOBBYINT);
+        if(roomManager.gameStarted){
+            roomManager.lobbyManager->setBaseAndInputTypeFromclientChatMessage();
+        }else{
+            sati::getInstance()->setBaseAndInputType(&roomManager,
+                                                     inputType::OPTIONSELECTIONINPUTLOBBY);
+        }
     }
 }
+void clientLobbyManager::sendCHATMESSAGEHandler(){
+    messagePF::addAccumulate(players.find(chatMessageInt)->second, chatMessageString);
+}
 
+namespace clientChatManagerSendCHATMESSAGE{
+    clientChatManager* chatManager;
+    void func(){
+        chatManager->sendCHATMESSAGE();
+    }
+}
 void clientChatManager::sendCHATMESSAGE(){
-    std::ostream& out = clientLobbySession->out;
+    std::ostream& out = roomManager.clientRoomSession->out;
     //STEP 1;
     messageType t = messageType::CHATMESSAGE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
-    out.write(reinterpret_cast<char *>(&id), sizeof(id));
+    out.write(reinterpret_cast<char *>(&myId), sizeof(myId));
     //STEP 3;
     out << chatMessageString << std::endl;
 
-    clientLobbySession->sendMessage(&clientLobbyManager::uselessWriteFunctionCHATMESSAGE);
+    roomManager.clientRoomSession->sendMessage(clientChatManagerSendCHATMESSAGE::func);
 }

@@ -22,13 +22,14 @@ enum whoTurned{
 };
 // Represents the shared server state
 class clientLobbyManager : terminalInputBase {
+    class printingFunctions;
     clientRoomManager roomManager&;
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
     int id = 0;
-    std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
-    std::vector<messageType> messageTypeExpected;
+    //std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
+    std::vector<mtg> messageTypeExpected;
     inputType inputTypeExpected;
 
     void input(std::string inputString, inputType inputReceivedType) override;
@@ -71,6 +72,8 @@ public:
 
     inline void setInputType(inputType inputType);
 
+    inline void setBaseAndInputType(terminalInputBase* base_, inputType type);
+
     void Turn(int playerId, Card card, whoTurned who);
 
 
@@ -95,6 +98,10 @@ public:
     void firstRoundTurnHelper(int playerId, Card card, whoTurned who);
 
     void gameExitFinished();
+
+    void setBaseAndInputTypeFromclientChatMessage();
+
+    void sendCHATMESSAGEHandler();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP
