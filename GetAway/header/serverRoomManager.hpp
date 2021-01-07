@@ -34,8 +34,6 @@ public:
 
     void managementJoin(int excitedSessionId, const std::string &playerNameFinal);
 
-    void uselessWriteFunction(int id);
-
     void sendPLAYERJOINEDToAllExceptOne(int excitedSessionId);
 
     void sendPLAYERLEFTToAllExceptOne(int excitedSessionId);
@@ -46,7 +44,7 @@ public:
 
     void setInputType(inputType type);
 
-    void input(std::string inputString, inputType inputReceivedType);
+    void input(std::string inputString, inputType inputReceivedType) override;
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 };

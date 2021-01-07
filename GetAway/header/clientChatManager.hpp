@@ -3,10 +3,10 @@
 #define GETAWAY_CLIENTCHATMANAGER_HPP
 
 #include "terminalInputBase.hpp"
-#include "clientRoomManager.hpp"
 #include <istream>
 #include <map>
 
+class clientRoomManager;
 class clientChatManager: public terminalInputBase {
 
     clientRoomManager& roomManager;
@@ -17,13 +17,15 @@ class clientChatManager: public terminalInputBase {
     int chatMessageInt;
 
 public:
-    clientChatManager(clientRoomManager& roomManager_, const std::map<int, std::string> &players_, const std::string &playerName_, int id);
+    clientChatManager(clientRoomManager& roomManager_, const std::map<int, std::string> &players_, const std::string &playerName_, int myId_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 
-    void input(const std::string &inputString);
+    void input(std::string inputString, inputType receivedInputType_) override;
 
     void sendCHATMESSAGE();
+
+    void sendCHATMESSAGEHandler();
 };
 
 

@@ -5,10 +5,11 @@
 
 #include <istream>
 #include <memory>
-#include <clientChatManager.hpp>
-#include <clientLobbyManager.hpp>
+#include "clientChatManager.hpp"
 #include "terminalInputBase.hpp"
 #include "asio/io_context.hpp"
+#include "session.hpp"
+class clientLobbyManager;
 class clientRoomManager: public terminalInputBase {
 
     asio::io_context& io;
@@ -16,7 +17,6 @@ class clientRoomManager: public terminalInputBase {
     std::map<int, std::string> players;
 
     inputType inputTypeExpected;
-    std::vector<mtr> messageTypeExpected;
 
 public:
     int myId;
@@ -24,6 +24,7 @@ public:
     std::shared_ptr<clientChatManager> chatManager;
     std::shared_ptr<clientLobbyManager> lobbyManager;
     bool gameStarted = false;
+    void gameFinished();
 
     clientRoomManager(asio::io_context& io_);
 

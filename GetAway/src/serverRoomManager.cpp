@@ -84,11 +84,12 @@ void serverRoomManager::packetReceivedFromNetwork(std::istream &in, int received
     if(gameStarted && messageTypeReceived == mtc::GAME){
         lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }else if(messageTypeReceived == mtc::MESSAGE){
-        lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+        chatManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }
     else{
         resourceStrings::print("Unexpected Packet Type Received in class serverRoomManager\r\n");
     }
+    std::get<1>(players.find(sessionId)->second)->receiveMessage();
 }
 
 //excitedSessionId is the one to send state to and update of it to remaining
@@ -98,7 +99,8 @@ void serverRoomManager::managementJoin(int excitedSessionId, const std::string& 
     std::ostream& out = playerSession->out;
 
     //STEP 1;
-    messageType t = messageType::SELFANDSTATE;
+    out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
+    mtr t = mtr::SELFANDSTATE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
     out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
@@ -114,7 +116,7 @@ void serverRoomManager::managementJoin(int excitedSessionId, const std::string& 
         //STEP 6;
         out << std::get<0>(gamePlayer.second) << std::endl;
     }
-    playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+    playerSession->sendMessage();
 
     sendPLAYERJOINEDToAllExceptOne(excitedSessionId);
     resourceStrings::print("Player Joined: " + std::get<0>(players.find(excitedSessionId)->second) + "\r\n");
@@ -122,14 +124,14 @@ void serverRoomManager::managementJoin(int excitedSessionId, const std::string& 
 
 
 void serverRoomManager::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
-
     for(auto& player: players){
         if(player.first != excitedSessionId){
             auto playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            messageType t = messageType::PLAYERJOINED;
+            out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
+            mtr t = mtr::PLAYERJOINED;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             auto mapPtr = players.find(excitedSessionId);
@@ -138,7 +140,7 @@ void serverRoomManager::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
             //STEP 3;
             out << std::get<0>(mapPtr->second) << std::endl;
 
-            playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+            playerSession->sendMessage();
         }
     }
 }
@@ -149,21 +151,18 @@ void serverRoomManager::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
             auto playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
-            messageType t = messageType::PLAYERLEFT;
             //STEP 1;
+            out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
+            mtr t = mtr::PLAYERLEFT;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             auto mapPtr = players.find(excitedSessionId);
             int id = mapPtr->first;
             //STEP 2;
             out.write(reinterpret_cast<char*>(&id), sizeof(id));
 
-            playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+            playerSession->sendMessage();
         }
     }
-}
-
-void serverRoomManager::uselessWriteFunction(int id) {
-
 }
 
 void serverRoomManager::goBackToServerListener(){

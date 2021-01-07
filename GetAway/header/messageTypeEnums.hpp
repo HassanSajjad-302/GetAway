@@ -5,28 +5,27 @@
 
 //message type core
 enum class mtc{
-    ROOM,
-    MESSAGE,
-    GAME
+    ROOM = 1,
+    MESSAGE = 11,
+    GAME = 12
 };
 
 //message type room
 enum class mtr{
-    SELFANDSTATE ,
-    PLAYERJOINED ,
-    PLAYERLEFT
+    SELFANDSTATE = 21,
+    PLAYERJOINED  = 22,
+    PLAYERLEFT = 23
 };
 
 //message type game
 enum class mtg{
-    GAMEFIRSTTURNSERVER ,
-    GAMETURNCLIENT ,
-    GAMETURNSERVER ,
+    GAMEFIRSTTURNSERVER = 31,
+    GAMETURNCLIENT  = 32,
+    GAMETURNSERVER  = 33,
 };
 
 enum class messageType{
-    CHATMESSAGE ,
-    CHATMESSAGEID ,
-    ENUMSIZE = 8
+    CHATMESSAGE  = 41,
+    CHATMESSAGEID  = 42,
 };
 #endif //GETAWAY_MESSAGETYPEENUMS_HPP

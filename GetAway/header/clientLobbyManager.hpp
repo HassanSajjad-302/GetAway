@@ -23,13 +23,12 @@ enum whoTurned{
 // Represents the shared server state
 class clientLobbyManager : terminalInputBase {
     class printingFunctions;
-    clientRoomManager roomManager&;
+    clientRoomManager& roomManager;
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
     int id = 0;
     //std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
-    std::vector<mtg> messageTypeExpected;
     inputType inputTypeExpected;
 
     void input(std::string inputString, inputType inputReceivedType) override;
@@ -59,16 +58,11 @@ class clientLobbyManager : terminalInputBase {
 public:
     explicit
     clientLobbyManager(clientRoomManager &roomManager, const std::string& playerName_,
-                       const std::map<int, std::string>& players_);
+                       const std::map<int, std::string>& players_, std::istream& in);
 
     ~clientLobbyManager();
 
-    //Used-By-Session
-    void join(std::shared_ptr<session<clientLobbyManager>> clientLobbySession_);
-
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
-
-    void managementGAMEFIRSTTURNSERVERReceived();
 
     inline void setInputType(inputType inputType);
 
@@ -78,8 +72,6 @@ public:
 
 
     void sendGAMETURNCLIENT(Card card);
-
-    void uselessWriteFunctionGAMETURNCLIENT();
 
     int nextInTurnSequence(int currentSessionId);
 
@@ -100,8 +92,6 @@ public:
     void gameExitFinished();
 
     void setBaseAndInputTypeFromclientChatMessage();
-
-    void sendCHATMESSAGEHandler();
 };
 
 #endif //GETAWAY_CLIENTLOBBYMANAGER_HPP

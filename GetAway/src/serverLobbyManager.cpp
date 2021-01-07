@@ -17,10 +17,10 @@ serverLobbyManager(    const std::map<int, std::tuple<const std::string,
 }
 
 void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
-    messageType messageTypeReceived;
+    mtg messageTypeReceived;
     //STEP 1;
-    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
-    if(messageTypeReceived == messageType::GAMETURNCLIENT){
+    in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageTypeReceived));
+    if(messageTypeReceived == mtg::GAMETURNCLIENT){
         constants::Log("GAMETURNCLIENT received");
         int index;
         if(indexGamePlayerDataFromId(sessionId, index)){
@@ -43,7 +43,6 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
     else{
         resourceStrings::print("Unexpected Packet Type Received in class serverLobbyManager\r\n");
     }
-    std::get<1>(players.find(sessionId)->second)->receiveMessage();
 }
 
 void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
@@ -56,7 +55,8 @@ void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card ca
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            messageType t = messageType::GAMETURNSERVER;
+            out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
+            mtg t = mtg::GAMETURNSERVER;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             out.write(reinterpret_cast<char *>(&sessionId), sizeof(sessionId));
@@ -65,7 +65,7 @@ void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card ca
             //STEP 4;
             out.write(reinterpret_cast<char*>(&card.cardNumber), sizeof(card.cardNumber));
 
-            playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+            playerSession->sendMessage();
         }
     }
 }
@@ -153,9 +153,8 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
         auto playerSession = std::get<1>(players.find(gamePlayersData[i].id)->second);
         std::ostream& out = playerSession->out;
 
-        messageType t = messageType::GAMEFIRSTTURNSERVER;
         //STEP 1;
-        out.write(reinterpret_cast<char*>(&t), sizeof(t));
+        out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
         auto &p = gamePlayersData[currentIndexGamePlayersData];
         int handSize = constants::cardsCount(p.cards);
         //STEP 2;
@@ -184,7 +183,7 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
             //STEP 11;
             out.write(reinterpret_cast<char*>(&gpCardsSize), sizeof(gpCardsSize));
         }
-        playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+        playerSession->sendMessage();
     }
 }
 

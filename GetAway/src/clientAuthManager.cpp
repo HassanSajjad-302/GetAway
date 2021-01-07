@@ -11,15 +11,23 @@ playerName(std::move(playerName_)), password(std::move(password_)), io{io_}
 void clientAuthManager::starting() {
     tcp::socket tmp = std::move(authSession->sock);
     authSession.reset();
-    std::make_shared<session<clientLobbyManager>>(std::move(tmp),
+    std::make_shared<session<clientRoomManager>>(std::move(tmp),
                                                  std::make_shared<clientRoomManager>(io))->registerSessionToManager();
+}
+
+namespace clientAuthManagerJoin{
+    clientAuthManager* authManager;
+    void func(){
+        authManager->starting();
+    }
 }
 
 void clientAuthManager::join(std::shared_ptr<session<clientAuthManager>> authSession_) {
     authSession = std::move(authSession_);
     authSession->out << password << std::endl;
     authSession->out << playerName << std::endl;
-    authSession->sendMessage(&clientAuthManager::starting);
+    clientAuthManagerJoin::authManager = this;
+    authSession->sendMessage(clientAuthManagerJoin::func);
 }
 
 clientAuthManager::~clientAuthManager() = default;

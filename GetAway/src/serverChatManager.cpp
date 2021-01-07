@@ -36,14 +36,13 @@ void serverChatManager::CHATMESSAGEReceived(const std::string &chatMessageReceiv
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            messageType t = messageType::CHATMESSAGEID;
-            out.write(reinterpret_cast<char*>(&t), sizeof(t));
+            out.write(reinterpret_cast<const char*>(&constants::mtcMessage), sizeof(constants::mtcMessage));
             //STEP 2;
             out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
             //STEP 3;
             out << chatMessageReceived << std::endl;
 
-            playerSession->sendMessage(&serverRoomManager::uselessWriteFunction);
+            playerSession->sendMessage();
         }
     }
     resourceStrings::print("Message Sent To All Clients\r\n");

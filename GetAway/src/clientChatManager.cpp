@@ -3,10 +3,12 @@
 #include <cassert>
 #include "lobbyPF.hpp"
 #include "clientChatManager.hpp"
+#include "clientRoomManager.hpp"
+#include "clientLobbyManager.hpp"
 #include "sati.hpp"
 
-clientChatManager::clientChatManager(clientRoomManager& roomManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int id):
-        roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{id}
+clientChatManager::clientChatManager(clientRoomManager& roomManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int myId_):
+        roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{myId_}
 {
 }
 
@@ -31,7 +33,7 @@ void clientChatManager::packetReceivedFromNetwork(std::istream &in, int received
 #endif
 }
 
-void clientChatManager::input(const std::string& inputString){
+void clientChatManager::input(std::string inputString, inputType inputReceivedType_){
     if(inputString.empty()){
         lobbyPF::setInputStatementHomeAccumulate();
         if(roomManager.gameStarted){
@@ -53,25 +55,26 @@ void clientChatManager::input(const std::string& inputString){
         }
     }
 }
-void clientLobbyManager::sendCHATMESSAGEHandler(){
+void clientChatManager::sendCHATMESSAGEHandler(){
     messagePF::addAccumulate(players.find(chatMessageInt)->second, chatMessageString);
 }
 
 namespace clientChatManagerSendCHATMESSAGE{
     clientChatManager* chatManager;
     void func(){
-        chatManager->sendCHATMESSAGE();
+        chatManager->sendCHATMESSAGEHandler();
     }
 }
+
 void clientChatManager::sendCHATMESSAGE(){
     std::ostream& out = roomManager.clientRoomSession->out;
     //STEP 1;
-    messageType t = messageType::CHATMESSAGE;
-    out.write(reinterpret_cast<char*>(&t), sizeof(t));
+    out.write(reinterpret_cast<const char*>(&constants::mtcMessage), sizeof(constants::mtcMessage));
     //STEP 2;
     out.write(reinterpret_cast<char *>(&myId), sizeof(myId));
     //STEP 3;
     out << chatMessageString << std::endl;
 
+    clientChatManagerSendCHATMESSAGE::chatManager = this;
     roomManager.clientRoomSession->sendMessage(clientChatManagerSendCHATMESSAGE::func);
 }

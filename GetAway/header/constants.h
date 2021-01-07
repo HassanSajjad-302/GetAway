@@ -6,6 +6,7 @@
 #include <set>
 #include "deckSuit.hpp"
 #include "inputType.h"
+#include "messageTypeEnums.hpp"
 
 #if !defined(NDEBUG) && !defined(ANDROID)
 #include "spdlog/spdlog.h"
@@ -50,6 +51,9 @@ A PLAYER CAN NOT LEAVE AMID THE GAME EVEN IF SHE HAS FINISHED HER CARDS. APPLICA
 
     void initializeCards(std::map<deckSuit, std::set<int>>& cards);
 
+    constexpr mtc mtcRoom = mtc::ROOM;
+    constexpr mtc mtcGame = mtc::GAME;
+    constexpr mtc mtcMessage = mtc::MESSAGE;
     inline void exitCookedTerminal() {
 #ifdef __linux__
         system("stty cooked");
