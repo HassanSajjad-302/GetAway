@@ -67,13 +67,13 @@ leave(int id)
         resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
         players.erase(players.find(id));
         if(players.size() == 1){
-            goBackToServerListener();
+            serverlistener->registerForInputReceival();
         }
     }else{
+        players.erase(players.find(id));
         resourceStrings::print("Player Left During The Game\r\n");
-        //todo
-        //handle player left during the game by sending a player left message.
-        exit(-1);
+        sendPLAYERLEFTDURINGGAMEToAllExceptOne(id);
+        gameExitFinished();
     }
 }
 
@@ -81,7 +81,7 @@ void serverRoomManager::packetReceivedFromNetwork(std::istream &in, int received
     mtc messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
-    if(gameStarted && messageTypeReceived == mtc::GAME){
+    if(messageTypeReceived == mtc::GAME){
         lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }else if(messageTypeReceived == mtc::MESSAGE){
         chatManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
@@ -165,10 +165,23 @@ void serverRoomManager::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
     }
 }
 
-void serverRoomManager::goBackToServerListener(){
-    serverlistener->registerForInputReceival();
-}
+void serverRoomManager::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessionId) {
+    for(auto& player: players){
+        auto playerSession = std::get<1>(player.second);
+        std::ostream& out = playerSession->out;
 
+        //STEP 1;
+        out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
+        mtr t = mtr::PLAYERLEFTDURINGGAME;
+        out.write(reinterpret_cast<char*>(&t), sizeof(t));
+        auto mapPtr = players.find(excitedSessionId);
+        int id = mapPtr->first;
+        //STEP 2;
+        out.write(reinterpret_cast<char*>(&id), sizeof(id));
+
+        playerSession->sendMessage();
+    }
+}
 void serverRoomManager::setInputType(inputType type){
     sati::getInstance()->setInputType(type);
     inputTypeExpected = type;
@@ -184,6 +197,7 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                     //Start The Game
                     serverlistener->shutdownAcceptorAndProbe();
                     lobbyManager = std::make_shared<serverLobbyManager>(players, *this);
+                    gameStarted = true;
                     setInputType(inputType::OPTIONSELECTIONINPUTGAME);
                     sati::getInstance()->setBase(this, appState::GAME);
                     serverPF::setGameMain();
@@ -198,8 +212,6 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
             }
         }
         else if(inputReceivedType == inputType::OPTIONSELECTIONINPUTGAME){
-            //TODO
-            //Early-End-Game. input 1 for early ending game. send early ending game message to all players.
             int input;
             if(constants::inputHelper(inputString, 2, 3, inputType::OPTIONSELECTIONINPUTGAME,
                                       inputType::OPTIONSELECTIONINPUTGAME, input)){
@@ -210,18 +222,25 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                     std::make_shared<serverHome>(serverHome(io))->run();
                 }
             }
-            if(inputString == "1"){
-                //Exit The Application Here Amid Game
-                //TODO
-                //Ending Is Not Good Here. It is When Game is Occuring.
-            }else{
-                resourceStrings::print("Wrong Input\r\n");
-                setInputType(inputType::OPTIONSELECTIONINPUTGAME);
-            }
         }else{
             resourceStrings::print("No Handler For This InputType\r\n");
         }
     }else{
         resourceStrings::print("Message Of Unexpected Input Type Received\r\n");
     }
+}
+
+void serverRoomManager::gameExitFinished(){
+    gameStarted = false;
+    serverlistener->runAgain();
+
+    lobbyManager.reset();
+    if(players.size() == 1){
+        serverlistener->registerForInputReceival();
+        return;
+    }
+    inputTypeExpected = inputType::SERVERLOBBYTWOORMOREPLAYERS;
+    serverPF::setLobbyMainTwoOrMorePlayers();
+    sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
+                                                            inputType::SERVERLOBBYTWOORMOREPLAYERS);
 }

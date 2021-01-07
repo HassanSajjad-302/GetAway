@@ -40,13 +40,15 @@ public:
 
     void leave(int id);
 
-    void goBackToServerListener();
-
     void setInputType(inputType type);
 
     void input(std::string inputString, inputType inputReceivedType) override;
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
+
+    void gameExitFinished();
+
+    void sendPLAYERLEFTDURINGGAMEToAllExceptOne(int id);
 };
 
 

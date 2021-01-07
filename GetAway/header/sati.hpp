@@ -67,12 +67,14 @@ public:
     void setInputType(inputType nextReceiveInputType);
     void printExitMessage(const std::string& message);
     void setBase(terminalInputBase* base_, appState currentAppState_);
+    void setBaseAndInputType(terminalInputBase *base_, inputType nextReceiveInputType);
+    void setBaseAndCurrentStateAndInputType(terminalInputBase *base_, appState currentAppState_,
+                                            inputType nextReceivedInputType);
     void operator()();
 
     inputType receiveInputType;
     void accumulatePrint();
 
-    void setBaseAndInputType(terminalInputBase *base_, inputType nextReceiveInputType);
 };
 
 #endif //GETAWAY_SATI_HPP

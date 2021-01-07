@@ -73,7 +73,7 @@ session<T, ID>::
 fail(errorCode ec, char const* what)
 {
 
-    resourceStrings::print(std::string(what) + ": " + ec.message() + "\n");
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\r\n");
 
     // Don't report on canceled operations
     if(ec == asio::error::operation_aborted)
@@ -252,7 +252,7 @@ fail(errorCode ec, char const* what)
 {
     if(ec == asio::error::operation_aborted)
         return;
-    resourceStrings::print(std::string(what) + ": " + ec.message() + "\n");
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\r\n");
     managerPtr->leave(id);
 }
 

@@ -27,7 +27,7 @@ class clientLobbyManager : terminalInputBase {
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
-    int id = 0;
+    int myId = 0;
     //std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
     inputType inputTypeExpected;
 
@@ -53,12 +53,12 @@ class clientLobbyManager : terminalInputBase {
     int turnPlayerIdExpected; //used only if firstRound = false
     //
     std::map<deckSuit, std::set<int>> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
-    bool gameStarted = false;
+    bool gameFinished = false;
 
 public:
     explicit
     clientLobbyManager(clientRoomManager &roomManager, const std::string& playerName_,
-                       const std::map<int, std::string>& players_, std::istream& in);
+                       const std::map<int, std::string>& players_, std::istream& in, int myId_);
 
     ~clientLobbyManager();
 
@@ -88,8 +88,6 @@ public:
     void assignToTurnAbleCards(deckSuit suit);
 
     void firstRoundTurnHelper(int playerId, Card card, whoTurned who);
-
-    void gameExitFinished();
 
     void setBaseAndInputTypeFromclientChatMessage();
 };

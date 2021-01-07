@@ -375,12 +375,12 @@ void serverLobbyManager::performLastOrThullaTurn(
     roundTurns.clear();
     if(gamePlayersData.empty()){
         //match drawn
-        roomManager.gameStarted = false;
+        roomManager.gameExitFinished();
         return;
     }
     if(gamePlayersData.size() == 1){
         //That id left player has lost
-        roomManager.gameStarted = false;
+        roomManager.gameExitFinished();
         return;
     }
     newRoundTurn(roundKing);

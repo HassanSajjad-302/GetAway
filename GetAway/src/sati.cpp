@@ -37,7 +37,7 @@ void sati::printExitMessage(const std::string& message) {
 
 void sati::setBase(terminalInputBase *base_, appState currentAppState_) {
     currentAppState = currentAppState_;
-    std::lock_guard<std::mutex> lockGuard(m);
+    std::lock_guard<std::mutex> lockGuard(m.get());
     base = base_;
 }
 
@@ -45,6 +45,14 @@ void sati::setBaseAndInputType(terminalInputBase* base_, inputType nextReceiveIn
     std::lock_guard<std::mutex> lock{m.get()};
     base = base_;
     receiveInputType = nextReceiveInputType;
+    handlerAssigned = true;
+}
+
+void sati::setBaseAndCurrentStateAndInputType(terminalInputBase* base_, appState currentAppState_, inputType nextReceivedInputType){
+    currentAppState = currentAppState_;
+    std::lock_guard<std::mutex> lock{m.get()};
+    base = base_;
+    receiveInputType = nextReceivedInputType;
     handlerAssigned = true;
 }
 

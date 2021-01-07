@@ -6,7 +6,6 @@
 #include "clientLobbyManager.hpp"
 
 clientRoomManager::clientRoomManager(asio::io_context& io_): io{io_} {
-    auto p = new clientChatManager(*this, players, playerName, myId);
 }
 
 void clientRoomManager::join(std::shared_ptr<session<clientRoomManager>> clientRoomSession_) {
@@ -21,7 +20,7 @@ void clientRoomManager::packetReceivedFromNetwork(std::istream &in, int received
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            lobbyManager = std::make_shared<clientLobbyManager>(*this, playerName, players, in);
+            lobbyManager = std::make_shared<clientLobbyManager>(*this, playerName, players, in, myId);
             gameStarted = true;
         }else{
             lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize);
@@ -79,6 +78,13 @@ void clientRoomManager::packetReceivedFromNetwork(std::istream &in, int received
                 PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
+            case mtr::PLAYERLEFTDURINGGAME:{
+                int playerLeftId;
+                in.read(reinterpret_cast<char *>(&playerLeftId), sizeof(playerLeftId));
+                gameFinished();
+                resourceStrings::print("Player Left During Game. Game Ended.\r\n");
+                break;
+            }
             default: {
                 resourceStrings::print("Unknown Packet Type Received in class clientRoomManager."
                                        "Packet does not match of any type of mtr.\r\n");
@@ -115,10 +121,9 @@ void clientRoomManager::input(std::string inputString, inputType inputReceivedTy
             sati::getInstance()->setBaseAndInputType(chatManager.get(), inputType::MESSAGESTRING);
         }
         else if(input== 2){
-            exitApplication();
-            std::make_shared<clientHome>(io)->run();
+            exitApplication(true);
         }else{
-            exitApplication();
+            exitApplication(false);
         }
     }
 }
@@ -133,22 +138,15 @@ void clientRoomManager::gameFinished(){
     lobbyManager.reset();
 }
 
-void clientRoomManager::exitApplication(){
+void clientRoomManager::exitApplication(bool backToHome){
     clientRoomSession->sock.shutdown(asio::socket_base::shutdown_both);
     clientRoomSession->sock.close();
     clientRoomSession.reset();
+    if(backToHome)
+        std::make_shared<clientHome>(clientHome(io))->run();
 }
 
 void clientRoomManager::setInputType(inputType inputType) {
     inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
-}
-
-void clientRoomManager::leaveGame(){
-    exitApplication();
-    std::make_shared<clientHome>(clientHome(io))->run();
-}
-
-void clientRoomManager::exitApplicationAmidGame(){
-    exitApplication();
 }

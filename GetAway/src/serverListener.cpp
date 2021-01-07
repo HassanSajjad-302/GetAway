@@ -132,7 +132,9 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
 
 void serverListener::registerForInputReceival() {
     serverPF::setLobbyMainOnePlayer();
-    sati::getInstance()->setBase(this, appState::LOBBY);
+
+    sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
+                                                            inputType::SERVERLOBBYONEPLAYER);
 }
 
 void serverListener::shutdown() {

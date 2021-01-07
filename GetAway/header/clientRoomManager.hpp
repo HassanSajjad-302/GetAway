@@ -40,11 +40,7 @@ public:
 
     void setInputType(inputType inputType);
 
-    void exitApplication();
-
-    void leaveGame();
-
-    void exitApplicationAmidGame();
+    void exitApplication(bool backToHome);
 };
 
 

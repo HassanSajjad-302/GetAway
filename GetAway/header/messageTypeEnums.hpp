@@ -14,7 +14,8 @@ enum class mtc{
 enum class mtr{
     SELFANDSTATE = 21,
     PLAYERJOINED  = 22,
-    PLAYERLEFT = 23
+    PLAYERLEFT = 23,
+    PLAYERLEFTDURINGGAME = 24
 };
 
 //message type game
