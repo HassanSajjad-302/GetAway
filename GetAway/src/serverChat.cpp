@@ -1,13 +1,13 @@
 
-#include "serverChatManager.hpp"
+#include "serverChat.hpp"
 
-serverChatManager::serverChatManager(
-        const std::map<int, std::tuple<const std::string, std::shared_ptr<session<serverRoomManager, true>>>> &players_):
+serverChat::serverChat(
+        const std::map<int, std::tuple<const std::string, std::shared_ptr<session<serverLobby, true>>>> &players_):
         players{players_}{
 
 }
 
-void serverChatManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
+void serverChat::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
     int senderId;
     //TODO
     //This is an extra read, delete it.
@@ -29,7 +29,7 @@ void serverChatManager::packetReceivedFromNetwork(std::istream &in, int received
 
 }
 
-void serverChatManager::CHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId) {
+void serverChat::CHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
             auto playerSession = std::get<1>(player.second);

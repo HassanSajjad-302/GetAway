@@ -1,14 +1,14 @@
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(srcFiles "../Client/main.cpp" "../GetAway/src/clientAuthManager.cpp"
-        "../GetAway/src/clientLobbyManager.cpp"
+set(srcFiles "../Client/main.cpp" "../GetAway/src/clientAuth.cpp"
+        "../GetAway/src/clientGetAway.cpp"
         "../GetAway/src/messageTypeEnums.cpp"
         "../GetAway/src/sati.cpp" "../GetAway/src/constants.cpp" "../GetAway/src/deckSuit.cpp"
-        "../GetAway/src/lobbyPF.cpp" "../GetAway/src/gamePF.cpp" "../GetAway/src/clientHomePF.cpp"
-        "../GetAway/src/messagePF.cpp" "../GetAway/src/clientHome.cpp"
+        "../GetAway/src/clientLobbyPF.cpp" "../GetAway/src/clientGetAwayPF.cpp" "../GetAway/src/clientHomePF.cpp"
+        "../GetAway/src/clientChatPF.cpp" "../GetAway/src/clientHome.cpp"
         "../GetAway/src/resourceStrings.cpp" "../GetAway/src/androidClientMain.cpp"
-        "../GetAway/src/satiAndroid.cpp" "../GetAway/src/clientRoomManager.cpp" "../GetAway/src/clientChatManager.cpp" )
+        "../GetAway/src/satiAndroid.cpp" "../GetAway/src/clientLobby.cpp" "../GetAway/src/clientChat.cpp" )
 
 if(NOT ANDROID)
   add_executable(Client "${srcFiles}")

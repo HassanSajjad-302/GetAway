@@ -1,7 +1,7 @@
 
 #include "clientHome.hpp"
 #include "constants.h"
-#include "clientAuthManager.hpp"
+#include "clientAuth.hpp"
 #include <memory>
 #include <regex>
 #include <chrono>
@@ -17,7 +17,7 @@ clientHome::clientHome(asio::io_context &io_): io(io_), guard(io_.get_executor()
 void clientHome::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
-    clientHomePF::setInputStatementMAIN();
+    PF::setInputStatementMAIN();
     ref = this->shared_from_this();
 }
 
@@ -90,7 +90,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                            1, 6, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
                     //Add Server
-                    clientHomePF::setInputStatementIPADDRESS();
+                    PF::setInputStatementIPADDRESS();
                     setInputType(inputType::HOMEIPADDRESS);
                 }else if(input == 2){
                     //Join Server
@@ -98,12 +98,12 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         setInputType(inputType::HOMEMAIN);
                         resourceStrings::print("No Registered Servers\r\n");
                     }else{
-                        clientHomePF::setInputStatementSELECTSERVER(addedServers);
+                        PF::setInputStatementSELECTSERVER(addedServers);
                         setInputType(inputType::HOMEJOINSERVER);
                     }
                 }else if(input == 3){
                     //Find Local Server
-                    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+                    PF::setInputStatementHome7R3(broadcastServersObtained);
                     //BroadCast
                     asio::error_code error;
 
@@ -129,14 +129,14 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                                 }
                             });
                     setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
-                    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+                    PF::setInputStatementHome7R3(broadcastServersObtained);
                 }else if(input == 4){
                     //Game Rules
-                    clientHomePF::setInputStatementHomeGameRules();
+                    PF::setInputStatementHomeGameRules();
                     setInputType(inputType::HOMEGAMERULES);
                 }else if(input == 5){
                     //About
-                    clientHomePF::setInputStatementHomeAbout();
+                    PF::setInputStatementHomeAbout();
                     setInputType(inputType::HOMEABOUT);
                 }else if(input == 6){
                     //Exit
@@ -151,13 +151,13 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             }
         }else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(inputString.empty()){
-                clientHomePF::setInputStatementMAIN();
+                PF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
             }else{
                 if(isValidIp4(inputString.c_str())){
                     ipAddress = std::move(inputString);
                     setInputType(inputType::HOMEASSIGNSERVERNAME);
-                    clientHomePF::setInputStatementASSIGNSERVERNAME();
+                    PF::setInputStatementASSIGNSERVERNAME();
                 }else{
                     resourceStrings::print("Please enter valid ip address\r\n");
                     setInputType(inputType::HOMEIPADDRESS);
@@ -165,11 +165,11 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             }
         }else if(inputReceivedType == inputType::HOMEASSIGNSERVERNAME){
             if(inputString.empty()){
-                clientHomePF::setInputStatementMAIN();
+                PF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
             }else{
                 addedServers.emplace_back(std::move(inputString), std::move(ipAddress));
-                clientHomePF::setInputStatementMAIN();
+                PF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
             }
         }else if(inputReceivedType == inputType::HOMEJOINSERVER){
@@ -178,7 +178,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             if(constants::inputHelper(inputString, 1, addedServers.size(), inputType::HOMEJOINSERVER,
                                       inputType::HOMEJOINSERVER, input)){
                 --input;
-                clientHomePF::setInputStatementClientName();
+                PF::setInputStatementClientName();
                 setInputType(inputType::HOMECLIENTNAME);
                 connectWithServer = addedServers[input];
             }
@@ -194,7 +194,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
             if(inputString.empty()){
                 //move back
                 setInputType(inputType::HOMEMAIN);
-                clientHomePF::setInputStatementHome7();
+                PF::setInputStatementHome7();
                 //close probeListenerUdpSock server
                 udpSock.close();
                 broadcastServersObtained.clear();
@@ -207,7 +207,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     broadcastudpSock.close();
                     udpSock.close();
                     --input;
-                    clientHomePF::setInputStatementClientName();
+                    PF::setInputStatementClientName();
                     setInputType(inputType::HOMECLIENTNAME);
                     connectWithServer = broadcastServersObtained[input];
                 }
@@ -225,13 +225,13 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                                           self->promote();
                                       }
                                   });
-            clientHomePF::setInputStatementConnectingToServer(std::get<0>(connectWithServer));
+            PF::setInputStatementConnectingToServer(std::get<0>(connectWithServer));
             setInputType(inputType::HOMECONNECTTINGTOSERVER);
         }else if(inputReceivedType == inputType::HOMEGAMERULES){
-            clientHomePF::setInputStatementMAIN();
+            PF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
         }else if(inputReceivedType == inputType::HOMEABOUT){
-            clientHomePF::setInputStatementMAIN();
+            PF::setInputStatementMAIN();
             setInputType(inputType::HOMEMAIN);
         }
     }else{
@@ -241,7 +241,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
 
 void clientHome::CONNECTTOSERVERFail(asio::error_code ec){
     resourceStrings::print(ec.message() + "\r\n");
-    clientHomePF::setInputStatementMAIN();
+    PF::setInputStatementMAIN();
     setInputType(inputType::HOMEMAIN);
     resourceStrings::print("Connect To Server Failed\r\n");
 }
@@ -252,7 +252,7 @@ void clientHome::setInputType(inputType type) {
 }
 
 void clientHome::promote() {
-    std::make_shared<session<clientAuthManager>>(std::move(tcpSock), std::make_shared<clientAuthManager>(
+    std::make_shared<session<clientAuth>>(std::move(tcpSock), std::make_shared<clientAuth>(
             std::move(myName), "password", io))->registerSessionToManager();
     guard.reset();
     ref.reset();
@@ -283,7 +283,7 @@ void clientHome::broadcastResponseRecieved(errorCode ec, std::size_t bytes){
         return;
     }
     broadcastServersObtained.emplace_back(std::string(receiveBuffer, receiveBuffer + bytes), remoteEndpoint.address().to_string());
-    clientHomePF::setInputStatementHome7R3(broadcastServersObtained);
+    PF::setInputStatementHome7R3(broadcastServersObtained);
     //
     udpSock.async_receive_from(
             asio::buffer(receiveBuffer), remoteEndpoint,

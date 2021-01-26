@@ -1,4 +1,4 @@
-#ifndef GETAWAY_CLIENTLOBBYMANAGER_HPP
+#ifndef GETAWAY_CLIENTGETAWAY_HPP
 #define GETAWAY_SERVERTCPSESSIONSTATE_HPP
 
 #include <memory>
@@ -6,7 +6,7 @@
 #include <unordered_set>
 #include <vector>
 #include <chrono>
-#include "serverRoomManager.hpp"
+#include "serverLobby.hpp"
 #include "serverListener.hpp"
 #include "session.hpp"
 // Represents the shared server state
@@ -17,7 +17,7 @@ class serverAuthManager
     int classSendSize =0;
     std::map<int, std::shared_ptr<session<serverAuthManager, true>>> serverAuthSessions;
     std::shared_ptr<serverListener> serverlistener; //This is passed next to lobby which uses it to cancel accepting
-    std::shared_ptr<serverRoomManager> nextManager;
+    std::shared_ptr<serverLobby> nextManager;
 
 public:
     //Used-By-Session

@@ -1,22 +1,22 @@
 #include <random>
-#include <serverLobbyManager.hpp>
+#include <serverGetAway.hpp>
 #include <utility>
 #include <cassert>
 #include "constants.h"
 #include "resourceStrings.hpp"
-#include "serverRoomManager.hpp"
+#include "serverLobby.hpp"
 #include "sati.hpp"
 
-serverLobbyManager::
-serverLobbyManager(    const std::map<int, std::tuple<const std::string,
-        std::shared_ptr<session<serverRoomManager, true>>>>& gameData_, serverRoomManager& roomManager_):
+serverGetAway::
+serverGetAway(const std::map<int, std::tuple<const std::string,
+        std::shared_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& roomManager_):
         players{gameData_}, roomManager{roomManager_}{
     initializeGame();
     doFirstTurnOfFirstRound();
     firstRound = true;
 }
 
-void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
+void serverGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
     mtg messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageTypeReceived));
@@ -45,7 +45,7 @@ void serverLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
     }
 }
 
-void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
+void serverGetAway::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
     constants::Log("Sending GameTurnServerToAllExceptOne to all. Called By Session-Id {}", sessionId);
     constants::Log("Sending Card {} {}", deckSuitValue::displaySuitType[(int) card.suit],
                  deckSuitValue::displayCards[card.cardNumber]);
@@ -70,7 +70,7 @@ void serverLobbyManager::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card ca
     }
 }
 
-void serverLobbyManager::initializeGame(){
+void serverGetAway::initializeGame(){
     std::random_device rd{};
     //todo
     //providing a same value to random engine for testing
@@ -133,7 +133,7 @@ void serverLobbyManager::initializeGame(){
 
 }
 
-void serverLobbyManager::doFirstTurnOfFirstRound(){
+void serverGetAway::doFirstTurnOfFirstRound(){
     //check for auto first turn possibilities
     constants::initializeCards(flushedCards);
     for(auto& player: gamePlayersData){
@@ -188,7 +188,7 @@ void serverLobbyManager::doFirstTurnOfFirstRound(){
 }
 
 #ifndef NDEBUG
-void serverLobbyManager::checkForCardsCount(){
+void serverGetAway::checkForCardsCount(){
     int cardsCount = 0;
     cardsCount += constants::cardsCount(flushedCards);
     cardsCount += roundTurns.size();
@@ -207,7 +207,7 @@ void serverLobbyManager::checkForCardsCount(){
 
 }
 #endif
-void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
+void serverGetAway::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
 #ifndef NDEBUG
     checkForCardsCount();
 #endif
@@ -251,7 +251,7 @@ void serverLobbyManager::managementGAMETURNCLIENTReceived(int sessionId, Card ca
 }
 
 void
-serverLobbyManager::doTurnReceivedOfFirstRound(
+serverGetAway::doTurnReceivedOfFirstRound(
         std::vector<playerData>::iterator turnReceivedPlayer, Card cardReceived) {
     turnCardNumberOfGamePlayerIterator(turnReceivedPlayer, cardReceived);
     roundTurns.emplace_back(turnReceivedPlayer->id, cardReceived);
@@ -277,12 +277,12 @@ serverLobbyManager::doTurnReceivedOfFirstRound(
     }
 }
 
-void serverLobbyManager::newRoundTurn(std::vector<playerData>::iterator currentGamePlayer){
+void serverGetAway::newRoundTurn(std::vector<playerData>::iterator currentGamePlayer){
         currentGamePlayer->turnTypeExpected = turnType::ROUNDFIRSTTURN;
         currentGamePlayer->turnExpected = true;
 }
 
-void serverLobbyManager::Turn(std::vector<playerData>::iterator currentTurnPlayer, Card card){
+void serverGetAway::Turn(std::vector<playerData>::iterator currentTurnPlayer, Card card){
     if(currentTurnPlayer->turnTypeExpected == turnType::ROUNDFIRSTTURN){ //First Turn Of Round Was Expected
         performFirstOrMiddleTurn(currentTurnPlayer, card, true);
     }else if (currentTurnPlayer->turnTypeExpected == turnType::ROUNDMIDDLETURN){
@@ -294,7 +294,7 @@ void serverLobbyManager::Turn(std::vector<playerData>::iterator currentTurnPlaye
     }
 }
 
-void serverLobbyManager::performFirstOrMiddleTurn(
+void serverGetAway::performFirstOrMiddleTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool firstTurn){
 
     constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(firstTurn));
@@ -343,7 +343,7 @@ void serverLobbyManager::performFirstOrMiddleTurn(
     checkForCardsCount();
 }
 
-void serverLobbyManager::performLastOrThullaTurn(
+void serverGetAway::performLastOrThullaTurn(
         std::vector<playerData>::iterator currentTurnPlayer, Card card, bool lastTurn){
     constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(lastTurn));
     std::vector<playerData>::iterator roundKing;
@@ -387,15 +387,15 @@ void serverLobbyManager::performLastOrThullaTurn(
     checkForCardsCount();
 }
 
-void serverLobbyManager::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer,
-                                                            Card card){
+void serverGetAway::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer,
+                                                       Card card){
 
     sendGAMETURNSERVERTOAllExceptOne(turnReceivedPlayer->id, card);
     turnReceivedPlayer->cards.find(card.suit)->second.erase(card.cardNumber);
     turnReceivedPlayer->turnExpected = false;
 }
 
-std::vector<playerData>::iterator serverLobbyManager::roundKingGamePlayerDataIterator(){
+std::vector<playerData>::iterator serverGetAway::roundKingGamePlayerDataIterator(){
     int highestCardHolderId = std::get<0>(*roundTurns.begin());
     int highestCardNumber = std::get<1>(*roundTurns.begin()).cardNumber;
     for(auto turns: roundTurns){
@@ -419,7 +419,7 @@ std::vector<playerData>::iterator serverLobbyManager::roundKingGamePlayerDataIte
     throw(std::logic_error("HighestCardHolder Id not present in gamePlayerData\r\n"));
 }
 
-bool serverLobbyManager::indexGamePlayerDataFromId(int id, int& index){
+bool serverGetAway::indexGamePlayerDataFromId(int id, int& index){
     for(u_int i=0; i < gamePlayersData.size(); ++i){
         if(gamePlayersData[i].id == id){
             index = i;

@@ -1,16 +1,13 @@
 #include <algorithm>
 #include <utility>
-#include "clientLobbyManager.hpp"
+#include "clientGetAway.hpp"
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
-
 #include "constants.h"
-#include "gamePF.hpp"
-#include "messagePF.hpp"
 #include "resourceStrings.hpp"
 
-clientLobbyManager::clientLobbyManager(clientRoomManager &roomManager_, const std::string& playerName_,
-                                       const std::map<int, std::string>& players_, std::istream& in, int myId_):
+clientGetAway::clientGetAway(clientLobby &roomManager_, const std::string& playerName_,
+                             const std::map<int, std::string>& players_, std::istream& in, int myId_):
         roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{myId_}
 {
     constants::initializeCards(myCards);
@@ -57,12 +54,12 @@ clientLobbyManager::clientLobbyManager(clientRoomManager &roomManager_, const st
     }
 
     //Printing Starts
-    gamePF::setTurnSequence(players, turnSequence);
+    PF::setTurnSequence(players, turnSequence);
 
-    gamePF::setRoundTurns(roundTurns, players);
+    PF::setRoundTurns(roundTurns, players);
 
-    gamePF::setWaitingForTurn(waitingForTurn, players);
-    gamePF::setCards(myCards);
+    PF::setWaitingForTurn(waitingForTurn, players);
+    PF::setCards(myCards);
 
     sati::getInstance()->setBase(this, appState::GAME);
     //set input statement and clearAndPrint all this
@@ -78,7 +75,7 @@ clientLobbyManager::clientLobbyManager(clientRoomManager &roomManager_, const st
             assignToTurnAbleCards(deckSuit::SPADE);
         }
     }
-    gamePF::setInputStatementHome3Accumulate();
+    PF::setInputStatementHome3Accumulate();
     turnPlayerIdExpected = myId;
 
     inputTypeExpected = inputType::OPTIONSELECTIONINPUTGAME;
@@ -91,9 +88,9 @@ clientLobbyManager::clientLobbyManager(clientRoomManager &roomManager_, const st
     }
 }
 
-clientLobbyManager::~clientLobbyManager() = default;
+clientGetAway::~clientGetAway() = default;
 
-void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
+void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
 
     mtg messageTypeReceived;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
@@ -123,7 +120,7 @@ void clientLobbyManager::packetReceivedFromNetwork(std::istream &in, int receive
     }
 }
 
-void clientLobbyManager::sendGAMETURNCLIENT(Card card){
+void clientGetAway::sendGAMETURNCLIENT(Card card){
     constants::Log("Seding Card Message To Server. Suit {} {}",
                    deckSuitValue::displaySuitType[(int)card.suit], deckSuitValue::displayCards[card.cardNumber]);
     std::ostream& out = roomManager.clientRoomSession->out;
@@ -141,7 +138,7 @@ void clientLobbyManager::sendGAMETURNCLIENT(Card card){
     roomManager.clientRoomSession->sendMessage();
 }
 
-void clientLobbyManager::input(std::string inputString, inputType inputReceivedType) {
+void clientGetAway::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputTypeExpected){
         switch (inputReceivedType) {
             case inputType::OPTIONSELECTIONINPUTGAME:
@@ -169,15 +166,14 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
                 }
                 if(success){
                     if(input == 1){
-                        messagePF::setInputStatementAccumulate();
-                        setBaseAndInputType(roomManager.chatManager.get(), inputType::MESSAGESTRING);
+                        roomManager.chatManager->setBaseAndInputTypeForMESSAGESTRING();
                     }else if(input == 2){
                         roomManager.exitApplication(true);
                     }else if(input == 3){
                         roomManager.exitApplication(false);
                     }else{
                         //perform turn
-                        gamePF::setInputStatementHome3R3Accumulate(turnAbleCards);
+                        PF::setInputStatementHome3R3Accumulate(turnAbleCards);
                         setInputType(inputType::GAMEPERFORMTURN);
                     }
                 }
@@ -206,39 +202,39 @@ void clientLobbyManager::input(std::string inputString, inputType inputReceivedT
     }
 }
 
-void clientLobbyManager::setBaseAndInputTypeFromclientChatMessage(){
+void clientGetAway::setBaseAndInputTypeFromclientChatMessage(){
     setInputTypeGameInt();
     setBaseAndInputType(this, inputType::OPTIONSELECTIONINPUTGAME);
 }
 
-void clientLobbyManager::setInputTypeGameInt(){
+void clientGetAway::setInputTypeGameInt(){
     if(firstRound){
         if(std::find(waitingForTurn.begin(), waitingForTurn.end(), myId) == waitingForTurn.end()){
-            gamePF::setInputStatementHome2Accumulate();
+            PF::setInputStatementHome2Accumulate();
         }else{
-            gamePF::setInputStatementHome3Accumulate();
+            PF::setInputStatementHome3Accumulate();
         }
     }else{
         if(turnPlayerIdExpected != myId){
-            gamePF::setInputStatementHome2Accumulate();
+            PF::setInputStatementHome2Accumulate();
         }else{
-            gamePF::setInputStatementHome3Accumulate();
+            PF::setInputStatementHome3Accumulate();
         }
     }
 }
-void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned who){
+void clientGetAway::firstRoundTurnHelper(int playerId, Card card, whoTurned who){
     constants::Log("firstRoundTurnHelper Called");
     waitingForTurn.erase(std::find(waitingForTurn.begin(), waitingForTurn.end(), playerId));
     if(who == whoTurned::CLIENT){
         myCards.find(card.suit)->second.erase(card.cardNumber);
-        gamePF::setCards(myCards);
+        PF::setCards(myCards);
         setInputTypeGameInt();
         setInputType(inputType::OPTIONSELECTIONINPUTGAME);
     }
     flushedCards.find(card.suit)->second.emplace(card.cardNumber);
     roundTurns.emplace_back(playerId, card);
-    gamePF::setWaitingForTurn(waitingForTurn, players);
-    gamePF::setRoundTurnsAccumulate(roundTurns, players);
+    PF::setWaitingForTurn(waitingForTurn, players);
+    PF::setRoundTurnsAccumulate(roundTurns, players);
     numberOfCards.find(playerId)->second -= 1;
 
     if (roundTurns.size() == turnSequence.size()) {
@@ -248,7 +244,7 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
                 //This is ace of spade
                 turnPlayerIdExpected = std::get<0>(t);
                 waitingForTurn.emplace_back(std::get<0>(t));
-                gamePF::setWaitingForTurn(waitingForTurn, players);
+                PF::setWaitingForTurn(waitingForTurn, players);
                 firstRound = false;
                 //Here I am auto turning. So, here I have to check whether auto turn is possible and if yes then
                 //auto turn but do not send it to the server and just clearAndPrint it to the screen.
@@ -263,7 +259,7 @@ void clientLobbyManager::firstRoundTurnHelper(int playerId, Card card, whoTurned
         roundTurns.clear();
     }
 }
-void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
+void clientGetAway::Turn(int playerId, Card card, whoTurned who) {
     if(firstRound && std::find(
             waitingForTurn.begin(), waitingForTurn.end(), playerId) != waitingForTurn.end()) {
         firstRoundTurnHelper(playerId, card, who);
@@ -284,7 +280,7 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
             roomManager.gameFinished();
         }else{
             waitingForTurn.emplace_back(turnPlayerIdExpected);
-            gamePF::setWaitingForTurn(waitingForTurn, players);
+            PF::setWaitingForTurn(waitingForTurn, players);
             setInputTypeGameInt();
             setInputType(inputType::OPTIONSELECTIONINPUTGAME);
         }
@@ -293,18 +289,18 @@ void clientLobbyManager::Turn(int playerId, Card card, whoTurned who) {
     }
 }
 
-void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, bool firstTurn, whoTurned who) {
+void clientGetAway::helperFirstTurnAndMiddleTurn(int playerId, Card card, bool firstTurn, whoTurned who) {
     constants::Log("FirstTurnAndMiddleTurn Called. firstTurn value is {}", std::to_string(firstTurn));
     if(firstTurn){
         suitOfTheRound = card.suit;
         constants::Log("Suit Of The Round is {}", deckSuitValue::displaySuitType[(int)suitOfTheRound]);
     }
     roundTurns.emplace_back(playerId, card);
-    gamePF::setRoundTurns(roundTurns, players);
+    PF::setRoundTurns(roundTurns, players);
 
     if(playerId == myId){
         myCards.find(card.suit)->second.erase(card.cardNumber);
-        gamePF::setCards(myCards);
+        PF::setCards(myCards);
     }
 
 
@@ -319,7 +315,7 @@ void clientLobbyManager::helperFirstTurnAndMiddleTurn(int playerId, Card card, b
     }
 }
 
-void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bool thullaTurn, whoTurned who) {
+void clientGetAway::helperLastTurnAndThullaTurn(int playerId, Card card, bool thullaTurn, whoTurned who) {
     constants::Log("helperLastTurnAndThullaTurn Called. thullaTurn is {}", thullaTurn);
     if(thullaTurn){
         turnPlayerIdExpected = roundKing();
@@ -328,17 +324,17 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         //playerId may be our Id.
         assert(turnPlayerIdExpected != playerId && "Why we are performing thulla turn if we have already performed our turn in the round");
         roundTurns.emplace_back(playerId, card);
-        gamePF::setRoundTurns(roundTurns, players);
+        PF::setRoundTurns(roundTurns, players);
 
         if(playerId == myId){
             myCards.find(card.suit)->second.erase(card.cardNumber);
-            gamePF::setCards(myCards);
+            PF::setCards(myCards);
         }else if(turnPlayerIdExpected == myId){
             constants::Log("I received a thulla");
             for(auto thullaCards: roundTurns){
                 myCards.find(std::get<1>(thullaCards).suit)->second.emplace(std::get<1>(thullaCards).cardNumber);
             }
-            gamePF::setCards(myCards);
+            PF::setCards(myCards);
         }
 
         for(auto& rt: roundTurns){
@@ -347,12 +343,12 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         numberOfCards.find(turnPlayerIdExpected)->second += roundTurns.size();
     }else{
         roundTurns.emplace_back(playerId, card);
-        gamePF::setRoundTurns(roundTurns, players);
+        PF::setRoundTurns(roundTurns, players);
 
         turnPlayerIdExpected = roundKing();
         if(playerId == myId){
             myCards.find(card.suit)->second.erase(card.cardNumber);
-            gamePF::setCards(myCards);
+            PF::setCards(myCards);
         }
         for(auto& rt: roundTurns){
             flushedCards.find(std::get<1>(rt).suit)->second.emplace(std::get<1>(rt).cardNumber);
@@ -398,7 +394,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
         return;
     }else{
         //game continues
-        gamePF::setTurnSequence(players, turnSequence);
+        PF::setTurnSequence(players, turnSequence);
 
         if(turnPlayerIdExpected == myId){
             assignToTurnAbleCards();
@@ -406,7 +402,7 @@ void clientLobbyManager::helperLastTurnAndThullaTurn(int playerId, Card card, bo
     }
 }
 
-int clientLobbyManager::nextInTurnSequence(int currentSessionId){
+int clientGetAway::nextInTurnSequence(int currentSessionId){
     std::vector<int>::iterator it;
     for(it = turnSequence.begin(); it != turnSequence.end(); ++it){
         if(*it == currentSessionId){
@@ -421,7 +417,7 @@ int clientLobbyManager::nextInTurnSequence(int currentSessionId){
     return *turnSequence.begin();
 }
 
-int clientLobbyManager::roundKing() {
+int clientGetAway::roundKing() {
     int highestCardHolderId = std::get<0>(*roundTurns.begin());
     int highestCardNumber = std::get<1>(*roundTurns.begin()).cardNumber;
     for(auto turns: roundTurns){
@@ -440,17 +436,17 @@ int clientLobbyManager::roundKing() {
     return highestCardHolderId;
 }
 
-void clientLobbyManager::setInputType(inputType inputType) {
+void clientGetAway::setInputType(inputType inputType) {
     inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
 }
 
-void clientLobbyManager::setBaseAndInputType(terminalInputBase *base_, inputType type) {
+void clientGetAway::setBaseAndInputType(terminalInputBase *base_, inputType type) {
     inputTypeExpected = type;
     sati::getInstance()->setBaseAndInputType(base_, type);
 }
 
-void clientLobbyManager::assignToTurnAbleCards(){
+void clientGetAway::assignToTurnAbleCards(){
     turnAbleCards.clear();
     for(auto& cardPair: myCards){
         for(auto c: cardPair.second){
@@ -459,7 +455,7 @@ void clientLobbyManager::assignToTurnAbleCards(){
     }
 }
 
-void clientLobbyManager::assignToTurnAbleCards(deckSuit suit) {
+void clientGetAway::assignToTurnAbleCards(deckSuit suit) {
     turnAbleCards.clear();
     for(auto c: myCards.find(suit)->second){
         turnAbleCards.emplace_back(suit, c);

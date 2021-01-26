@@ -1,26 +1,26 @@
 
-#include <sati.hpp>
-#include "clientRoomManager.hpp"
+#include "sati.hpp"
+#include "clientLobby.hpp"
 #include "messageTypeEnums.hpp"
 #include "clientHome.hpp"
-#include "clientLobbyManager.hpp"
+#include "clientGetAway.hpp"
 
-clientRoomManager::clientRoomManager(asio::io_context& io_): io{io_} {
+clientLobby::clientLobby(asio::io_context& io_): io{io_} {
 }
 
-void clientRoomManager::join(std::shared_ptr<session<clientRoomManager>> clientRoomSession_) {
+void clientLobby::join(std::shared_ptr<session<clientLobby>> clientRoomSession_) {
     clientRoomSession = std::move(clientRoomSession_);
     clientRoomSession->receiveMessage();
 }
 
-void clientRoomManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
+void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
 
     mtc messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            lobbyManager = std::make_shared<clientLobbyManager>(*this, playerName, players, in, myId);
+            lobbyManager = std::make_shared<clientGetAway>(*this, playerName, players, in, myId);
             gameStarted = true;
         }else{
             lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize);
@@ -56,7 +56,7 @@ void clientRoomManager::packetReceivedFromNetwork(std::istream &in, int received
                     players.emplace(playersId, playerName);
                 }
                 SELFANDSTATEReceived();
-                chatManager = std::make_shared<clientChatManager>(*this, players, playerName, myId);
+                chatManager = std::make_shared<clientChat>(*this, players, playerName, myId);
                 break;
             }
                 //STEP 1;
@@ -86,39 +86,36 @@ void clientRoomManager::packetReceivedFromNetwork(std::istream &in, int received
                 break;
             }
             default: {
-                resourceStrings::print("Unknown Packet Type Received in class clientRoomManager."
+                resourceStrings::print("Unknown Packet Type Received in class clientLobby."
                                        "Packet does not match of any type of mtr.\r\n");
                 break;
             }
         }
     }
     else{
-        resourceStrings::print("Unexpected Packet Type Received in class clientRoomManager "
+        resourceStrings::print("Unexpected Packet Type Received in class clientLobby "
                                "Packet Type Not Present In Enum mtc\r\n");
     }
     clientRoomSession->receiveMessage();
 }
 
-void clientRoomManager::SELFANDSTATEReceived(){
+void clientLobby::SELFANDSTATEReceived(){
     setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
     sati::getInstance()->setBase(this, appState::LOBBY);
-    lobbyPF::addOrRemovePlayer(players);
-    lobbyPF::setInputStatementHomeAccumulate();
+    PF::addOrRemovePlayerAccumulate(players);
 }
 
-void clientRoomManager::PLAYERJOINEDOrPLAYERLEFTReceived(){
-    lobbyPF::addOrRemovePlayer(players);
-    lobbyPF::setInputStatementHomeAccumulate();
+void clientLobby::PLAYERJOINEDOrPLAYERLEFTReceived(){
+    PF::addOrRemovePlayerAccumulate(players);
 }
 
 //Before refactor, lines of this function = 123;
-void clientRoomManager::input(std::string inputString, inputType inputReceivedType) {
+void clientLobby::input(std::string inputString, inputType inputReceivedType) {
     int input;
     if(constants::inputHelper(inputString, 1, 3, inputType::OPTIONSELECTIONINPUTLOBBY, inputType::OPTIONSELECTIONINPUTLOBBY,
                               input)){
         if(input == 1){
-            messagePF::setInputStatementAccumulate();
-            sati::getInstance()->setBaseAndInputType(chatManager.get(), inputType::MESSAGESTRING);
+            chatManager->setBaseAndInputTypeForMESSAGESTRING();
         }
         else if(input== 2){
             exitApplication(true);
@@ -128,17 +125,16 @@ void clientRoomManager::input(std::string inputString, inputType inputReceivedTy
     }
 }
 
-void clientRoomManager::gameFinished(){
+void clientLobby::gameFinished(){
     gameStarted = false;
     sati::getInstance()->setBase(this, appState::LOBBY);
 
-    lobbyPF::addOrRemovePlayer(players);
-    lobbyPF::setInputStatementHomeAccumulate();
+    PF::addOrRemovePlayerAccumulate(players);
     setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
     lobbyManager.reset();
 }
 
-void clientRoomManager::exitApplication(bool backToHome){
+void clientLobby::exitApplication(bool backToHome){
     clientRoomSession->sock.shutdown(asio::socket_base::shutdown_both);
     clientRoomSession->sock.close();
     clientRoomSession.reset();
@@ -146,7 +142,13 @@ void clientRoomManager::exitApplication(bool backToHome){
         std::make_shared<clientHome>(clientHome(io))->run();
 }
 
-void clientRoomManager::setInputType(inputType inputType) {
+void clientLobby::setInputType(inputType inputType) {
     inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
+}
+
+void clientLobby::setBaseAndInputTypeFromclientChatMessage() {
+    PF::setInputStatementHomeAccumulate();
+    sati::getInstance()->setBaseAndInputType(this,
+                                             inputType::OPTIONSELECTIONINPUTLOBBY);
 }

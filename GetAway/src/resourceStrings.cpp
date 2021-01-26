@@ -1,6 +1,3 @@
-//
-// Created by hassan on 12/19/2020.
-//
 
 #include "resourceStrings.hpp"
 #include <iostream>
@@ -18,8 +15,24 @@ void resourceStrings::clearAndPrint(const std::string &toPrint) {
     std::cout<<toPrint;
 }
 
+void resourceStrings::clearAndPrint(const std::string &messageBuffer, const std::string &nonMessageBuffer,
+                                    std::string& userIncomingInput, std::mutex& mut, bool lock){
+#ifdef __linux__
+    system("clear");
+#endif
+#if defined(_WIN32) || defined(_WIN64)
+    system("cls");
+#endif
+    std::cout<<messageBuffer << nonMessageBuffer;
+    if(lock){
+        std::lock_guard lockGuard(mut);
+        std::cout<<userIncomingInput;
+    }else{
+        std::cout<<userIncomingInput;
+    }
+}
+
 void resourceStrings::print(const std::string &toPrint) {
     std::cout<<toPrint;
 }
 #endif
-

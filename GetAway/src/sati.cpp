@@ -138,7 +138,7 @@ void sati::accumulatePrint(){
     accumulateBuffersAndPrint(true);
 }
 
-void sati::accumulateBuffersAndPrint(bool lock) {
+/*void sati::accumulateBuffersAndPrint(bool lock) {
     std::string toPrint;
 #ifdef SERVERMACRO
     if(currentAppState == appState::HOME){
@@ -150,17 +150,10 @@ void sati::accumulateBuffersAndPrint(bool lock) {
     if(currentAppState == appState::GAME){
         toPrint = inputStatementBuffer;
     }
-    if(lock){
-        std::lock_guard lockGuard(m.get());
-        toPrint += userIncomingInput;
-    }
-    else{
-        toPrint += userIncomingInput;
-    }
 #endif
 #ifdef CLIENTMACRO
     if(currentAppState == appState::HOME){
-        toPrint += inputStatementBuffer + errorMessage;
+        toPrint += inputStatementBuffer;
     }
     if(currentAppState == appState::LOBBY) {
         if(!messageBuffer.empty()){
@@ -175,6 +168,7 @@ void sati::accumulateBuffersAndPrint(bool lock) {
         toPrint += turnSequence  + "\r\n";
         toPrint += turns + "\r\n" + waitingForTurn + "\r\n" + cardsString + "\r\n" + inputStatementBuffer + "\r\n";
     }
+#endif
     if(lock){
         std::lock_guard lockGuard(m.get());
         toPrint += userIncomingInput;
@@ -182,9 +176,12 @@ void sati::accumulateBuffersAndPrint(bool lock) {
     else{
         toPrint += userIncomingInput;
     }
-#endif
-
     resourceStrings::clearAndPrint(toPrint);
+}*/
+
+//A completely new function and refactorization of sati.cpp
+void sati::accumulateBuffersAndPrint(bool lock) {
+    resourceStrings::clearAndPrint(messageBuffer, nonMessageBuffer, userIncomingInput, m.get(), lock);
 }
 
 #endif

@@ -2,14 +2,14 @@
 #include <serverPF.hpp>
 #include <sati.hpp>
 #include <serverHome.hpp>
-#include "serverRoomManager.hpp"
-#include "serverChatManager.hpp"
-serverRoomManager::serverRoomManager(std::shared_ptr <serverListener> serverlistener_, asio::io_context &io_):
+#include "serverLobby.hpp"
+#include "serverChat.hpp"
+serverLobby::serverLobby(std::shared_ptr <serverListener> serverlistener_, asio::io_context &io_):
         serverlistener(std::move(serverlistener_)), io{io_} {
-    chatManager = std::make_shared<serverChatManager>(players);
+    chatManager = std::make_shared<serverChat>(players);
 }
 
-void serverRoomManager::shutDown() {
+void serverLobby::shutDown() {
     constants::Log("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
     serverlistener.reset();
     for(auto &p: players){
@@ -20,16 +20,16 @@ void serverRoomManager::shutDown() {
     }
 }
 
-void serverRoomManager::setPlayerNameAdvanced(std::string playerNameAdvacned_) {
+void serverLobby::setPlayerNameAdvanced(std::string playerNameAdvacned_) {
     playerNameAdvanced = std::move(playerNameAdvacned_);
 }
 
 int
-serverRoomManager::
-join(std::shared_ptr<session<serverRoomManager, true>> roomSession)
+serverLobby::
+join(std::shared_ptr<session<serverLobby, true>> roomSession)
 {
     roomSession->receiveMessage();
-    std::tuple<std::string, std::shared_ptr<session<serverRoomManager, true>>> tup(playerNameAdvanced, std::move(roomSession));
+    std::tuple<std::string, std::shared_ptr<session<serverLobby, true>>> tup(playerNameAdvanced, std::move(roomSession));
     int id;
     std::string playerNameFinal;
     if(players.empty())
@@ -59,7 +59,7 @@ join(std::shared_ptr<session<serverRoomManager, true>> roomSession)
 }
 
 void
-serverRoomManager::
+serverLobby::
 leave(int id)
 {
     if(!gameStarted){
@@ -77,7 +77,7 @@ leave(int id)
     }
 }
 
-void serverRoomManager::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
+void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
     mtc messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
@@ -87,13 +87,13 @@ void serverRoomManager::packetReceivedFromNetwork(std::istream &in, int received
         chatManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }
     else{
-        resourceStrings::print("Unexpected Packet Type Received in class serverRoomManager\r\n");
+        resourceStrings::print("Unexpected Packet Type Received in class serverLobby\r\n");
     }
     std::get<1>(players.find(sessionId)->second)->receiveMessage();
 }
 
 //excitedSessionId is the one to send state to and update of it to remaining
-void serverRoomManager::managementJoin(int excitedSessionId, const std::string& playerNameFinal) {
+void serverLobby::managementJoin(int excitedSessionId, const std::string& playerNameFinal) {
 
     auto playerSession = std::get<1>(players.find(excitedSessionId)->second);
     std::ostream& out = playerSession->out;
@@ -123,7 +123,7 @@ void serverRoomManager::managementJoin(int excitedSessionId, const std::string& 
 }
 
 
-void serverRoomManager::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
+void serverLobby::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
             auto playerSession = std::get<1>(player.second);
@@ -145,7 +145,7 @@ void serverRoomManager::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
     }
 }
 
-void serverRoomManager::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
+void serverLobby::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
             auto playerSession = std::get<1>(player.second);
@@ -165,7 +165,7 @@ void serverRoomManager::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
     }
 }
 
-void serverRoomManager::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessionId) {
+void serverLobby::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
         auto playerSession = std::get<1>(player.second);
         std::ostream& out = playerSession->out;
@@ -182,12 +182,12 @@ void serverRoomManager::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessio
         playerSession->sendMessage();
     }
 }
-void serverRoomManager::setInputType(inputType type){
+void serverLobby::setInputType(inputType type){
     sati::getInstance()->setInputType(type);
     inputTypeExpected = type;
 }
 
-void serverRoomManager::input(std::string inputString, inputType inputReceivedType){
+void serverLobby::input(std::string inputString, inputType inputReceivedType){
     if(inputReceivedType == inputTypeExpected){
         if(inputReceivedType == inputType::SERVERLOBBYTWOORMOREPLAYERS){
             int input;
@@ -196,7 +196,7 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
                 if(input == 1){
                     //Start The Game
                     serverlistener->shutdownAcceptorAndProbe();
-                    lobbyManager = std::make_shared<serverLobbyManager>(players, *this);
+                    lobbyManager = std::make_shared<serverGetAway>(players, *this);
                     gameStarted = true;
                     setInputType(inputType::OPTIONSELECTIONINPUTGAME);
                     sati::getInstance()->setBase(this, appState::GAME);
@@ -230,7 +230,7 @@ void serverRoomManager::input(std::string inputString, inputType inputReceivedTy
     }
 }
 
-void serverRoomManager::gameExitFinished(){
+void serverLobby::gameExitFinished(){
     gameStarted = false;
     serverlistener->runAgain();
 

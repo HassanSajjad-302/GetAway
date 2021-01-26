@@ -1,5 +1,5 @@
-#ifndef GETAWAY_SERVERLOBBYMANAGER_HPP
-#define GETAWAY_SERVERLOBBYMANAGER_HPP
+#ifndef GETAWAY_SERVERGETAWAY_HPP
+#define GETAWAY_SERVERGETAWAY_HPP
 
 #include <memory>
 #include <string>
@@ -14,12 +14,12 @@
 #include "playerData.hpp"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
-class serverRoomManager;
-class serverLobbyManager
+class serverLobby;
+class serverGetAway
 {
-    serverRoomManager& roomManager;
+    serverLobby& roomManager;
     const std::map<int, std::tuple<const std::string,
-    std::shared_ptr<session<serverRoomManager, true>>>>& players;
+    std::shared_ptr<session<serverLobby, true>>>>& players;
 
     bool firstRound;
     std::map<deckSuit, std::set<int>> flushedCards;
@@ -29,8 +29,8 @@ class serverLobbyManager
 
 public:
     explicit
-    serverLobbyManager(    const std::map<int, std::tuple<const std::string,
-            std::shared_ptr<session<serverRoomManager, true>>>>& gameData_, serverRoomManager& roomManager_);
+    serverGetAway(const std::map<int, std::tuple<const std::string,
+            std::shared_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& roomManager_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 
@@ -63,4 +63,4 @@ public:
 
     std::vector<playerData>::iterator roundKingGamePlayerDataIterator();
 };
-#endif //GETAWAY_SERVERLOBBYMANAGER_HPP
+#endif //GETAWAY_SERVERGETAWAY_HPP

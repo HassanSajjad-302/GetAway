@@ -4,7 +4,7 @@
 #include "clientHome.hpp"
 #include "sati.hpp"
 #include "session.hpp"
-#include "clientAuthManager.hpp"
+#include "clientAuth.hpp"
 #include "constants.h"
 #include <fstream>
 #include <memory>

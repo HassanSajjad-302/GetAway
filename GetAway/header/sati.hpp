@@ -8,9 +8,8 @@
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
 #include "appState.hpp"
-#include "lobbyPF.hpp"
-#include "gamePF.hpp"
-#include "messagePF.hpp"
+#include "clientGetAwayPF.hpp"
+#include "clientGetAwayPF.hpp"
 #include "clientHomePF.hpp"
 #include "asio/io_context.hpp"
 #include "inputType.h"
@@ -19,6 +18,7 @@
 //singleton for asynchronous terminal input
 class sati {
 private:
+
     asio::io_context& io;
     std::reference_wrapper<std::mutex> m; //This mutex needs to be locked when this class members changes.
     // Or some other thread wants to clearAndPrint on screen.
@@ -26,24 +26,12 @@ private:
     //Buffers For Holding And RePrinting
     std::string userIncomingInput;
     void accumulateBuffersAndPrint(bool lock);
-public:
-    std::string inputStatementBuffer;
 
+public:
 #ifdef CLIENTMACRO
     std::string messageBuffer; //messages
+    std::string nonMessageBuffer;
 
-    //Only For Lobby
-    std::string playersInLobby;
-
-    //Only For Game
-    std::string turnSequence;
-    std::string turns;
-    std::string waitingForTurn;
-    std::string timeLeft;
-    std::string cardsString;
-
-    //Only For Home
-    std::string errorMessage;
 #endif
 #ifdef SERVERMACRO
     std::string playerJoined;

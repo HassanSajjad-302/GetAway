@@ -1,5 +1,5 @@
-#ifndef GETAWAY_CLIENTLOBBYMANAGER_HPP
-#define GETAWAY_CLIENTLOBBYMANAGER_HPP
+#ifndef GETAWAY_CLIENTGETAWAY_HPP
+#define GETAWAY_CLIENTGETAWAY_HPP
 
 #include <map>
 #include <set>
@@ -13,7 +13,7 @@
 #include "inputType.h"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
-#include "clientRoomManager.hpp"
+#include "clientLobby.hpp"
 
 enum whoTurned{
     CLIENT,
@@ -21,9 +21,38 @@ enum whoTurned{
     AUTO
 };
 // Represents the shared server state
-class clientLobbyManager : terminalInputBase {
-    class printingFunctions;
-    clientRoomManager& roomManager;
+class clientGetAway : terminalInputBase {
+    class PF {
+        static inline std::string inputStatementBuffer;
+        static inline std::string turnSequence;
+        static inline std::string cardsString;
+        static inline std::string waitingForTurn;
+        static inline std::string turns;
+        static inline void accumulateAndPrint();
+    public:
+        //input-statement-functions
+        static void setInputStatementHome2Accumulate();
+
+        static void setInputStatementHome3Accumulate();
+
+        static void setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_);
+        static void setInputStatementHome3R3Accumulate(const std::vector<Card>& turnAbleCards_);
+
+        static void setTurnSequence(const std::map<int, std::string>& gamePlayer_, const std::vector<int>& turnSequence_);
+
+        static void
+        setRoundTurns(const std::vector<std::tuple<int, Card>> &roundTurns,
+                      const std::map<int, std::string> &gamePlayers);
+
+        static void setRoundTurnsAccumulate(const std::vector<std::tuple<int, Card>> &roundTurns,
+                                            const std::map<int, std::string> &gamePlayers);
+
+        static void setWaitingForTurn(const std::vector<int>& waitingplayersId, const std::map<int, std::string>& gamePlayers);
+
+        static void setCards(const std::map<deckSuit, std::set<int>>& cardsMap);
+    };
+
+    clientLobby& roomManager;
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
@@ -57,10 +86,10 @@ class clientLobbyManager : terminalInputBase {
 
 public:
     explicit
-    clientLobbyManager(clientRoomManager &roomManager, const std::string& playerName_,
-                       const std::map<int, std::string>& players_, std::istream& in, int myId_);
+    clientGetAway(clientLobby &roomManager, const std::string& playerName_,
+                  const std::map<int, std::string>& players_, std::istream& in, int myId_);
 
-    ~clientLobbyManager();
+    ~clientGetAway();
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 
@@ -92,4 +121,4 @@ public:
     void setBaseAndInputTypeFromclientChatMessage();
 };
 
-#endif //GETAWAY_CLIENTLOBBYMANAGER_HPP
+#endif //GETAWAY_CLIENTGETAWAY_HPP
