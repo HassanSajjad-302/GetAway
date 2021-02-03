@@ -206,12 +206,14 @@ void serverGetAway::checkForCardsCount(){
     assert(cardsCount == constants::DECKSIZE && "Card-Count not equal to 52 error");
 
 }
-#endif
-void serverGetAway::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
-#ifndef NDEBUG
-    checkForCardsCount();
+#define CHECKCARDCOUNT checkForCardsCount();
+#else
+#define CHECKCARDCOUNT
 #endif
 
+void serverGetAway::managementGAMETURNCLIENTReceived(int sessionId, Card cardReceived) {
+
+    CHECKCARDCOUNT
     constants::Log("Game Turn Client Received From{}", std::get<0>(players.find(sessionId)->second));
     constants::Log("Card Received Is {} {}", deckSuitValue::displaySuitType[(int)cardReceived.suit],
                  deckSuitValue::displayCards[cardReceived.cardNumber]);
@@ -340,7 +342,7 @@ void serverGetAway::performFirstOrMiddleTurn(
         constants::Log("Waiting For Turn. Turn Expected Called");
         nextGamePlayerIterator->turnExpected = true;
     }
-    checkForCardsCount();
+    CHECKCARDCOUNT
 }
 
 void serverGetAway::performLastOrThullaTurn(
@@ -384,7 +386,7 @@ void serverGetAway::performLastOrThullaTurn(
         return;
     }
     newRoundTurn(roundKing);
-    checkForCardsCount();
+    CHECKCARDCOUNT
 }
 
 void serverGetAway::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer,

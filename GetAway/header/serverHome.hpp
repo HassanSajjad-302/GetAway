@@ -13,7 +13,11 @@
 using namespace asio::ip;
 
 class serverHome : terminalInputBase, public std::enable_shared_from_this<serverHome>{
-
+    class PF {
+    public:
+        static void setHomeMain();
+        static void setHomeChangeServerName();
+    };
     asio::io_context& io;
     asio::executor_work_guard<decltype(io.get_executor())> guard;
     tcp::socket sock;

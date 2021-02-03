@@ -4,7 +4,6 @@
 #include "serverListener.hpp"
 #include "session.hpp"
 #include "serverAuthManager.hpp"
-#include "serverPF.hpp"
 #include "resourceStrings.hpp"
 #include "constants.h"
 #include "sati.hpp"
@@ -49,7 +48,7 @@ run()
     {
         self->probeReply(ec, bytesReceived);
     });
-    serverPF::setLobbyMainOnePlayer();
+    PF::setLobbyMainOnePlayer();
     sati::getInstance()->setBase(this, appState::LOBBY);
     sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
 }
@@ -131,7 +130,7 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
 }
 
 void serverListener::registerForInputReceival() {
-    serverPF::setLobbyMainOnePlayer();
+    PF::setLobbyMainOnePlayer();
 
     sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
                                                             inputType::SERVERLOBBYONEPLAYER);

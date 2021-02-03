@@ -1,11 +1,9 @@
 
 #include "resourceStrings.hpp"
 #include "serverHome.hpp"
-#include "serverPF.hpp"
 #include "serverAuthManager.hpp"
 #include "sati.hpp"
 #include <memory>
-#include <regex>
 
 serverHome::serverHome(asio::io_context &io_): io(io_), guard(io.get_executor()), sock(io_){
 
@@ -14,7 +12,7 @@ serverHome::serverHome(asio::io_context &io_): io(io_), guard(io.get_executor())
 void serverHome::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
-    serverPF::setHomeMain();
+    PF::setHomeMain();
     ref = this->shared_from_this();
 }
 
@@ -26,7 +24,7 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                            1, 2, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
                     //Change Server Name
-                    serverPF::setHomeChangeServerName();
+                    PF::setHomeChangeServerName();
                     setInputType(inputType::HOMESTARTSERVER);
                 }else if(input == 2){
                     //Exit

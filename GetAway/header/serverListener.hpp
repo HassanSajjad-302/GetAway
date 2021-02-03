@@ -16,6 +16,10 @@ class serverAuthManager;
 // Accepts incoming connections and launches the sessions
 class serverListener : public std::enable_shared_from_this<serverListener>, terminalInputBase
 {
+    class PF {
+    public:
+        static void setLobbyMainOnePlayer();
+    };
     asio::io_context& io;
     tcp::acceptor acceptor;
     std::shared_ptr<serverAuthManager> nextManager;

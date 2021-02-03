@@ -1,4 +1,6 @@
-#ifndef ANDROID
+#ifdef ANDROID
+#include "satiAndroid.hpp"
+#else
 #ifndef GETAWAY_SATI_HPP
 #define GETAWAY_SATI_HPP
 
@@ -28,11 +30,9 @@ private:
     void accumulateBuffersAndPrint(bool lock);
 
 public:
-#ifdef CLIENTMACRO
     std::string messageBuffer; //messages
     std::string nonMessageBuffer;
 
-#endif
 #ifdef SERVERMACRO
     std::string playerJoined;
 #endif
@@ -44,11 +44,6 @@ public:
 
     explicit sati(asio::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
-
-    friend class lobbyPF;
-    friend class homePF;
-    friend class gamePF;
-    friend class messagePF;
 
     static sati& getInstanceFirstTime(asio::io_context& io_, std::mutex& mut);
     static sati* getInstance();
@@ -66,6 +61,4 @@ public:
 };
 
 #endif //GETAWAY_SATI_HPP
-#else
-#include "satiAndroid.hpp"
 #endif

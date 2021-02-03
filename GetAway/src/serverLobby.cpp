@@ -1,5 +1,4 @@
 
-#include <serverPF.hpp>
 #include <sati.hpp>
 #include <serverHome.hpp>
 #include "serverLobby.hpp"
@@ -52,7 +51,7 @@ join(std::shared_ptr<session<serverLobby, true>> roomSession)
 
     if(players.size() == 2){
         sati::getInstance()->setBase(this, appState::LOBBY);
-        serverPF::setLobbyMainTwoOrMorePlayers();
+        PF::setLobbyMainTwoOrMorePlayers();
         setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
     }
     return id;
@@ -200,7 +199,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                     gameStarted = true;
                     setInputType(inputType::OPTIONSELECTIONINPUTGAME);
                     sati::getInstance()->setBase(this, appState::GAME);
-                    serverPF::setGameMain();
+                    PF::setGameMain();
                 }else if(input == 2){
                     //Close Server
                     serverlistener->shutdown();
@@ -240,7 +239,7 @@ void serverLobby::gameExitFinished(){
         return;
     }
     inputTypeExpected = inputType::SERVERLOBBYTWOORMOREPLAYERS;
-    serverPF::setLobbyMainTwoOrMorePlayers();
+    PF::setLobbyMainTwoOrMorePlayers();
     sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
                                                             inputType::SERVERLOBBYTWOORMOREPLAYERS);
 }

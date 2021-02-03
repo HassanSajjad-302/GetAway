@@ -12,7 +12,12 @@
 
 class serverChat;
 class serverLobby: terminalInputBase{
+    class PF {
+    public:
+        static void setLobbyMainTwoOrMorePlayers();
+        static void setGameMain();
 
+    };
     std::map<int, std::tuple<const std::string,
             std::shared_ptr<session<serverLobby, true>>>> players;
 
