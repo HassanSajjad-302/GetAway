@@ -60,3 +60,7 @@ else()
     add_subdirectory(Client)
 endif()
 
+add_executable(Test Test/GetAway/main.cpp Test/GetAway/GetAwayTest.cpp
+        )
+target_include_directories(Test PRIVATE Test/GetAway)
+target_include_directories(Test PUBLIC asio/asio/include)
