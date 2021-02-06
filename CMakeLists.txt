@@ -51,6 +51,7 @@ else()
             PATHS "/home/hassan/Music/spdlog_Installed/lib/cmake/spdlog"
             NO_DEFAULT_PATH)
     target_link_libraries(GetAway PRIVATE spdlog::spdlog_header_only)
+    add_subdirectory(Test)
 endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
@@ -59,8 +60,3 @@ if(hasParent)
 else()
     add_subdirectory(Client)
 endif()
-
-add_executable(Test Test/GetAway/main.cpp Test/GetAway/GetAwayTest.cpp
-        )
-target_include_directories(Test PRIVATE Test/GetAway)
-target_include_directories(Test PUBLIC asio/asio/include)

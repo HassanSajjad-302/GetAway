@@ -7,11 +7,20 @@
 #include "deckSuit.hpp"
 #include "inputType.h"
 #include "messageTypeEnums.hpp"
-
+/*
 #if !defined(NDEBUG) && !defined(ANDROID)
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
-#endif
+#endif*/
+namespace gameStrings{
+    const std::string
+    clientHome = "1)Add Server 2)Join Server 3)Find Local Server"
+                 " 4)Game Rules 5)About 6)Exit\r\n",
+    enterRemoteServerIPAddress = "Please Enter Remote Server Ip-Address. Press Enter To Go Back.\r\n",
+    enterYourName = "Please Enter Your Name. Press Enter To Use Default.\r\n",
+    assignThisIpAddressAServerName = "Please Assign This Ip-Address A Server Name. Press Enter To Go Back.\r\n";
+
+}
 namespace constants{
     constexpr int SUITSIZE = 13;
     constexpr int DECKSIZE = SUITSIZE * 4;
@@ -63,12 +72,12 @@ A PLAYER CAN NOT LEAVE AMID THE GAME EVEN IF SHE HAS FINISHED HER CARDS. APPLICA
     bool inputHelper(const std::string& inputString, int lower, int upper, inputType notInRange_,
                      inputType invalidInput_, int& input_);
 
-    template<typename... T>
+ /*   template<typename... T>
     inline void Log(const char*p, T... args){
 #if !defined(NDEBUG) && !defined(ANDROID)
         spdlog::info(p, args...);
 #endif
-    }
+    }*/
 }
 
 #endif

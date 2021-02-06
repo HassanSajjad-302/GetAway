@@ -121,9 +121,14 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                             asio::buffer(receiveBuffer), remoteEndpoint,
                             [self = this](errorCode ec, std::size_t bytesReceived)
                             {
-                                if(ec)
-                                    resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
-                                    ": " + ec.message() + "\r\n");
+                                if(ec){
+                                    if(ec != asio::error::operation_aborted){
+                                        resourceStrings::print(std::string(
+                                                "error in lambda broadcastResponse Receival") + ": " + ec.message()
+                                                               + "\r\n");
+
+                                    }
+                                }
                                 else{
                                     self->broadcastResponseRecieved(ec, bytesReceived);
                                 }

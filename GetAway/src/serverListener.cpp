@@ -31,7 +31,8 @@ void
 serverListener::
 run()
 {
-    nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this(), io);
+    nextManager = std::make_shared<serverAuthManager>(
+            std::move(password), shared_from_this(), io);
     // Start accepting a connection
     acceptor.async_accept(
             tcpSock,
@@ -90,8 +91,11 @@ void
 serverListener::
 onAccept(errorCode ec)
 {
-    if(ec)
-        return fail(ec, "accept");
+    if(ec){
+        if(ec != asio::error::operation_aborted){
+            return fail(ec, "accept");
+        }
+    }
     else{
         tcpSock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
@@ -113,7 +117,8 @@ onAccept(errorCode ec)
 void serverListener::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputType::SERVERLOBBYONEPLAYER){
         int input;
-        if(constants::inputHelper(inputString, 2, 3, inputType::SERVERLOBBYONEPLAYER, inputType::SERVERLOBBYONEPLAYER, input)){
+        if(constants::inputHelper(inputString, 2, 3, inputType::SERVERLOBBYONEPLAYER,
+                                  inputType::SERVERLOBBYONEPLAYER, input)){
             if(input == 2){
                 //close server
                 shutdown();
@@ -150,8 +155,12 @@ void serverListener::shutdownAcceptorAndProbe(){
 }
 
 void serverListener::probeReply(asio::error_code ec, int size) {
-    if(ec)
-        return fail(ec, "probeReply");
+    if(ec){
+        if(ec != asio::error::operation_aborted){
+            return fail(ec, "probeReply");
+
+        }
+    }
     else{
         asio::error_code error;
         asio::ip::udp::socket sock(acceptor.get_executor());

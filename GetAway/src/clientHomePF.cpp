@@ -4,8 +4,7 @@
 #include "clientHome.hpp"
 
 void clientHome::PF::setInputStatementHome7() {
-    sati::getInstance()->nonMessageBuffer = "1)Add Server 2)Join Server 3)Find Local Server"
-                                                " 4)Game Rules 5)About 6)Exit\r\n";
+    sati::getInstance()->nonMessageBuffer = gameStrings::clientHome;
 }
 
 void clientHome::PF::setInputStatementMAIN() {
@@ -14,7 +13,7 @@ void clientHome::PF::setInputStatementMAIN() {
 }
 
 void clientHome::PF::setInputStatementHome7R1() {
-    sati::getInstance()->nonMessageBuffer = "Please Enter Remote Server Ip-Address. Press Enter To Go Back.\r\n";
+    sati::getInstance()->nonMessageBuffer = gameStrings::enterRemoteServerIPAddress;
 }
 
 void clientHome::PF::setInputStatementIPADDRESS() {
@@ -45,7 +44,7 @@ void clientHome::PF::setInputStatementHome7R3(const std::vector<std::tuple<std::
 }
 
 void clientHome::PF::setInputStatementClientName() {
-    sati::getInstance()->nonMessageBuffer = "Please Enter Your Name. Press Enter To Use Default.\r\n";
+    sati::getInstance()->nonMessageBuffer = gameStrings::enterYourName;
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
@@ -67,7 +66,7 @@ void clientHome::PF::setInputStatementSELECTSERVER(const std::vector<std::tuple<
 }
 
 void clientHome::PF::setInputStatementHome7R1RR() {
-    sati::getInstance()->nonMessageBuffer = "Please Assign This Ip-Address A Server Name. Press Enter To Go Back.\r\n";
+    sati::getInstance()->nonMessageBuffer = gameStrings::assignThisIpAddressAServerName;
 }
 
 void clientHome::PF::setInputStatementASSIGNSERVERNAME() {
