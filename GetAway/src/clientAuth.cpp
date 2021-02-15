@@ -1,4 +1,4 @@
-#include "clientAuth.hpp"
+/*#include "clientAuth.hpp"
 #include <utility>
 #include "clientGetAway.hpp"
 #include "session.hpp"
@@ -12,7 +12,7 @@ void clientAuth::starting() {
     tcp::socket tmp = std::move(authSession->sock);
     authSession.reset();
     std::make_shared<session<clientLobby>>(std::move(tmp),
-                                           std::make_shared<clientLobby>(io))->registerSessionToManager();
+                                           std::make_shared<clientLobby>(io));
 }
 
 namespace clientAuthManagerJoin{
@@ -31,3 +31,4 @@ void clientAuth::join(std::shared_ptr<session<clientAuth>> authSession_) {
 }
 
 clientAuth::~clientAuth() = default;
+*/

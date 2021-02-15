@@ -5,7 +5,7 @@
 
 //message type core
 enum class mtc{
-    ROOM = 1,
+    LOBBY = 1,
     MESSAGE = 11,
     GAME = 12
 };

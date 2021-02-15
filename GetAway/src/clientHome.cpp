@@ -1,19 +1,20 @@
 
 #include "clientHome.hpp"
 #include "constants.h"
-#include "clientAuth.hpp"
+#include "clientLobby.hpp"
 #include <memory>
-#include <regex>
 #include <chrono>
-#include <clientHomePF.hpp>
 #include "resourceStrings.hpp"
 #include "sati.hpp"
 
 clientHome::clientHome(asio::io_context &io_): io(io_), guard(io_.get_executor()), tcpSock(io_), udpSock(io_),
                                                broadcastudpSock(io), broadcastTimer(io){
-
 }
 
+//If i delete the following function and just use the constructor, then a behavior occurs that I can't reason about.
+// If I exit pressing 6 in clientHome, io.run() still blocks instead of exiting as there is no async operation being
+// waited on. Another behavior that I can't reason about is that I can't declare a destructor in this class. It will
+//be an error.
 void clientHome::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
@@ -119,7 +120,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     udpSock.bind(host_endpoint);
                     udpSock.async_receive_from(
                             asio::buffer(receiveBuffer), remoteEndpoint,
-                            [self = this](errorCode ec, std::size_t bytesReceived)
+                            [self = this](std::error_code ec, std::size_t bytesReceived)
                             {
                                 if(ec)
                                     resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
@@ -252,8 +253,7 @@ void clientHome::setInputType(inputType type) {
 }
 
 void clientHome::promote() {
-    std::make_shared<session<clientAuth>>(std::move(tcpSock), std::make_shared<clientAuth>(
-            std::move(myName), "password", io))->registerSessionToManager();
+    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string>>(std::move(tcpSock), io, std::move(myName));
     guard.reset();
     ref.reset();
 }
@@ -287,7 +287,7 @@ void clientHome::broadcastResponseRecieved(errorCode ec, std::size_t bytes){
     //
     udpSock.async_receive_from(
             asio::buffer(receiveBuffer), remoteEndpoint,
-            [self = this](errorCode ec, std::size_t bytesReceived)
+            [self = this](std::error_code ec, std::size_t bytesReceived)
             {
                 if(ec)
                     resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +

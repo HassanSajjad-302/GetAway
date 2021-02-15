@@ -8,9 +8,9 @@
 #include "sati.hpp"
 
 serverGetAway::
-serverGetAway(const std::map<int, std::tuple<const std::string,
-        std::shared_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& roomManager_):
-        players{gameData_}, roomManager{roomManager_}{
+serverGetAway(const std::map<int, std::tuple<std::string,
+        std::unique_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& lobbyManager_):
+        players{gameData_}, lobbyManager{lobbyManager_}{
     initializeGame();
     doFirstTurnOfFirstRound();
     firstRound = true;
@@ -51,7 +51,7 @@ void serverGetAway::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
                  deckSuitValue::displayCards[card.cardNumber]);
     for(auto& player: players){
         if(player.first != sessionId){
-            auto playerSession = std::get<1>(player.second);
+            auto& playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
             //STEP 1;
@@ -150,7 +150,7 @@ void serverGetAway::doFirstTurnOfFirstRound(){
         auto& player = gamePlayersData[i];
         int currentIndexGamePlayersData = i;
 
-        auto playerSession = std::get<1>(players.find(gamePlayersData[i].id)->second);
+        auto& playerSession = std::get<1>(players.find(gamePlayersData[i].id)->second);
         std::ostream& out = playerSession->out;
 
         //STEP 1;
@@ -377,12 +377,12 @@ void serverGetAway::performLastOrThullaTurn(
     roundTurns.clear();
     if(gamePlayersData.empty()){
         //match drawn
-        roomManager.gameExitFinished();
+        lobbyManager.gameExitFinished();
         return;
     }
     if(gamePlayersData.size() == 1){
         //That id left player has lost
-        roomManager.gameExitFinished();
+        lobbyManager.gameExitFinished();
         return;
     }
     newRoundTurn(roundKing);

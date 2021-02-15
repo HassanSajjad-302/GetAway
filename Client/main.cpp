@@ -3,12 +3,9 @@
 #ifndef ANDROID
 #include "clientHome.hpp"
 #include "sati.hpp"
-#include "session.hpp"
-#include "clientAuth.hpp"
 #include "constants.h"
 #include <fstream>
 #include <memory>
-#include <random>
 
 //Following link can be helpful
 //https://www.tutorialspoint.com/Read-a-character-from-standard-input-without-waiting-for-a-newline-in-Cplusplus
@@ -45,7 +42,6 @@ int main(){
 
     std::make_shared<clientHome>(clientHome(io))->run();
 
-    
     io.run();
 
     inputThread.detach();

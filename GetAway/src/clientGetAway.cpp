@@ -5,10 +5,10 @@
 #include "sati.hpp"
 #include "constants.h"
 #include "resourceStrings.hpp"
-
-clientGetAway::clientGetAway(clientLobby &roomManager_, const std::string& playerName_,
+#include "clientLobby.hpp"
+clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& playerName_,
                              const std::map<int, std::string>& players_, std::istream& in, int myId_):
-        roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{myId_}
+        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}
 {
     constants::initializeCards(myCards);
     constants::initializeCards(flushedCards);
@@ -123,7 +123,7 @@ void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
 void clientGetAway::sendGAMETURNCLIENT(Card card){
     constants::Log("Seding Card Message To Server. Suit {} {}",
                    deckSuitValue::displaySuitType[(int)card.suit], deckSuitValue::displayCards[card.cardNumber]);
-    std::ostream& out = roomManager.clientRoomSession->out;
+    std::ostream& out = lobbyManager.clientLobbySession.out;
     //STEP 1;
     out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
     mtg t = mtg::GAMETURNCLIENT;
@@ -135,7 +135,7 @@ void clientGetAway::sendGAMETURNCLIENT(Card card){
     //STEP 3;
     out.write(reinterpret_cast<char *>(&card.cardNumber), sizeof(card.cardNumber));
 
-    roomManager.clientRoomSession->sendMessage();
+    lobbyManager.clientLobbySession.sendMessage();
 }
 
 void clientGetAway::input(std::string inputString, inputType inputReceivedType) {
@@ -166,11 +166,11 @@ void clientGetAway::input(std::string inputString, inputType inputReceivedType) 
                 }
                 if(success){
                     if(input == 1){
-                        roomManager.chatManager->setBaseAndInputTypeForMESSAGESTRING();
+                        lobbyManager.clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
                     }else if(input == 2){
-                        roomManager.exitApplication(true);
+                        lobbyManager.exitApplication(true);
                     }else if(input == 3){
-                        roomManager.exitApplication(false);
+                        lobbyManager.exitApplication(false);
                     }else{
                         //perform turn
                         PF::setInputStatementHome3R3Accumulate(turnAbleCards);
@@ -277,7 +277,7 @@ void clientGetAway::Turn(int playerId, Card card, whoTurned who) {
             helperFirstTurnAndMiddleTurn(playerId, card, false, who);
         }
         if(gameFinished){
-            roomManager.gameFinished();
+            lobbyManager.gameFinished();
         }else{
             waitingForTurn.emplace_back(turnPlayerIdExpected);
             PF::setWaitingForTurn(waitingForTurn, players);

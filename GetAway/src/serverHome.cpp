@@ -1,7 +1,8 @@
 
 #include "resourceStrings.hpp"
 #include "serverHome.hpp"
-#include "serverAuthManager.hpp"
+#include "serverListener.hpp"
+#include "constants.h"
 #include "sati.hpp"
 #include <memory>
 
@@ -43,16 +44,14 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                 std::make_shared<serverListener>(
                         io,
                         tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        "Server",
-                        "password")->run();
+                        "Server");
                 guard.reset();
                 ref.reset();
             }else{
                 std::make_shared<serverListener>(
                         io,
                         tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        inputString,
-                        "password")->run();
+                        inputString);
                 guard.reset();
                 ref.reset();
             }

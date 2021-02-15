@@ -9,7 +9,6 @@
 #include <map>
 #include <tuple>
 #include "session.hpp"
-#include "serverListener.hpp"
 #include "messageTypeEnums.hpp"
 #include "playerData.hpp"
 #include "deckSuit.hpp"
@@ -17,9 +16,9 @@
 class serverLobby;
 class serverGetAway
 {
-    serverLobby& roomManager;
-    const std::map<int, std::tuple<const std::string,
-    std::shared_ptr<session<serverLobby, true>>>>& players;
+    serverLobby& lobbyManager;
+    const std::map<int, std::tuple<std::string,
+    std::unique_ptr<session<serverLobby, true>>>>& players;
 
     bool firstRound;
     std::map<deckSuit, std::set<int>> flushedCards;
@@ -29,8 +28,8 @@ class serverGetAway
 
 public:
     explicit
-    serverGetAway(const std::map<int, std::tuple<const std::string,
-            std::shared_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& roomManager_);
+    serverGetAway(const std::map<int, std::tuple<std::string,
+            std::unique_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& lobbyManager_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 

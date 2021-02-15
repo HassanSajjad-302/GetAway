@@ -7,11 +7,10 @@
 #include"asio/ip/tcp.hpp"
 #include "asio/ip/udp.hpp"
 #include "terminalInputBase.hpp"
+#include "serverLobby.hpp"
 
 using namespace asio::ip;
 using errorCode = asio::error_code;
-// Forward declaration
-class serverAuthManager;
 
 // Accepts incoming connections and launches the sessions
 class serverListener : public std::enable_shared_from_this<serverListener>, terminalInputBase
@@ -22,8 +21,7 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
     };
     asio::io_context& io;
     tcp::acceptor acceptor;
-    std::shared_ptr<serverAuthManager> nextManager;
-    std::string password;
+    serverLobby nextManager;
     std::string serverName;
 
     //Following are used for local server find handling
@@ -42,8 +40,7 @@ public:
     serverListener(
             asio::io_context& io_,
             const tcp::endpoint& endpoint,
-            const std::string& serverName_,
-            std::string password_);
+            const std::string& serverName_);
 
     // Start accepting incoming connections
     void run();

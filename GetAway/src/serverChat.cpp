@@ -1,8 +1,9 @@
 
 #include "serverChat.hpp"
+#include "serverLobby.hpp"
 
 serverChat::serverChat(
-        const std::map<int, std::tuple<const std::string, std::shared_ptr<session<serverLobby, true>>>> &players_):
+        const std::map<int, std::tuple<std::string, std::unique_ptr<session<serverLobby, true>>>> &players_):
         players{players_}{
 
 }
@@ -32,7 +33,7 @@ void serverChat::packetReceivedFromNetwork(std::istream &in, int receivedPacketS
 void serverChat::CHATMESSAGEReceived(const std::string &chatMessageReceived, int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
-            auto playerSession = std::get<1>(player.second);
+            auto& playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
             //STEP 1;

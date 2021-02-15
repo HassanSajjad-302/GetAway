@@ -13,8 +13,8 @@
 #include "inputType.h"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
-#include "clientLobby.hpp"
 
+class clientLobby;
 enum whoTurned{
     CLIENT,
     RECEIVED,
@@ -52,7 +52,7 @@ class clientGetAway : terminalInputBase {
         static void setCards(const std::map<deckSuit, std::set<int>>& cardsMap);
     };
 
-    clientLobby& roomManager;
+    clientLobby& lobbyManager;
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
@@ -61,12 +61,6 @@ class clientGetAway : terminalInputBase {
     inputType inputTypeExpected;
 
     void input(std::string inputString, inputType inputReceivedType) override;
-
-    //TODO
-    //Following two are used for clearAndPrint by sati.cpp
-    //Should be part of some other struct
-    std::string chatMessageString;
-    int chatMessageInt{};
 
     //Following Are Used For Game Management
     std::map<deckSuit, std::set<int>> myCards; //here cards are stored based on there 0-12 number and 0-4 enum value as in
@@ -86,7 +80,7 @@ class clientGetAway : terminalInputBase {
 
 public:
     explicit
-    clientGetAway(clientLobby &roomManager, const std::string& playerName_,
+    clientGetAway(clientLobby &lobbyManager_, const std::string& playerName_,
                   const std::map<int, std::string>& players_, std::istream& in, int myId_);
 
     ~clientGetAway();

@@ -5,8 +5,8 @@
 #include "clientGetAway.hpp"
 #include "sati.hpp"
 
-clientChat::clientChat(clientLobby& roomManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int myId_):
-        roomManager{roomManager_}, playerName{playerName_}, players{players_}, myId{myId_}
+clientChat::clientChat(clientLobby& lobbyManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int myId_):
+        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}
 {
 }
 
@@ -34,19 +34,19 @@ void clientChat::packetReceivedFromNetwork(std::istream &in, int receivedPacketS
 void clientChat::input(std::string inputString, inputType inputReceivedType_){
     if(inputReceivedType_ == inputType::MESSAGESTRING){
         if(inputString.empty()){
-            if(roomManager.gameStarted){
-                roomManager.lobbyManager->setBaseAndInputTypeFromclientChatMessage();
+            if(lobbyManager.gameStarted){
+                lobbyManager.clientGetAwayPtr->setBaseAndInputTypeFromclientChatMessage();
             }else{
-                roomManager.setBaseAndInputTypeFromclientChatMessage();
+                lobbyManager.setBaseAndInputTypeFromclientChatMessage();
             }
         }else{
             chatMessageString = std::move(inputString);
             chatMessageInt = myId;
             sendCHATMESSAGE();
-            if(roomManager.gameStarted){
-                roomManager.lobbyManager->setBaseAndInputTypeFromclientChatMessage();
+            if(lobbyManager.gameStarted){
+                lobbyManager.clientGetAwayPtr->setBaseAndInputTypeFromclientChatMessage();
             }else{
-                roomManager.setBaseAndInputTypeFromclientChatMessage();
+                lobbyManager.setBaseAndInputTypeFromclientChatMessage();
             }
         }
     }
@@ -63,7 +63,7 @@ namespace clientChatManagerSendCHATMESSAGE{
 }
 
 void clientChat::sendCHATMESSAGE(){
-    std::ostream& out = roomManager.clientRoomSession->out;
+    std::ostream& out = lobbyManager.clientLobbySession.out;
     //STEP 1;
     out.write(reinterpret_cast<const char*>(&constants::mtcMessage), sizeof(constants::mtcMessage));
     //STEP 2;
@@ -72,7 +72,7 @@ void clientChat::sendCHATMESSAGE(){
     out << chatMessageString << std::endl;
 
     clientChatManagerSendCHATMESSAGE::chatManager = this;
-    roomManager.clientRoomSession->sendMessage(clientChatManagerSendCHATMESSAGE::func);
+    lobbyManager.clientLobbySession.sendMessage(clientChatManagerSendCHATMESSAGE::func);
 }
 
 void clientChat::setBaseAndInputTypeForMESSAGESTRING(){

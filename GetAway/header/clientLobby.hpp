@@ -8,8 +8,8 @@
 #include "clientChat.hpp"
 #include "terminalInputBase.hpp"
 #include "asio/io_context.hpp"
-#include "session.hpp"
-class clientGetAway;
+#include "clientSession.hpp"
+#include "clientGetAway.hpp"
 class clientLobby: public terminalInputBase {
 
     class PF {
@@ -30,15 +30,14 @@ class clientLobby: public terminalInputBase {
 
 public:
     int myId;
-    std::shared_ptr<session<clientLobby>> clientRoomSession;
-    std::shared_ptr<clientChat> chatManager;
-    std::shared_ptr<clientGetAway> lobbyManager;
+    clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession;
+    std::unique_ptr<clientChat> clientChatPtr;
+    std::unique_ptr<clientGetAway> clientGetAwayPtr;
     bool gameStarted = false;
     void gameFinished();
 
-    explicit clientLobby(asio::io_context& io_);
-
-    void join(std::shared_ptr<session<clientLobby>> clientRoomSession_);
+    explicit clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_,
+                         asio::io_context& io_, std::string playerName);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 

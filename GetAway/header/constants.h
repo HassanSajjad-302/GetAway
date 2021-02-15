@@ -51,7 +51,7 @@ A PLAYER CAN NOT LEAVE AMID THE GAME EVEN IF SHE HAS FINISHED HER CARDS. APPLICA
 
     void initializeCards(std::map<deckSuit, std::set<int>>& cards);
 
-    constexpr mtc mtcRoom = mtc::ROOM;
+    constexpr mtc mtcRoom = mtc::LOBBY;
     constexpr mtc mtcGame = mtc::GAME;
     constexpr mtc mtcMessage = mtc::MESSAGE;
     inline void exitCookedTerminal() {

@@ -5,12 +5,11 @@
 #include "clientHome.hpp"
 #include "clientGetAway.hpp"
 
-clientLobby::clientLobby(asio::io_context& io_): io{io_} {
-}
-
-void clientLobby::join(std::shared_ptr<session<clientLobby>> clientRoomSession_) {
-    clientRoomSession = std::move(clientRoomSession_);
-    clientRoomSession->receiveMessage();
+clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_, asio::io_context& io_,
+                         std::string playerName):
+clientLobbySession{clientLobbySession_}, io{io_} {
+    clientLobbySession.out << playerName << std::endl;
+    clientLobbySession.receiveMessage();
 }
 
 void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
@@ -20,14 +19,14 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            lobbyManager = std::make_shared<clientGetAway>(*this, playerName, players, in, myId);
+            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, playerName, players, in, myId);
             gameStarted = true;
         }else{
-            lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize);
+            clientGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize);
         }
     }else if(messageTypeReceived == mtc::MESSAGE){
-        chatManager->packetReceivedFromNetwork(in, receivedPacketSize);
-    }else if(messageTypeReceived == mtc::ROOM){
+        clientChatPtr->packetReceivedFromNetwork(in, receivedPacketSize);
+    }else if(messageTypeReceived == mtc::LOBBY){
         mtr innerMessageType;
         in.read(reinterpret_cast<char*>(&innerMessageType), sizeof(innerMessageType));
         switch (innerMessageType) {
@@ -56,7 +55,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                     players.emplace(playersId, playerName);
                 }
                 SELFANDSTATEReceived();
-                chatManager = std::make_shared<clientChat>(*this, players, playerName, myId);
+                clientChatPtr = std::make_unique<clientChat>(*this, players, playerName, myId);
                 break;
             }
                 //STEP 1;
@@ -96,7 +95,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         resourceStrings::print("Unexpected Packet Type Received in class clientLobby "
                                "Packet Type Not Present In Enum mtc\r\n");
     }
-    clientRoomSession->receiveMessage();
+    clientLobbySession.receiveMessage();
 }
 
 void clientLobby::SELFANDSTATEReceived(){
@@ -112,10 +111,10 @@ void clientLobby::PLAYERJOINEDOrPLAYERLEFTReceived(){
 //Before refactor, lines of this function = 123;
 void clientLobby::input(std::string inputString, inputType inputReceivedType) {
     int input;
-    if(constants::inputHelper(inputString, 1, 3, inputType::OPTIONSELECTIONINPUTLOBBY, inputType::OPTIONSELECTIONINPUTLOBBY,
-                              input)){
+    if(constants::inputHelper(inputString, 1, 3, inputType::OPTIONSELECTIONINPUTLOBBY,
+                              inputType::OPTIONSELECTIONINPUTLOBBY,input)){
         if(input == 1){
-            chatManager->setBaseAndInputTypeForMESSAGESTRING();
+            clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
         }
         else if(input== 2){
             exitApplication(true);
@@ -131,13 +130,12 @@ void clientLobby::gameFinished(){
 
     PF::addOrRemovePlayerAccumulate(players);
     setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
-    lobbyManager.reset();
+    clientGetAwayPtr.reset();
 }
 
 void clientLobby::exitApplication(bool backToHome){
-    clientRoomSession->sock.shutdown(asio::socket_base::shutdown_both);
-    clientRoomSession->sock.close();
-    clientRoomSession.reset();
+    clientLobbySession.sock.shutdown(asio::socket_base::shutdown_both);
+    clientLobbySession.sock.close();
     if(backToHome)
         std::make_shared<clientHome>(clientHome(io))->run();
 }

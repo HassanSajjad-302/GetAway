@@ -3,7 +3,6 @@
 #ifndef ANDROID
 
 #include "sati.hpp"
-#include "serverAuthManager.hpp"
 #include <fstream>
 #include <memory>
 #include "serverHome.hpp"

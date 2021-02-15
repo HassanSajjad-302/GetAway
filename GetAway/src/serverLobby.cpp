@@ -2,59 +2,26 @@
 #include <sati.hpp>
 #include <serverHome.hpp>
 #include "serverLobby.hpp"
+#include "serverListener.hpp"
 #include "serverChat.hpp"
-serverLobby::serverLobby(std::shared_ptr <serverListener> serverlistener_, asio::io_context &io_):
-        serverlistener(std::move(serverlistener_)), io{io_} {
-    chatManager = std::make_shared<serverChat>(players);
+serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_):
+        serverlistener(serverlistener_), io{io_} {
+    chatManagerPtr = std::make_unique<serverChat>(players);
 }
 
 void serverLobby::shutDown() {
-    constants::Log("UseCount of serverlistener from serverLobbyManager {}", serverlistener.use_count());
-    serverlistener.reset();
     for(auto &p: players){
         std::get<1>(p.second)->sock.shutdown(asio::socket_base::shutdown_both);
         std::get<1>(p.second)->sock.close();
-        constants::Log("UseCount of serverLobbySession from serverLobbyManager {}", std::get<1>(p.second).use_count());
         std::get<1>(p.second).reset();
     }
 }
 
-void serverLobby::setPlayerNameAdvanced(std::string playerNameAdvacned_) {
-    playerNameAdvanced = std::move(playerNameAdvacned_);
-}
-
-int
-serverLobby::
-join(std::shared_ptr<session<serverLobby, true>> roomSession)
-{
-    roomSession->receiveMessage();
-    std::tuple<std::string, std::shared_ptr<session<serverLobby, true>>> tup(playerNameAdvanced, std::move(roomSession));
-    int id;
-    std::string playerNameFinal;
-    if(players.empty())
-    {
-        id = 0;
-        players.emplace(id,tup);
-        playerNameFinal = std::move(playerNameAdvanced);
-    }
-    else{
-        id = players.rbegin()->first + 1;
-        auto pair = players.emplace(id,tup);
-        playerNameFinal = std::move(playerNameAdvanced);
-        //TODO
-        //Currently, There is no policy for handling players with different Names.
-        //Because of having same Id, I currently don't care. Though this is the only
-        //reason server resends the playerName.
-    }
-    //Tell EveryOne SomeOne has Joined In
-    managementJoin(id, playerNameFinal);
-
-    if(players.size() == 2){
-        sati::getInstance()->setBase(this, appState::LOBBY);
-        PF::setLobbyMainTwoOrMorePlayers();
-        setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
-    }
-    return id;
+void serverLobby::newConnectionReceived(asio::ip::tcp::socket sock) {
+    auto lobbySession = std::make_unique<session<serverLobby, true>>(std::move(sock), *this, maxID);
+    lobbySession->receiveMessage();
+    yetToBePromotedSession.emplace(maxID, std::move(lobbySession));
+    ++maxID;
 }
 
 void
@@ -66,7 +33,7 @@ leave(int id)
         resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
         players.erase(players.find(id));
         if(players.size() == 1){
-            serverlistener->registerForInputReceival();
+            serverlistener.registerForInputReceival();
         }
     }else{
         players.erase(players.find(id));
@@ -80,21 +47,38 @@ void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     mtc messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
-    if(messageTypeReceived == mtc::GAME){
-        lobbyManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+    if(messageTypeReceived == mtc::LOBBY){
+        //STEP 2;
+        //TODO
+        char arr[61]; //This constant will be fed from somewhere else but one is added.
+        in.getline(arr,61);
+        joinedPlayerName = std::string(arr);
+        //todo
+        //currently no policy for handling players with same names.
+        auto s = yetToBePromotedSession.extract(sessionId);
+        players.emplace(sessionId, std::make_tuple(std::move(joinedPlayerName), std::move(s.mapped())));
+    }
+    else if(messageTypeReceived == mtc::GAME){
+        serverGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }else if(messageTypeReceived == mtc::MESSAGE){
-        chatManager->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+        chatManagerPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }
     else{
         resourceStrings::print("Unexpected Packet Type Received in class serverLobby\r\n");
+
     }
     std::get<1>(players.find(sessionId)->second)->receiveMessage();
 }
 
+void serverLobby::managementNewSessionReceived(int excitedSessionId) {
+
+}
+
+
 //excitedSessionId is the one to send state to and update of it to remaining
 void serverLobby::managementJoin(int excitedSessionId, const std::string& playerNameFinal) {
 
-    auto playerSession = std::get<1>(players.find(excitedSessionId)->second);
+    auto& playerSession = std::get<1>(players.find(excitedSessionId)->second);
     std::ostream& out = playerSession->out;
 
     //STEP 1;
@@ -125,7 +109,7 @@ void serverLobby::managementJoin(int excitedSessionId, const std::string& player
 void serverLobby::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
-            auto playerSession = std::get<1>(player.second);
+            auto& playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
             //STEP 1;
@@ -147,7 +131,7 @@ void serverLobby::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
 void serverLobby::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
         if(player.first != excitedSessionId){
-            auto playerSession = std::get<1>(player.second);
+            auto& playerSession = std::get<1>(player.second);
             std::ostream& out = playerSession->out;
 
             //STEP 1;
@@ -166,7 +150,7 @@ void serverLobby::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
 
 void serverLobby::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
-        auto playerSession = std::get<1>(player.second);
+        auto& playerSession = std::get<1>(player.second);
         std::ostream& out = playerSession->out;
 
         //STEP 1;
@@ -194,19 +178,19 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                                       inputType::SERVERLOBBYTWOORMOREPLAYERS, input)){
                 if(input == 1){
                     //Start The Game
-                    serverlistener->shutdownAcceptorAndProbe();
-                    lobbyManager = std::make_shared<serverGetAway>(players, *this);
+                    serverlistener.shutdownAcceptorAndProbe();
+                    serverGetAwayPtr = std::make_unique<serverGetAway>(players, *this);
                     gameStarted = true;
                     setInputType(inputType::OPTIONSELECTIONINPUTGAME);
                     sati::getInstance()->setBase(this, appState::GAME);
                     PF::setGameMain();
                 }else if(input == 2){
                     //Close Server
-                    serverlistener->shutdown();
-                    std::make_shared<serverHome>(serverHome(io))->run();
+                    serverlistener.shutdown();
+                    std::make_shared<serverHome>(serverHome(io));
                 }else{
                     //Exit
-                    serverlistener->shutdown();
+                    serverlistener.shutdown();
                 }
             }
         }
@@ -215,10 +199,10 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
             if(constants::inputHelper(inputString, 2, 3, inputType::OPTIONSELECTIONINPUTGAME,
                                       inputType::OPTIONSELECTIONINPUTGAME, input)){
                 if(input == 2){
-                    serverlistener->shutdown();
+                    serverlistener.shutdown();
                 }else{
-                    serverlistener->shutdown();
-                    std::make_shared<serverHome>(serverHome(io))->run();
+                    serverlistener.shutdown();
+                    std::make_shared<serverHome>(serverHome(io));
                 }
             }
         }else{
@@ -231,11 +215,11 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
 
 void serverLobby::gameExitFinished(){
     gameStarted = false;
-    serverlistener->runAgain();
+    serverlistener.runAgain();
 
-    lobbyManager.reset();
+    serverGetAwayPtr.reset();
     if(players.size() == 1){
-        serverlistener->registerForInputReceival();
+        serverlistener.registerForInputReceival();
         return;
     }
     inputTypeExpected = inputType::SERVERLOBBYTWOORMOREPLAYERS;

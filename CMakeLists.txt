@@ -10,7 +10,7 @@ endif()
     set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 set(srcFiles "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
-        "GetAway/src/serverAuthManager.cpp" "GetAway/src/serverGetAway.cpp"
+        "GetAway/src/serverGetAway.cpp"
         "GetAway/src/messageTypeEnums.cpp"
         "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp"
         "GetAway/src/playerData.cpp" "GetAway/src/constants.cpp" "GetAway/src/deckSuit.cpp"
