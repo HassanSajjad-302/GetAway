@@ -23,7 +23,7 @@ class clientLobby: public terminalInputBase {
     };
 
     asio::io_context& io;
-    std::string playerName;
+    std::string myName;
     std::map<int, std::string> players;
 
     inputType inputTypeExpected;
@@ -52,6 +52,8 @@ public:
     void exitApplication(bool backToHome);
 
     void setBaseAndInputTypeFromclientChatMessage();
+
+    void run();
 };
 
 

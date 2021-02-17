@@ -1,7 +1,7 @@
   set(CMAKE_CXX_STANDARD 20)
   set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(srcFiles "../Client/main.cpp" "../GetAway/src/clientAuth.cpp"
+set(srcFiles "../Client/main.cpp"
         "../GetAway/src/clientGetAway.cpp"
         "../GetAway/src/messageTypeEnums.cpp"
         "../GetAway/src/sati.cpp" "../GetAway/src/constants.cpp" "../GetAway/src/deckSuit.cpp"

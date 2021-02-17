@@ -253,7 +253,8 @@ void clientHome::setInputType(inputType type) {
 }
 
 void clientHome::promote() {
-    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string>>(std::move(tcpSock), io, std::move(myName));
+    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string>>(std::move(tcpSock), io,
+            std::move(myName))->run();
     guard.reset();
     ref.reset();
 }

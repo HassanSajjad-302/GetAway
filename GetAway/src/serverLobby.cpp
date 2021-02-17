@@ -29,11 +29,16 @@ serverLobby::
 leave(int id)
 {
     if(!gameStarted){
-        sendPLAYERLEFTToAllExceptOne(id);
-        resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
-        players.erase(players.find(id));
-        if(players.size() == 1){
-            serverlistener.registerForInputReceival();
+        auto s = yetToBePromotedSession.find(id);
+        if(s == yetToBePromotedSession.end()){
+            sendPLAYERLEFTToAllExceptOne(id);
+            resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
+            players.erase(players.find(id));
+            if(players.size() == 1){
+                serverlistener.registerForInputReceival();
+            }
+        }else{
+            yetToBePromotedSession.erase(s);
         }
     }else{
         players.erase(players.find(id));
@@ -55,8 +60,17 @@ void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         joinedPlayerName = std::string(arr);
         //todo
         //currently no policy for handling players with same names.
-        auto s = yetToBePromotedSession.extract(sessionId);
-        players.emplace(sessionId, std::make_tuple(std::move(joinedPlayerName), std::move(s.mapped())));
+        auto s = std::move(yetToBePromotedSession.find(sessionId)->second);
+        //s->receiveMessage();
+        yetToBePromotedSession.erase(sessionId);
+        players.emplace(sessionId, std::make_tuple(std::move(joinedPlayerName), std::move(s)));
+        managementJoin(sessionId, std::get<0>(players.find(sessionId)->second));
+
+        if(players.size() == 2){
+            sati::getInstance()->setBase(this, appState::LOBBY);
+            PF::setLobbyMainTwoOrMorePlayers();
+            setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+        }
     }
     else if(messageTypeReceived == mtc::GAME){
         serverGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
@@ -65,15 +79,14 @@ void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     }
     else{
         resourceStrings::print("Unexpected Packet Type Received in class serverLobby\r\n");
-
+        //Only one packet is allowed from yetToBePromotedSession. if it is not name then remove the session.
+        if(yetToBePromotedSession.find(sessionId) != yetToBePromotedSession.end()){
+            yetToBePromotedSession.erase(yetToBePromotedSession.find(sessionId));
+            return;
+        }
     }
     std::get<1>(players.find(sessionId)->second)->receiveMessage();
 }
-
-void serverLobby::managementNewSessionReceived(int excitedSessionId) {
-
-}
-
 
 //excitedSessionId is the one to send state to and update of it to remaining
 void serverLobby::managementJoin(int excitedSessionId, const std::string& playerNameFinal) {
@@ -187,7 +200,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                 }else if(input == 2){
                     //Close Server
                     serverlistener.shutdown();
-                    std::make_shared<serverHome>(serverHome(io));
+                    std::make_shared<serverHome>(serverHome(io))->run();
                 }else{
                     //Exit
                     serverlistener.shutdown();
@@ -202,7 +215,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                     serverlistener.shutdown();
                 }else{
                     serverlistener.shutdown();
-                    std::make_shared<serverHome>(serverHome(io));
+                    std::make_shared<serverHome>(serverHome(io))->run();
                 }
             }
         }else{

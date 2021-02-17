@@ -44,14 +44,14 @@ void serverHome::input(std::string inputString, inputType inputReceivedType) {
                 std::make_shared<serverListener>(
                         io,
                         tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        "Server");
+                        "Server")->run();
                 guard.reset();
                 ref.reset();
             }else{
                 std::make_shared<serverListener>(
                         io,
                         tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        inputString);
+                        inputString)->run();
                 guard.reset();
                 ref.reset();
             }

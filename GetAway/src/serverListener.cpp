@@ -29,7 +29,6 @@ void
 serverListener::
 run()
 {
-    //nextManager = std::make_shared<serverAuthManager>(std::move(password), shared_from_this(), io);
     // Start accepting a connection
     acceptor.async_accept(
             tcpSock,
@@ -52,6 +51,7 @@ run()
 }
 
 void serverListener::runAgain(){
+    ptr.reset();
     // Start accepting a connection
     acceptor.async_accept(
             tcpSock,
@@ -93,9 +93,6 @@ onAccept(errorCode ec)
         tcpSock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
         nextManager.newConnectionReceived(std::move(tcpSock));
-        /*std::make_shared<session<serverLobby, true>>(
-                std::move(tcpSock),
-                nextManager);*/
     }
 
 
@@ -116,7 +113,7 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
             if(input == 2){
                 //close server
                 shutdown();
-                std::make_shared<serverHome>(serverHome(io));
+                std::make_shared<serverHome>(serverHome(io))->run();
             }else{
                 //exit application
                 shutdown();
@@ -139,10 +136,15 @@ void serverListener::shutdown() {
     acceptor.cancel();
     probeListenerUdpSock.close();
     nextManager.shutDown();
-   // constants::Log("UseCount of nextManager from serverListener {}", nextManager.use_count());
+    ptr.reset();
 }
 
 void serverListener::shutdownAcceptorAndProbe(){
+    //This is assigned because otherwise this class will exit as from now on there will be no shared ptr holding it
+    //as it was before being holded in lambdas of acceptr and probeListenerUdpSock which are now canceled and closed
+    //Pointer will be reset in shutdown as we want to exit and in runAgain because now we again have reference pointing
+    //to it
+    ptr = shared_from_this();
     acceptor.cancel();
     probeListenerUdpSock.close();
 }

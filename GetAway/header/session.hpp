@@ -227,7 +227,6 @@ session(
         , manager(manager_)
         , id(id_)
 {
-    //this->id = manager.join(std::enable_shared_from_this<session<T, true>>::shared_from_this());
 }
 
 // Report a failure

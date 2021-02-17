@@ -34,7 +34,7 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
     void onAccept(errorCode ec);
 
     void input(std::string inputString, inputType inputReceivedType) override;
-
+    std::shared_ptr<serverListener> ptr;
 public:
     tcp::socket tcpSock;
     serverListener(

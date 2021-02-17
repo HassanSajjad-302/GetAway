@@ -41,6 +41,7 @@ public:
     void sendMessage(void (*func)());
     void sendMessage();
     void receiveMessage();
+    void run();
 
     explicit clientSession(tcp::socket socket, U... stateConstructorArgs);
 };
@@ -177,6 +178,11 @@ readMore(errorCode ec, int firstRead) {
             waitingForService -= (packetSize + 4);
         }
     }
+}
+
+template<typename T, bool ID, typename... U>
+void clientSession<T, ID, U...>::run() {
+    manager.run();
 }
 
 template<typename T> clientSession(T, asio::io_context, std::string) -> clientSession<T, false, asio::io_context&, std::string>;

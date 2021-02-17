@@ -5,10 +5,16 @@
 #include "clientHome.hpp"
 #include "clientGetAway.hpp"
 
-clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_, asio::io_context& io_,
-                         std::string playerName):
-clientLobbySession{clientLobbySession_}, io{io_} {
-    clientLobbySession.out << playerName << std::endl;
+clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_,
+                         asio::io_context& io_, std::string playerName):
+clientLobbySession{clientLobbySession_}, io{io_}, myName(std::move(playerName)) {
+}
+
+void clientLobby::run() {
+    mtc sendingType = mtc::LOBBY;
+    clientLobbySession.out.write(reinterpret_cast<char *>(&sendingType), sizeof(sendingType));
+    clientLobbySession.out << myName << std::endl;
+    clientLobbySession.sendMessage();
     clientLobbySession.receiveMessage();
 }
 
@@ -19,7 +25,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, playerName, players, in, myId);
+            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, myName, players, in, myId);
             gameStarted = true;
         }else{
             clientGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize);
@@ -39,8 +45,8 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 //STEP 3
                 in.getline(arr, 61);
                 //TODO
-                //Action on if a new playerName is assigned.
-                playerName = std::string(arr);
+                //Action on if a new myName is assigned.
+                myName = std::string(arr);
 
                 int size;
                 //STEP 4
@@ -51,11 +57,11 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                     in.read(reinterpret_cast<char *>(&playersId), sizeof(playersId));
                     //STEP 6
                     in.getline(arr, 61);
-                    playerName = std::string(arr);
-                    players.emplace(playersId, playerName);
+                    myName = std::string(arr);
+                    players.emplace(playersId, myName);
                 }
                 SELFANDSTATEReceived();
-                clientChatPtr = std::make_unique<clientChat>(*this, players, playerName, myId);
+                clientChatPtr = std::make_unique<clientChat>(*this, players, myName, myId);
                 break;
             }
                 //STEP 1;
