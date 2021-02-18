@@ -5,9 +5,8 @@
 #include "sati.hpp"
 #include <fstream>
 #include <memory>
-#include "serverHome.hpp"
 #include "constants.h"
-
+#include "home.hpp"
 int main(){
 #ifndef NDEBUG
     auto logger = spdlog::basic_logger_mt("MyLogger", "Logs.txt");
@@ -23,7 +22,7 @@ int main(){
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
 
-    std::make_shared<serverHome>(serverHome(io))->run();
+    std::make_shared<home>(home(io))->run();
     /*serverHome h(io);
     h.run();*/
 

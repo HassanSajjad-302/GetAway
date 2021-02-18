@@ -1,8 +1,7 @@
 #include<memory>
 #include <utility>
-#include <serverHome.hpp>
+#include <home.hpp>
 #include "serverListener.hpp"
-#include "session.hpp"
 #include "resourceStrings.hpp"
 #include "constants.h"
 #include "sati.hpp"
@@ -51,7 +50,6 @@ run()
 }
 
 void serverListener::runAgain(){
-    ptr.reset();
     // Start accepting a connection
     acceptor.async_accept(
             tcpSock,
@@ -68,6 +66,7 @@ void serverListener::runAgain(){
             {
                 self->probeReply(ec, bytesReceived);
             });
+    ptr.reset();
 }
 
 // Report a failure
@@ -113,7 +112,7 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
             if(input == 2){
                 //close server
                 shutdown();
-                std::make_shared<serverHome>(serverHome(io))->run();
+                std::make_shared<home>(home(io))->run();
             }else{
                 //exit application
                 shutdown();

@@ -1,28 +1,33 @@
 
 #include "sati.hpp"
 #include "constants.h"
-#include "clientHome.hpp"
+#include "home.hpp"
 
-void clientHome::PF::setInputStatementHome7() {
-    sati::getInstance()->nonMessageBuffer = "1)Add Server 2)Join Server 3)Find Local Server"
-                                                " 4)Game Rules 5)About 6)Exit\r\n";
+void home::PF::setInputStatementHome7() {
+    sati::getInstance()->nonMessageBuffer = "1)Start Server 2)Add Server 3)Join Server 4)Find Local Server"
+                                                " 5)Game Rules 6)About 7)Exit\r\n";
 }
 
-void clientHome::PF::setInputStatementMAIN() {
+void home::PF::setHomeChangeServerName(){
+    sati::getInstance()->nonMessageBuffer = "Enter Server Name. Press Enter To Use Default.\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
+}
+
+void home::PF::setInputStatementMAIN() {
     setInputStatementHome7();
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementHome7R1() {
+void home::PF::setInputStatementHome7R1() {
     sati::getInstance()->nonMessageBuffer = "Please Enter Remote Server Ip-Address. Press Enter To Go Back.\r\n";
 }
 
-void clientHome::PF::setInputStatementIPADDRESS() {
+void home::PF::setInputStatementIPADDRESS() {
     setInputStatementHome7R1();
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string>>& servers) {
+void home::PF::setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string>>& servers) {
     assert(!servers.empty() && "Number Of Registered Server Should Not Be Zero");
     sati::getInstance()->nonMessageBuffer += "Please select one of the following\r\n";
     for(int i=0; i<servers.size(); ++i){
@@ -32,7 +37,7 @@ void clientHome::PF::setInputStatementHome7R2(const std::vector<std::tuple<std::
     }
 }
 
-void clientHome::PF::setInputStatementHome7R3(const std::vector<std::tuple<std::string, std::string>>& probeReply) {
+void home::PF::setInputStatementHome7R3(const std::vector<std::tuple<std::string, std::string>>& probeReply) {
     sati::getInstance()->nonMessageBuffer = "Press Enter To Cancel. Or The Listed Number To Join Server\r\n";
     int count = 1;
     for(auto& server:probeReply){
@@ -44,38 +49,38 @@ void clientHome::PF::setInputStatementHome7R3(const std::vector<std::tuple<std::
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementClientName() {
+void home::PF::setInputStatementClientName() {
     sati::getInstance()->nonMessageBuffer = "Please Enter Your Name. Press Enter To Use Default.\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementHomeGameRules(){
+void home::PF::setInputStatementHomeGameRules(){
     sati::getInstance()->nonMessageBuffer = constants::gameRules;
     sati::getInstance()->nonMessageBuffer += "\r\nPress Enter To Go Back\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementHomeAbout(){
+void home::PF::setInputStatementHomeAbout(){
     sati::getInstance()->nonMessageBuffer = constants::about;
     sati::getInstance()->nonMessageBuffer += "\r\nPress Enter To Go Back\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string>>& servers){
+void home::PF::setInputStatementSELECTSERVER(const std::vector<std::tuple<std::string, std::string>>& servers){
     setInputStatementHome7R2(servers);
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementHome7R1RR() {
+void home::PF::setInputStatementHome7R1RR() {
     sati::getInstance()->nonMessageBuffer = "Please Assign This Ip-Address A Server Name. Press Enter To Go Back.\r\n";
 }
 
-void clientHome::PF::setInputStatementASSIGNSERVERNAME() {
+void home::PF::setInputStatementASSIGNSERVERNAME() {
     setInputStatementHome7R1RR();
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
-void clientHome::PF::setInputStatementConnectingToServer(const std::string& serverName){
+void home::PF::setInputStatementConnectingToServer(const std::string& serverName){
     sati::getInstance()->nonMessageBuffer = "Connecting To Server " + serverName + ". To Cancel Connection Press 1\r\n";
     sati::getInstance()->accumulateBuffersAndPrint();
 }

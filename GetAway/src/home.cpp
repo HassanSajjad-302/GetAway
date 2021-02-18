@@ -1,28 +1,29 @@
 
-#include "clientHome.hpp"
+#include "home.hpp"
 #include "constants.h"
 #include "clientLobby.hpp"
+#include "serverListener.hpp"
 #include <memory>
 #include <chrono>
 #include "resourceStrings.hpp"
 #include "sati.hpp"
 
-clientHome::clientHome(asio::io_context &io_): io(io_), guard(io_.get_executor()), tcpSock(io_), udpSock(io_),
-                                               broadcastudpSock(io), broadcastTimer(io){
+home::home(asio::io_context &io_): io(io_), guard(io_.get_executor()), tcpSock(io_), udpSock(io_),
+                                   broadcastudpSock(io), broadcastTimer(io){
 }
 
 //If i delete the following function and just use the constructor, then a behavior occurs that I can't reason about.
-// If I exit pressing 6 in clientHome, io.run() still blocks instead of exiting as there is no async operation being
+// If I exit pressing 6 in home, io.run() still blocks instead of exiting as there is no async operation being
 // waited on. Another behavior that I can't reason about is that I can't declare a destructor in this class. It will
 //be an error.
-void clientHome::run() {
+void home::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
     PF::setInputStatementMAIN();
     ref = this->shared_from_this();
 }
 
-int clientHome::isValidIp4(const char *str) {
+int home::isValidIp4(const char *str) {
     int segs = 0;   /* Segment count. */
     int chcnt = 0;  /* Character count within segment. */
     int accum = 0;  /* Accumulator for segment. */
@@ -83,17 +84,21 @@ int clientHome::isValidIp4(const char *str) {
     return 1;
 }
 
-void clientHome::input(std::string inputString, inputType inputReceivedType) {
+void home::input(std::string inputString, inputType inputReceivedType) {
     if(inputReceivedType == inputTypeExpected){
         if(inputReceivedType == inputType::HOMEMAIN){
             int input;
             if(constants::inputHelper(inputString,
-                           1, 6, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
+                           1, 7, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
+                    //Change Server Name
+                    PF::setHomeChangeServerName();
+                    setInputType(inputType::HOMESTARTSERVER);
+                }else if(input == 2){
                     //Add Server
                     PF::setInputStatementIPADDRESS();
                     setInputType(inputType::HOMEIPADDRESS);
-                }else if(input == 2){
+                }else if(input == 3){
                     //Join Server
                     if(addedServers.empty()){
                         setInputType(inputType::HOMEMAIN);
@@ -102,7 +107,7 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                         PF::setInputStatementSELECTSERVER(addedServers);
                         setInputType(inputType::HOMEJOINSERVER);
                     }
-                }else if(input == 3){
+                }else if(input == 4){
                     //Find Local Server
                     PF::setInputStatementHome7R3(broadcastServersObtained);
                     //BroadCast
@@ -131,15 +136,15 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                             });
                     setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
                     PF::setInputStatementHome7R3(broadcastServersObtained);
-                }else if(input == 4){
+                }else if(input == 5){
                     //Game Rules
                     PF::setInputStatementHomeGameRules();
                     setInputType(inputType::HOMEGAMERULES);
-                }else if(input == 5){
+                }else if(input == 6){
                     //About
                     PF::setInputStatementHomeAbout();
                     setInputType(inputType::HOMEABOUT);
-                }else if(input == 6){
+                }else if(input == 7){
                     //Exit
                     if(tcpSock.is_open()){
                         asio::error_code ec;
@@ -150,7 +155,24 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
                     ref.reset();
                 }
             }
-        }else if(inputReceivedType == inputType::HOMEIPADDRESS){
+        }else if(inputReceivedType == inputType::HOMESTARTSERVER){
+            if(inputString.empty()){
+                std::make_shared<serverListener>(
+                        io,
+                        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                        "Server")->run();
+                guard.reset();
+                ref.reset();
+            }else{
+                std::make_shared<serverListener>(
+                        io,
+                        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                        inputString)->run();
+                guard.reset();
+                ref.reset();
+            }
+        }
+        else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(inputString.empty()){
                 PF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
@@ -240,26 +262,26 @@ void clientHome::input(std::string inputString, inputType inputReceivedType) {
     }
 }
 
-void clientHome::CONNECTTOSERVERFail(asio::error_code ec){
+void home::CONNECTTOSERVERFail(asio::error_code ec){
     resourceStrings::print(ec.message() + "\r\n");
     PF::setInputStatementMAIN();
     setInputType(inputType::HOMEMAIN);
     resourceStrings::print("Connect To Server Failed\r\n");
 }
 
-void clientHome::setInputType(inputType type) {
+void home::setInputType(inputType type) {
     sati::getInstance()->setInputType(type);
     inputTypeExpected = type;
 }
 
-void clientHome::promote() {
+void home::promote() {
     std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string>>(std::move(tcpSock), io,
             std::move(myName))->run();
     guard.reset();
     ref.reset();
 }
 
-void clientHome::startProbeBroadcast(){
+void home::startProbeBroadcast(){
     broadcastudpSock.send_to(asio::const_buffer(emptybroadcastMessage.c_str(),
                                                 emptybroadcastMessage.size()), senderEndpoint);
     broadcastTimer.expires_from_now(std::chrono::milliseconds(500));
@@ -275,7 +297,7 @@ void clientHome::startProbeBroadcast(){
     });
 }
 
-void clientHome::broadcastResponseRecieved(errorCode ec, std::size_t bytes){
+void home::broadcastResponseRecieved(errorCode ec, std::size_t bytes){
 
     auto it = std::find_if(broadcastServersObtained.begin(), broadcastServersObtained.end(), [&end = this->remoteEndpoint](auto& p){
         return std::get<1>(p) == end.address().to_string();

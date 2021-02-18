@@ -1,9 +1,10 @@
 
 #include <sati.hpp>
-#include <serverHome.hpp>
+#include <home.hpp>
 #include "serverLobby.hpp"
 #include "serverListener.hpp"
 #include "serverChat.hpp"
+
 serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_):
         serverlistener(serverlistener_), io{io_} {
     chatManagerPtr = std::make_unique<serverChat>(players);
@@ -31,9 +32,9 @@ leave(int id)
     if(!gameStarted){
         auto s = yetToBePromotedSession.find(id);
         if(s == yetToBePromotedSession.end()){
+            players.erase(players.find(id));
             sendPLAYERLEFTToAllExceptOne(id);
             resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
-            players.erase(players.find(id));
             if(players.size() == 1){
                 serverlistener.registerForInputReceival();
             }
@@ -95,8 +96,8 @@ void serverLobby::managementJoin(int excitedSessionId, const std::string& player
     std::ostream& out = playerSession->out;
 
     //STEP 1;
-    out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
-    mtr t = mtr::SELFANDSTATE;
+    out.write(reinterpret_cast<const char*>(&constants::mtcLobby), sizeof(constants::mtcLobby));
+    mtl t = mtl::SELFANDSTATE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //STEP 2;
     out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
@@ -126,8 +127,8 @@ void serverLobby::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
             std::ostream& out = playerSession->out;
 
             //STEP 1;
-            out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
-            mtr t = mtr::PLAYERJOINED;
+            out.write(reinterpret_cast<const char*>(&constants::mtcLobby), sizeof(constants::mtcLobby));
+            mtl t = mtl::PLAYERJOINED;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             auto mapPtr = players.find(excitedSessionId);
@@ -143,21 +144,16 @@ void serverLobby::sendPLAYERJOINEDToAllExceptOne(int excitedSessionId) {
 
 void serverLobby::sendPLAYERLEFTToAllExceptOne(int excitedSessionId) {
     for(auto& player: players){
-        if(player.first != excitedSessionId){
-            auto& playerSession = std::get<1>(player.second);
-            std::ostream& out = playerSession->out;
+        auto& playerSession = std::get<1>(player.second);
+        std::ostream& out = playerSession->out;
 
-            //STEP 1;
-            out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
-            mtr t = mtr::PLAYERLEFT;
-            out.write(reinterpret_cast<char*>(&t), sizeof(t));
-            auto mapPtr = players.find(excitedSessionId);
-            int id = mapPtr->first;
-            //STEP 2;
-            out.write(reinterpret_cast<char*>(&id), sizeof(id));
-
-            playerSession->sendMessage();
-        }
+        //STEP 1;
+        out.write(reinterpret_cast<const char*>(&constants::mtcLobby), sizeof(constants::mtcLobby));
+        mtl t = mtl::PLAYERLEFT;
+        out.write(reinterpret_cast<char*>(&t), sizeof(t));
+        //STEP 2;
+        out.write(reinterpret_cast<char*>(&excitedSessionId), sizeof(excitedSessionId));
+        playerSession->sendMessage();
     }
 }
 
@@ -167,13 +163,11 @@ void serverLobby::sendPLAYERLEFTDURINGGAMEToAllExceptOne(int excitedSessionId) {
         std::ostream& out = playerSession->out;
 
         //STEP 1;
-        out.write(reinterpret_cast<const char*>(&constants::mtcRoom), sizeof(constants::mtcRoom));
-        mtr t = mtr::PLAYERLEFTDURINGGAME;
+        out.write(reinterpret_cast<const char*>(&constants::mtcLobby), sizeof(constants::mtcLobby));
+        mtl t = mtl::PLAYERLEFTDURINGGAME;
         out.write(reinterpret_cast<char*>(&t), sizeof(t));
-        auto mapPtr = players.find(excitedSessionId);
-        int id = mapPtr->first;
         //STEP 2;
-        out.write(reinterpret_cast<char*>(&id), sizeof(id));
+        out.write(reinterpret_cast<char*>(&excitedSessionId), sizeof(excitedSessionId));
 
         playerSession->sendMessage();
     }
@@ -200,7 +194,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                 }else if(input == 2){
                     //Close Server
                     serverlistener.shutdown();
-                    std::make_shared<serverHome>(serverHome(io))->run();
+                    std::make_shared<home>(home(io))->run();
                 }else{
                     //Exit
                     serverlistener.shutdown();
@@ -215,7 +209,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                     serverlistener.shutdown();
                 }else{
                     serverlistener.shutdown();
-                    std::make_shared<serverHome>(serverHome(io))->run();
+                    std::make_shared<home>(home(io))->run();
                 }
             }
         }else{

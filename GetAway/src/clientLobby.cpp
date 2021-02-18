@@ -2,7 +2,7 @@
 #include "sati.hpp"
 #include "clientLobby.hpp"
 #include "messageTypeEnums.hpp"
-#include "clientHome.hpp"
+#include "home.hpp"
 #include "clientGetAway.hpp"
 
 clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_,
@@ -33,11 +33,11 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     }else if(messageTypeReceived == mtc::MESSAGE){
         clientChatPtr->packetReceivedFromNetwork(in, receivedPacketSize);
     }else if(messageTypeReceived == mtc::LOBBY){
-        mtr innerMessageType;
+        mtl innerMessageType;
         in.read(reinterpret_cast<char*>(&innerMessageType), sizeof(innerMessageType));
         switch (innerMessageType) {
             //STEP 1;
-            case mtr::SELFANDSTATE: {
+            case mtl::SELFANDSTATE: {
                 //STEP 2
                 in.read(reinterpret_cast<char *>(&myId), sizeof(myId));
                 //TODO
@@ -65,7 +65,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 break;
             }
                 //STEP 1;
-            case mtr::PLAYERJOINED: {
+            case mtl::PLAYERJOINED: {
                 int playerId = 0;
                 //STEP 2;
                 in.read(reinterpret_cast<char *>(&playerId), sizeof(playerId));
@@ -76,23 +76,24 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
-            case mtr::PLAYERLEFT: {
+            case mtl::PLAYERLEFT: {
                 int playerId = 0;
                 in.read(reinterpret_cast<char *>(&playerId), sizeof(playerId));
                 players.erase(players.find(playerId));
                 PLAYERJOINEDOrPLAYERLEFTReceived();
                 break;
             }
-            case mtr::PLAYERLEFTDURINGGAME:{
+            case mtl::PLAYERLEFTDURINGGAME:{
                 int playerLeftId;
                 in.read(reinterpret_cast<char *>(&playerLeftId), sizeof(playerLeftId));
                 gameFinished();
                 resourceStrings::print("Player Left During Game. Game Ended.\r\n");
+                players.erase(playerLeftId);
                 break;
             }
             default: {
                 resourceStrings::print("Unknown Packet Type Received in class clientLobby."
-                                       "Packet does not match of any type of mtr.\r\n");
+                                       "Packet does not match of any type of mtl.\r\n");
                 break;
             }
         }
@@ -143,7 +144,7 @@ void clientLobby::exitApplication(bool backToHome){
     clientLobbySession.sock.shutdown(asio::socket_base::shutdown_both);
     clientLobbySession.sock.close();
     if(backToHome)
-        std::make_shared<clientHome>(clientHome(io))->run();
+        std::make_shared<home>(home(io))->run();
 }
 
 void clientLobby::setInputType(inputType inputType) {

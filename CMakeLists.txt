@@ -9,14 +9,16 @@ endif()
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(srcFiles "GetAway/main.cpp" "GetAway/src/serverListener.cpp"
-        "GetAway/src/serverGetAway.cpp"
-        "GetAway/src/messageTypeEnums.cpp"
-        "GetAway/src/sati.cpp" "GetAway/src/replacementStreamBuff.cpp"
-        "GetAway/src/playerData.cpp" "GetAway/src/constants.cpp" "GetAway/src/deckSuit.cpp"
-        "GetAway/src/serverHome.cpp" "GetAway/src/serverHomePF.cpp" "GetAway/src/resourceStrings.cpp"
-        "GetAway/src/androidServerMain.cpp" "GetAway/src/satiAndroid.cpp" "GetAway/src/serverChat.cpp"
-        "GetAway/src/serverLobby.cpp" "GetAway/src/serverLobbyPF.cpp" "GetAway/src/serverListenerPF.cpp")
+set(srcFiles "GetAway/main.cpp" "GetAway/src/androidClientMain.cpp" "GetAway/src/resourceStrings.cpp"
+        "GetAway/src/clientChat.cpp" "GetAway/src/androidServerMain.cpp" "GetAway/src/deckSuit.cpp"
+        "GetAway/src/serverChat.cpp" "GetAway/src/serverGetAway.cpp"
+        "GetAway/src/sati.cpp" "GetAway/src/serverLobby.cpp" "GetAway/src/serverListener.cpp"
+        "GetAway/src/clientLobbyPF.cpp" "GetAway/src/satiAndroid.cpp" "GetAway/src/messageTypeEnums.cpp"
+        "GetAway/src/clientGetAwayPF.cpp" "GetAway/src/home.cpp" "GetAway/src/homePF.cpp"
+        "GetAway/src/serverLobbyPF.cpp" "GetAway/src/playerData.cpp" "GetAway/src/clientChatPF.cpp"
+        "GetAway/src/replacementStreamBuff.cpp" "GetAway/src/clientLobby.cpp"
+        "GetAway/src/serverListenerPF.cpp" "GetAway/src/clientGetAway.cpp"
+        "GetAway/src/constants.cpp")
 
 if(NOT ANDROID)
     add_executable(GetAway "${srcFiles}")
@@ -54,9 +56,4 @@ else()
 endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
-if(hasParent)
-    message(STATUS "Has a parent scope.")
-else()
-    add_subdirectory(Client)
-endif()
 

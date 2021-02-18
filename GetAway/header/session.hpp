@@ -1,6 +1,3 @@
-//
-// Created by hassan on 10/27/20.
-//
 
 #ifndef GETAWAY_SESSION_HPP
 #define GETAWAY_SESSION_HPP

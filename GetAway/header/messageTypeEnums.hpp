@@ -10,12 +10,13 @@ enum class mtc{
     GAME = 12
 };
 
-//message type room
-enum class mtr{
+//message type lobby
+enum class mtl{
+    PLAYERNAME = 20,
     SELFANDSTATE = 21,
     PLAYERJOINED  = 22,
     PLAYERLEFT = 23,
-    PLAYERLEFTDURINGGAME = 24
+    PLAYERLEFTDURINGGAME = 24,
 };
 
 //message type game

@@ -2,8 +2,8 @@
 // Created by hassan on 12/8/20.
 //
 
-#ifndef GETAWAY_CLIENTHOME_HPP
-#define GETAWAY_CLIENTHOME_HPP
+#ifndef GETAWAY_HOME_HPP
+#define GETAWAY_HOME_HPP
 
 #include "asio/ip/tcp.hpp"
 #include "asio/ip/udp.hpp"
@@ -14,7 +14,7 @@
 
 using namespace asio::ip;
 
-class clientHome : terminalInputBase, public std::enable_shared_from_this<clientHome>{
+class home : terminalInputBase, public std::enable_shared_from_this<home>{
 
     //PF means printing functions
     class PF{
@@ -39,6 +39,8 @@ class clientHome : terminalInputBase, public std::enable_shared_from_this<client
         static void setInputStatementASSIGNSERVERNAME();
 
         static void setInputStatementConnectingToServer(const std::string& serverName);
+
+        static void setHomeChangeServerName();
     };
 
     asio::io_context& io;
@@ -61,9 +63,9 @@ class clientHome : terminalInputBase, public std::enable_shared_from_this<client
     udp::endpoint remoteEndpoint{};
     char receiveBuffer[512];
 
-    std::shared_ptr<clientHome> ref;
+    std::shared_ptr<home> ref;
 public:
-    explicit clientHome(asio::io_context& io_);
+    explicit home(asio::io_context& io_);
     void run();
     void input(std::string inputString, inputType inputReceivedType) override;
     void setInputType(inputType type);
@@ -78,4 +80,4 @@ public:
 };
 
 
-#endif //GETAWAY_CLIENTHOME_HPP
+#endif //GETAWAY_HOME_HPP
