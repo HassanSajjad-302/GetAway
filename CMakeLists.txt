@@ -22,17 +22,21 @@ set(srcFiles "GetAway/main.cpp" "GetAway/src/androidClientMain.cpp" "GetAway/src
 
 if(NOT ANDROID)
     add_executable(GetAway "${srcFiles}")
-else()
+else ()
     add_library(GetAway "${srcFiles}")
-endif()
+endif ()
 
 target_compile_definitions(GetAway PUBLIC SERVERMACRO=1 ASIO_STANDALONE)
 
 target_include_directories(GetAway PUBLIC GetAway/header)
 target_include_directories(GetAway PUBLIC asio/asio/include)
+#target_include_directories(GetAway PUBLIC spdlog/include)
 
+#if this gives error, comment it and uncomment above line. It will result in a little slow compilation however.
+find_package(spdlog REQUIRED)
+target_link_libraries(GetAway PUBLIC spdlog::spdlog)
 
-if (WIN32)
+if (WIN32 AND NOT ANDROID)
     target_compile_options(GetAway PRIVATE -D_WIN32_WINNT=0x0A00)
 
     find_package(spdlog REQUIRED
@@ -40,19 +44,9 @@ if (WIN32)
             NO_DEFAULT_PATH)
 
     target_link_libraries(GetAway PRIVATE spdlog::spdlog_header_only)
-
-elseif(ANDROID)
-
-
-else()
-
+else ()
     find_package(Threads REQUIRED)
     target_link_libraries(GetAway PRIVATE Threads::Threads)
-
-    find_package(spdlog REQUIRED
-            PATHS "/home/hassan/Music/spdlog_Installed/lib/cmake/spdlog"
-            NO_DEFAULT_PATH)
-    target_link_libraries(GetAway PRIVATE spdlog::spdlog_header_only)
 endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
