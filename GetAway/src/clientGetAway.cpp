@@ -7,8 +7,8 @@
 #include "resourceStrings.hpp"
 #include "clientLobby.hpp"
 clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& playerName_,
-                             const std::map<int, std::string>& players_, std::istream& in, int myId_):
-        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}
+                             const std::map<int, std::string>& players_, std::istream& in, int myId_, bool clientOnly_):
+        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}, clientOnly(clientOnly_)
 {
     constants::initializeCards(myCards);
     constants::initializeCards(flushedCards);
@@ -75,7 +75,7 @@ clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& play
             assignToTurnAbleCards(deckSuit::SPADE);
         }
     }
-    PF::setInputStatementHome3Accumulate();
+    PF::setInputStatementHome3Accumulate(clientOnly);
     turnPlayerIdExpected = myId;
 
     inputTypeExpected = inputType::OPTIONSELECTIONINPUTGAME;
@@ -87,8 +87,6 @@ clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& play
         firstRound = true;
     }
 }
-
-clientGetAway::~clientGetAway() = default;
 
 void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
 
@@ -210,15 +208,15 @@ void clientGetAway::setBaseAndInputTypeFromclientChatMessage(){
 void clientGetAway::setInputTypeGameInt(){
     if(firstRound){
         if(std::find(waitingForTurn.begin(), waitingForTurn.end(), myId) == waitingForTurn.end()){
-            PF::setInputStatementHome2Accumulate();
+            PF::setInputStatementHome2Accumulate(clientOnly);
         }else{
-            PF::setInputStatementHome3Accumulate();
+            PF::setInputStatementHome3Accumulate(clientOnly);
         }
     }else{
         if(turnPlayerIdExpected != myId){
-            PF::setInputStatementHome2Accumulate();
+            PF::setInputStatementHome2Accumulate(clientOnly);
         }else{
-            PF::setInputStatementHome3Accumulate();
+            PF::setInputStatementHome3Accumulate(clientOnly);
         }
     }
 }

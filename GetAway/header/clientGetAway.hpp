@@ -31,9 +31,9 @@ class clientGetAway : terminalInputBase {
         static inline void accumulateAndPrint();
     public:
         //input-statement-functions
-        static void setInputStatementHome2Accumulate();
+        static void setInputStatementHome2Accumulate(bool clientOnly);
 
-        static void setInputStatementHome3Accumulate();
+        static void setInputStatementHome3Accumulate(bool clientOnly);
 
         static void setInputStatementHome3R3(const std::vector<Card>& turnAbleCards_);
         static void setInputStatementHome3R3Accumulate(const std::vector<Card>& turnAbleCards_);
@@ -77,13 +77,11 @@ class clientGetAway : terminalInputBase {
     //
     std::map<deckSuit, std::set<int>> flushedCards; //it will be used in the game ending to confirm the bug free gameplay.
     bool gameFinished = false;
-
+    bool clientOnly;
 public:
     explicit
     clientGetAway(clientLobby &lobbyManager_, const std::string& playerName_,
-                  const std::map<int, std::string>& players_, std::istream& in, int myId_);
-
-    ~clientGetAway();
+                  const std::map<int, std::string>& players_, std::istream& in, int myId_, bool clientOnly_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 

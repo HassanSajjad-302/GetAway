@@ -5,9 +5,10 @@
 #include "home.hpp"
 #include "clientGetAway.hpp"
 
-clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string>& clientLobbySession_,
-                         asio::io_context& io_, std::string playerName):
-clientLobbySession{clientLobbySession_}, io{io_}, myName(std::move(playerName)) {
+clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>&
+        clientLobbySession_, asio::io_context& io_, std::string playerName, serverListener* serverlistener_,
+        bool isItClientOnly): clientLobbySession{clientLobbySession_}, io{io_}, myName(std::move(playerName)),
+        listener(serverlistener_), clientOnly(isItClientOnly){
 }
 
 void clientLobby::run() {
@@ -25,7 +26,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, myName, players, in, myId);
+            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, myName, players, in, myId, clientOnly);
             gameStarted = true;
         }else{
             clientGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize);
@@ -60,7 +61,18 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                     myName = std::string(arr);
                     players.emplace(playersId, myName);
                 }
-                SELFANDSTATEReceived();
+                if(clientOnly){
+                    if(players.size() >= 2){
+                        PF::inputStatement = "2)Send Message 3)Leave 4)Exit\r\n";
+                    }else{
+                        PF::inputStatement = "3)Leave 4)Exit\r\n";
+                    }
+                }else{
+                    PF::inputStatement = "3)Close Server 4)Exit\r\n";
+                }
+                setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
+                sati::getInstance()->setBase(this, appState::LOBBY);
+                PF::addOrRemovePlayerAccumulate(players);
                 clientChatPtr = std::make_unique<clientChat>(*this, players, myName, myId);
                 break;
             }
@@ -73,22 +85,49 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 //STEP 3;
                 in.getline(arr, 61);
                 players.emplace(playerId, std::string(arr));
-                PLAYERJOINEDOrPLAYERLEFTReceived();
+                if(players.size() == 2){
+                    if(clientOnly){
+                        PF::inputStatement = "2)Send Message 3)Leave 4)Exit\r\n";
+                    }else{
+                        PF::inputStatement = "1)Start Game 2)Send Message 3)Close Server 4)Exit\r\n";
+                    }
+                }
+                PF::addOrRemovePlayerAccumulate(players);
                 break;
             }
             case mtl::PLAYERLEFT: {
                 int playerId = 0;
                 in.read(reinterpret_cast<char *>(&playerId), sizeof(playerId));
                 players.erase(players.find(playerId));
-                PLAYERJOINEDOrPLAYERLEFTReceived();
+                if(players.size() == 1){
+                    if(clientOnly){
+                        PF::inputStatement = "3)Leave 4)Exit\r\n";
+                    }else{
+                        PF::inputStatement = "3)Close Server 4)Exit\r\n";
+                    }
+                }
+                PF::addOrRemovePlayerAccumulate(players);
                 break;
             }
             case mtl::PLAYERLEFTDURINGGAME:{
                 int playerLeftId;
                 in.read(reinterpret_cast<char *>(&playerLeftId), sizeof(playerLeftId));
-                gameFinished();
-                resourceStrings::print("Player Left During Game. Game Ended.\r\n");
+                gameStarted = false;
                 players.erase(playerLeftId);
+                if(players.size() == 1){
+                    if(clientOnly){
+                        PF::inputStatement = "3)Leave 4)Exit\r\n";
+                    }else{
+                        PF::inputStatement = "3)Close Server 4)Exit\r\n";
+                    }
+                }
+                sati::getInstance()->setBase(this, appState::LOBBY);
+
+                PF::addOrRemovePlayerAccumulate(players);
+                setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
+                clientGetAwayPtr.reset();
+                resourceStrings::print("Player Left During Game. Game Ended.\r\n");
+                //players.erase(playerLeftId);
                 break;
             }
             default: {
@@ -105,28 +144,58 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     clientLobbySession.receiveMessage();
 }
 
-void clientLobby::SELFANDSTATEReceived(){
-    setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
-    sati::getInstance()->setBase(this, appState::LOBBY);
-    PF::addOrRemovePlayerAccumulate(players);
-}
-
-void clientLobby::PLAYERJOINEDOrPLAYERLEFTReceived(){
-    PF::addOrRemovePlayerAccumulate(players);
-}
-
 //Before refactor, lines of this function = 123;
 void clientLobby::input(std::string inputString, inputType inputReceivedType) {
     int input;
-    if(constants::inputHelper(inputString, 1, 3, inputType::OPTIONSELECTIONINPUTLOBBY,
-                              inputType::OPTIONSELECTIONINPUTLOBBY,input)){
-        if(input == 1){
-            clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
-        }
-        else if(input== 2){
-            exitApplication(true);
+    if(clientOnly){
+        if(players.size()>=2){
+            if(constants::inputHelper(inputString, 2, 4, inputType::OPTIONSELECTIONINPUTLOBBY,
+                                      inputType::OPTIONSELECTIONINPUTLOBBY,input)){
+                if(input == 2){
+                    clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
+                }
+                else if(input== 3){
+                    exitApplication(true);
+                }else{
+                    exitApplication(false);
+                }
+            }
         }else{
-            exitApplication(false);
+            if(constants::inputHelper(inputString, 3, 4, inputType::OPTIONSELECTIONINPUTLOBBY,
+                                      inputType::OPTIONSELECTIONINPUTLOBBY,input)){
+                if(input== 3){
+                    exitApplication(true);
+                }else{
+                    exitApplication(false);
+                }
+            }
+        }
+    }else{
+        if(players.size()>=2){
+            if(constants::inputHelper(inputString, 1, 4, inputType::OPTIONSELECTIONINPUTLOBBY,
+                                      inputType::OPTIONSELECTIONINPUTLOBBY,input)){
+                if(input == 1){
+                    //Start Game
+                    listener->startTheGame();
+                }
+                else if(input == 2){
+                    clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
+                }
+                else if(input== 3){
+                    exitApplication(true);
+                }else{
+                    exitApplication(false);
+                }
+            }
+        }else{
+            if(constants::inputHelper(inputString, 3, 4, inputType::OPTIONSELECTIONINPUTLOBBY,
+                                      inputType::OPTIONSELECTIONINPUTLOBBY,input)){
+                if(input== 3){
+                    exitApplication(true);
+                }else{
+                    exitApplication(false);
+                }
+            }
         }
     }
 }
@@ -143,6 +212,9 @@ void clientLobby::gameFinished(){
 void clientLobby::exitApplication(bool backToHome){
     clientLobbySession.sock.shutdown(asio::socket_base::shutdown_both);
     clientLobbySession.sock.close();
+    if(!clientOnly){
+        listener->shutdown();
+    }
     if(backToHome)
         std::make_shared<home>(home(io))->run();
 }

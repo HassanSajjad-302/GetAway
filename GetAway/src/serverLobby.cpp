@@ -5,8 +5,8 @@
 #include "serverListener.hpp"
 #include "serverChat.hpp"
 
-serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_):
-        serverlistener(serverlistener_), io{io_} {
+serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_, bool serverOnly_):
+        serverlistener(serverlistener_), io{io_}, serverOnly(serverOnly_) {
     chatManagerPtr = std::make_unique<serverChat>(players);
 }
 
@@ -35,8 +35,10 @@ leave(int id)
             players.erase(players.find(id));
             sendPLAYERLEFTToAllExceptOne(id);
             resourceStrings::print("Player Left: " + std::get<0>(players.find(id)->second) + "\r\n");
-            if(players.size() == 1){
-                serverlistener.registerForInputReceival();
+            if(serverOnly){
+                if(players.size() == 1){
+                    serverlistener.registerForInputReceival();
+                }
             }
         }else{
             yetToBePromotedSession.erase(s);
@@ -68,9 +70,11 @@ void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         managementJoin(sessionId, std::get<0>(players.find(sessionId)->second));
 
         if(players.size() == 2){
-            sati::getInstance()->setBase(this, appState::LOBBY);
-            PF::setLobbyMainTwoOrMorePlayers();
-            setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+            if(serverOnly){
+                sati::getInstance()->setBase(this, appState::LOBBY);
+                PF::setLobbyMainTwoOrMorePlayers();
+                setInputType(inputType::SERVERLOBBYTWOORMOREPLAYERS);
+            }
         }
     }
     else if(messageTypeReceived == mtc::GAME){
@@ -185,12 +189,7 @@ void serverLobby::input(std::string inputString, inputType inputReceivedType){
                                       inputType::SERVERLOBBYTWOORMOREPLAYERS, input)){
                 if(input == 1){
                     //Start The Game
-                    serverlistener.shutdownAcceptorAndProbe();
-                    serverGetAwayPtr = std::make_unique<serverGetAway>(players, *this);
-                    gameStarted = true;
-                    setInputType(inputType::OPTIONSELECTIONINPUTGAME);
-                    sati::getInstance()->setBase(this, appState::GAME);
-                    PF::setGameMain();
+                    startTheGame();
                 }else if(input == 2){
                     //Close Server
                     serverlistener.shutdown();
@@ -229,8 +228,22 @@ void serverLobby::gameExitFinished(){
         serverlistener.registerForInputReceival();
         return;
     }
-    inputTypeExpected = inputType::SERVERLOBBYTWOORMOREPLAYERS;
-    PF::setLobbyMainTwoOrMorePlayers();
-    sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
-                                                            inputType::SERVERLOBBYTWOORMOREPLAYERS);
+    if(serverOnly){
+        inputTypeExpected = inputType::SERVERLOBBYTWOORMOREPLAYERS;
+        PF::setLobbyMainTwoOrMorePlayers();
+        sati::getInstance()->setBaseAndCurrentStateAndInputType(this,appState::LOBBY,
+                                                                inputType::SERVERLOBBYTWOORMOREPLAYERS);
+    }
+}
+
+void serverLobby::startTheGame(){
+    //Start The Game
+    serverlistener.shutdownAcceptorAndProbe();
+    serverGetAwayPtr = std::make_unique<serverGetAway>(players, *this);
+    gameStarted = true;
+    if(serverOnly){
+        setInputType(inputType::OPTIONSELECTIONINPUTGAME);
+        sati::getInstance()->setBase(this, appState::GAME);
+        PF::setGameMain();
+    }
 }

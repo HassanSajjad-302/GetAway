@@ -8,6 +8,7 @@
 #include "asio/ip/udp.hpp"
 #include "terminalInputBase.hpp"
 #include "serverLobby.hpp"
+#include "clientLobby.hpp"
 
 using namespace asio::ip;
 using errorCode = asio::error_code;
@@ -35,13 +36,23 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
 
     void input(std::string inputString, inputType inputReceivedType) override;
     std::shared_ptr<serverListener> ptr;
+private:
+    tcp::socket tcpSockAcceptor;
+    tcp::socket tcpSockClient;
+    bool serverOnly = true;
+    std::string clientName = "Player";
+    clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>* clientPtr;
 public:
-    tcp::socket tcpSock;
     serverListener(
             asio::io_context& io_,
             const tcp::endpoint& endpoint,
-            const std::string& serverName_);
+            std::string  serverName_);
 
+    serverListener(
+            asio::io_context& io_,
+            const tcp::endpoint& endpoint,
+            std::string  serverName_,
+            std::string clientName);
     // Start accepting incoming connections
     void run();
     void runAgain();
@@ -51,6 +62,12 @@ public:
     void shutdown();
 
     void shutdownAcceptorAndProbe();
+
+    void promote();
+
+    void tcpSockClientConnectToServerFail(errorCode ec);
+
+    void startTheGame();
 };
 
 #endif //GETAWAY_SERVERLISTENER_HPP

@@ -30,9 +30,10 @@ class serverLobby: terminalInputBase{
     std::unique_ptr<serverGetAway> serverGetAwayPtr;
 
     inputType inputTypeExpected;
+    bool serverOnly = true;
 public:
     bool gameStarted = false;
-    serverLobby(serverListener& serverlistener_, asio::io_context& io_);
+    serverLobby(serverListener& serverlistener_, asio::io_context& io_, bool serverOnly_);
     void shutDown();
 
     void newConnectionReceived(asio::ip::tcp::socket sock);
@@ -56,7 +57,7 @@ public:
 
     void sendPLAYERLEFTDURINGGAMEToAllExceptOne(int id);
 
-    void managementNewSessionReceived(int excitedSessionId);
+    void startTheGame();
 };
 
 

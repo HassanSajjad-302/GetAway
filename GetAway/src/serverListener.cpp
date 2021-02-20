@@ -5,6 +5,7 @@
 #include "resourceStrings.hpp"
 #include "constants.h"
 #include "sati.hpp"
+#include "clientLobby.hpp"
 
 using errorCode = asio::error_code;
 
@@ -13,24 +14,43 @@ serverListener::
 serverListener(
         asio::io_context& io_,
         const tcp::endpoint& endpoint,
-        const std::string& serverName_)
+        std::string  serverName_)
         : acceptor(io_, endpoint)
-        , tcpSock(io_)
+        , tcpSockAcceptor(io_)
         , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
         , io{io_}
-        , nextManager(*this, io)
+        , nextManager(*this, io, true)
+        , tcpSockClient(io)
 {
     probeListenerEndpoint = udp::endpoint(udp::v4(), constants::PORT_PROBE_LISTENER);
 }
 
+serverListener::
+serverListener(
+        asio::io_context& io_,
+        const tcp::endpoint& endpoint,
+        std::string  serverName_,
+        std::string clientName_)
+        : acceptor(io_, endpoint)
+        , tcpSockAcceptor(io_)
+        , probeListenerUdpSock(io_)
+        , serverName(std::move(serverName_))
+        , io{io_}
+        , nextManager(*this, io, false)
+        , tcpSockClient(io)
+        , clientName(std::move(clientName_))
+{
+    serverOnly = false;
+    probeListenerEndpoint = udp::endpoint(udp::v4(), constants::PORT_PROBE_LISTENER);
+}
 void
 serverListener::
 run()
 {
     // Start accepting a connection
     acceptor.async_accept(
-            tcpSock,
+            tcpSockAcceptor,
             [self = shared_from_this()](errorCode ec)
             {
                 self->onAccept(ec);
@@ -44,15 +64,42 @@ run()
             {
                 self->probeReply(ec, bytesReceived);
             });
-    PF::setLobbyMainOnePlayer();
-    sati::getInstance()->setBase(this, appState::LOBBY);
-    sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+
+
+    if(!serverOnly){
+        tcpSockClient.async_connect(tcp::endpoint(make_address_v4("127.0.0.1"), constants::PORT_CLIENT_CONNECTOR),
+                                    [self = shared_from_this()](errorCode ec){
+                                        if(ec){
+                                            self->tcpSockClientConnectToServerFail(ec);
+                                        }else{
+                                            self->promote();
+                                        }
+                                    });
+    }
+
+
+    if(serverOnly){
+        PF::setLobbyMainOnePlayer();
+        sati::getInstance()->setBase(this, appState::LOBBY);
+        sati::getInstance()->setInputType(inputType::SERVERLOBBYONEPLAYER);
+    }
 }
 
+void serverListener::promote(){
+    auto clientLobbySession = std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string,serverListener*, bool>>(
+            std::move(tcpSockClient), io, std::move(clientName), this, false);
+    clientPtr = clientLobbySession.get();
+    clientPtr->run();
+}
+
+void serverListener::tcpSockClientConnectToServerFail(errorCode ec){
+    resourceStrings::print("Could Not Connect tcpSockClient To Server. Error " + ec.message() + "\r\n");
+    exit(-1);
+}
 void serverListener::runAgain(){
     // Start accepting a connection
     acceptor.async_accept(
-            tcpSock,
+            tcpSockAcceptor,
             [self = shared_from_this()](errorCode ec)
             {
                 self->onAccept(ec);
@@ -89,15 +136,15 @@ onAccept(errorCode ec)
     if(ec)
         return fail(ec, "accept");
     else{
-        tcpSock.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
+        tcpSockAcceptor.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
         // Launch a new session for this connection
-        nextManager.newConnectionReceived(std::move(tcpSock));
+        nextManager.newConnectionReceived(std::move(tcpSockAcceptor));
     }
 
 
     // Accept another connection
     acceptor.async_accept(
-            tcpSock,
+            tcpSockAcceptor,
             [self = shared_from_this()](errorCode ec)
         {
             self->onAccept(ec);
@@ -126,7 +173,6 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
 
 void serverListener::registerForInputReceival() {
     PF::setLobbyMainOnePlayer();
-
     sati::getInstance()->setBaseAndCurrentStateAndInputType(this, appState::LOBBY,
                                                             inputType::SERVERLOBBYONEPLAYER);
 }
@@ -171,4 +217,8 @@ void serverListener::probeReply(asio::error_code ec, int size) {
             {
                 self->probeReply(ec, bytesReceived);
             });
+}
+
+void serverListener::startTheGame() {
+    nextManager.startTheGame();
 }

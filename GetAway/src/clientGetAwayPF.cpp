@@ -14,13 +14,15 @@ void clientGetAway::PF::accumulateAndPrint() {
 }
 
 
-void clientGetAway::PF::setInputStatementHome2Accumulate() {
-    inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n";
+void clientGetAway::PF::setInputStatementHome2Accumulate(bool clientOnly) {
+    clientOnly ?  inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n" :
+            inputStatementBuffer = "1)Send Message 2)Close Server 3)Exit\r\n";
     accumulateAndPrint();
 }
 
-void clientGetAway::PF::setInputStatementHome3Accumulate() {
-    inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Perform Turn\r\n";
+void clientGetAway::PF::setInputStatementHome3Accumulate(bool clientOnly) {
+    clientOnly ? inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Perform Turn\r\n" :
+            inputStatementBuffer = "1)Send Message 2)Close Server 3)Exit 4)Perform Turn\r\n";
     accumulateAndPrint();
 }
 

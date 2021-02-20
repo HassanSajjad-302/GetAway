@@ -91,7 +91,7 @@ void home::input(std::string inputString, inputType inputReceivedType) {
             if(constants::inputHelper(inputString,
                            1, 7, inputType::HOMEMAIN, inputType::HOMEMAIN, input)){
                 if(input == 1){
-                    //Change Server Name
+                    //Start Server
                     PF::setHomeChangeServerName();
                     setInputType(inputType::HOMESTARTSERVER);
                 }else if(input == 2){
@@ -156,21 +156,23 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                 }
             }
         }else if(inputReceivedType == inputType::HOMESTARTSERVER){
-            if(inputString.empty()){
-                std::make_shared<serverListener>(
-                        io,
-                        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        "Server")->run();
-                guard.reset();
-                ref.reset();
+            PF::setInputStatementClientName();
+            setInputType(inputType::HOMECLIENTNAMESTARTINGSERVER);
+            if(!inputString.empty()){
+                serverName = inputString;
             }else{
-                std::make_shared<serverListener>(
-                        io,
-                        tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                        inputString)->run();
-                guard.reset();
-                ref.reset();
+                serverName = "Server";
             }
+        }else if(inputReceivedType == inputType::HOMECLIENTNAMESTARTINGSERVER){
+            if(!inputString.empty()){
+                myName = inputString;
+            }
+            std::make_shared<serverListener>(
+                    io,
+                    tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                    serverName, myName)->run();
+            guard.reset();
+            ref.reset();
         }
         else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(inputString.empty()){
@@ -202,7 +204,7 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                                       inputType::HOMEJOINSERVER, input)){
                 --input;
                 PF::setInputStatementClientName();
-                setInputType(inputType::HOMECLIENTNAME);
+                setInputType(inputType::HOMECLIENTNAMEJOININGSERVER);
                 connectWithServer = addedServers[input];
             }
         }else if(inputReceivedType == inputType::HOMECONNECTTINGTOSERVER){
@@ -231,11 +233,11 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                     udpSock.close();
                     --input;
                     PF::setInputStatementClientName();
-                    setInputType(inputType::HOMECLIENTNAME);
+                    setInputType(inputType::HOMECLIENTNAMEJOININGSERVER);
                     connectWithServer = broadcastServersObtained[input];
                 }
             }
-        }else if(inputReceivedType == inputType::HOMECLIENTNAME){
+        }else if(inputReceivedType == inputType::HOMECLIENTNAMEJOININGSERVER){
             if(!inputString.empty()){
                 myName = inputString;
             }
@@ -275,8 +277,8 @@ void home::setInputType(inputType type) {
 }
 
 void home::promote() {
-    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string>>(std::move(tcpSock), io,
-            std::move(myName))->run();
+    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>>(
+            std::move(tcpSock), io, std::move(myName), nullptr, true)->run();
     guard.reset();
     ref.reset();
 }

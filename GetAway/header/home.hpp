@@ -48,6 +48,7 @@ class home : terminalInputBase, public std::enable_shared_from_this<home>{
     tcp::socket tcpSock;
     inputType inputTypeExpected;
     std::string myName = "Player";
+    std::string serverName;
     std::string ipAddress;
     std::vector<std::tuple<std::string, std::string>> addedServers;//server-name, ip-address
     std::tuple<std::string, std::string> connectWithServer; //server-name, ip-address
