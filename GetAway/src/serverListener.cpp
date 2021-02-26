@@ -14,13 +14,14 @@ serverListener::
 serverListener(
         asio::io_context& io_,
         const tcp::endpoint& endpoint,
-        std::string  serverName_)
+        std::string  serverName_,
+        constants::gamesEnum gameSelected_)
         : acceptor(io_, endpoint)
         , tcpSockAcceptor(io_)
         , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
         , io{io_}
-        , nextManager(*this, io, true)
+        , nextManager(*this, io, true, gameSelected_)
         , tcpSockClient(io)
 {
     probeListenerEndpoint = udp::endpoint(udp::v4(), constants::PORT_PROBE_LISTENER);
@@ -31,15 +32,17 @@ serverListener(
         asio::io_context& io_,
         const tcp::endpoint& endpoint,
         std::string  serverName_,
-        std::string clientName_)
+        std::string clientName_,
+        constants::gamesEnum gameSelected_)
         : acceptor(io_, endpoint)
         , tcpSockAcceptor(io_)
         , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
         , io{io_}
-        , nextManager(*this, io, false)
+        , nextManager(*this, io, false, gameSelected_)
         , tcpSockClient(io)
         , clientName(std::move(clientName_))
+        , gameSelected(gameSelected_)
 {
     serverOnly = false;
     probeListenerEndpoint = udp::endpoint(udp::v4(), constants::PORT_PROBE_LISTENER);
@@ -86,8 +89,9 @@ run()
 }
 
 void serverListener::promote(){
-    auto clientLobbySession = std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string,serverListener*, bool>>(
-            std::move(tcpSockClient), io, std::move(clientName), this, false);
+    auto clientLobbySession = std::make_shared<clientSession<clientLobby, asio::io_context&, std::string,
+    serverListener*, bool, constants::gamesEnum>>(
+            std::move(tcpSockClient), io, std::move(clientName), this, false, gameSelected);
     clientPtr = clientLobbySession.get();
     clientPtr->run();
 }
@@ -137,7 +141,7 @@ onAccept(errorCode ec)
         return fail(ec, "accept");
     else{
         tcpSockAcceptor.set_option(asio::ip::tcp::no_delay(true));   // enable PSH
-        // Launch a new session for this connection
+        // Launch a new serverSession for this connection
         nextManager.newConnectionReceived(std::move(tcpSockAcceptor));
     }
 

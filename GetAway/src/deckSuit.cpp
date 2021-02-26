@@ -1,7 +1,3 @@
-//
-// Created by hassan on 12/3/20.
-//
-
 
 #include "deckSuit.hpp"
 #include <assert.h>

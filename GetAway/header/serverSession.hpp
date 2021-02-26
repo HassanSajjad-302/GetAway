@@ -1,6 +1,6 @@
 
-#ifndef GETAWAY_CLIENTSESSION_H
-#define GETAWAY_CLIENTSESSION_H
+#ifndef GETAWAY_SERVERSESSION_HPP
+#define GETAWAY_SERVERSESSION_HPP
 
 #include <memory>
 #include <string>
@@ -17,57 +17,62 @@
 using namespace asio::ip;
 using errorCode = asio::error_code;
 
-template <typename T, typename ...U>
-class clientSession : public std::enable_shared_from_this<clientSession<T, U...>>
+template <typename T>
+class serverSession : public std::enable_shared_from_this<serverSession<T>>
 {
-    T manager;
+    int id= 0;
+    T& manager;
     asio::streambuf sessionStreamBuffInput;
     std::istream in{&sessionStreamBuffInput};
     asio::streambuf sessionStreamBuffOutput;
 public:
     std::ostream out{&sessionStreamBuffOutput};
+
 private:
     std::queue<std::vector<asio::const_buffer>> sendingMessagesQueue;
+
+    void fail(errorCode ec, char const* what);
+    void readMore(errorCode ec, int bytes);
     bool allPacketsReceived = true;
 
-    static void fail(errorCode ec, char const* what);
-    void readMore(errorCode ec, int firstRead);
-
+    //friend T;
 public:
     tcp::socket sock;
-    void sendMessage(void (*func)());
+    void sendMessage(void (*func)(int id));
     void sendMessage();
     void receiveMessage();
-    void run();
 
-    explicit clientSession(tcp::socket socket, U... stateConstructorArgs);
+    serverSession(tcp::socket socket, T& manager_, int id_);
 };
 
-template<typename T, typename... U>
-clientSession<T, U...>::clientSession(tcp::socket socket, U... stateConstructorArgs) :
-sock(std::move(socket)), manager(*this, stateConstructorArgs...){
-
+template <typename T>
+serverSession<T>::
+serverSession(
+        tcp::socket socket,
+        T&  manager_,
+        int id_)
+        : sock(std::move(socket))
+        , manager(manager_)
+        , id(id_)
+{
 }
 
 // Report a failure
-template <typename T, typename ...U>
+template <typename T>
 void
-clientSession<T, U...>::
+serverSession<T>::
 fail(errorCode ec, char const* what)
 {
-
-    resourceStrings::print(std::string(what) + ": " + ec.message() + "\r\n");
-
-    // Don't report on canceled operations
     if(ec == asio::error::operation_aborted)
         return;
+    resourceStrings::print(std::string(what) + ": " + ec.message() + "\r\n");
+    manager.leave(id);
 }
 
-
-template <typename T, typename ...U>
+template <typename T>
 void
-clientSession<T, U...>::
-sendMessage(void (*func)()) {
+serverSession<T>::
+sendMessage(void (*func)(int id)) {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -79,21 +84,20 @@ sendMessage(void (*func)()) {
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     asio::async_write(sock, sendingMessagesQueue.front(),
-                      [self = this->shared_from_this(), func](
-                              errorCode ec, std::size_t bytes) {
-
-                          if(ec){
-                              return self->fail(ec, "sendMessage");
-                          }
-                          func();
-                      });
+                     [self = this->shared_from_this(), func, id = id](
+                             errorCode ec, std::size_t bytes) {
+                         if(ec){
+                             return self->fail(ec, "sendMessage");
+                         }
+                         func(id);
+                     });
     sendingMessagesQueue.pop();
 }
 
-template <typename T, typename ...U>
+template <typename T>
 void
-clientSession<T, U...>::
-sendMessage(){
+serverSession<T>::
+sendMessage() {
 
     int msSize = sessionStreamBuffOutput.data().size();
 
@@ -105,7 +109,7 @@ sendMessage(){
     sessionStreamBuffOutput.consume(sessionStreamBuffOutput.size());
 
     asio::async_write(sock, sendingMessagesQueue.front(),
-                      [self = this->shared_from_this()](
+                      [self = this](
                               errorCode ec, std::size_t bytes) {
                           if(ec){
                               return self->fail(ec, "sendMessage");
@@ -114,12 +118,12 @@ sendMessage(){
     sendingMessagesQueue.pop();
 }
 
-template <typename T, typename ...U>
+template <typename T>
 void
-clientSession<T, U...>::
+serverSession<T>::
 receiveMessage() {
     if(allPacketsReceived){
-        sock.async_receive(sessionStreamBuffInput.prepare(constants::TCP_PACKET_MTU), [self = this->shared_from_this()](
+        sock.async_receive(sessionStreamBuffInput.prepare(constants::TCP_PACKET_MTU), [self = this](
                 errorCode ec, std::size_t bytes)
         {
             self->readMore(ec, bytes);
@@ -128,9 +132,9 @@ receiveMessage() {
 
 }
 
-template <typename T, typename ...U>
+template <typename T>
 void
-clientSession<T, U...>::
+serverSession<T>::
 readMore(errorCode ec, int firstRead) {
     if(ec)
         return fail(ec, "readMore");
@@ -144,7 +148,7 @@ readMore(errorCode ec, int firstRead) {
         int waitingForServiceBody = waitingForService - 4;
         if (packetSize == waitingForServiceBody) {
             allPacketsReceived = true;
-            manager.packetReceivedFromNetwork(in, packetSize);
+            manager.packetReceivedFromNetwork(in, packetSize, id);
 
             sessionStreamBuffInput.consume(firstRead);
             //sessionStreamBuffInput.consume(SIZE_MAX);
@@ -153,34 +157,28 @@ readMore(errorCode ec, int firstRead) {
             //if it has come here then it means that consumeSize is firstRead plus 1500 which is standard read.
             int remainingPacket = packetSize - waitingForServiceBody;
             asio::async_read(sock, sessionStreamBuffInput.prepare(remainingPacket),
-                             [self = this->shared_from_this(), waitingForServiceBody, firstRead, remainingPacket](
-                                     errorCode ec, std::size_t secondRead) {
-                                 if (ec)
-                                     self->fail(ec, "error in lambda readMore");
-                                 if(secondRead != remainingPacket){
-                                     self->fail(ec, "error in lambda readmore. handler called with not the required "
-                                                    "bytes Read");
-                                 }
-                                 self->sessionStreamBuffInput.commit(remainingPacket);
-                                 self->allPacketsReceived = true;
-                                 self->manager.packetReceivedFromNetwork(
-                                         self->in, secondRead + waitingForServiceBody);
-                                 self->sessionStreamBuffInput.consume(firstRead + secondRead);
-                             });
+                            [self = this, waitingForServiceBody, firstRead, remainingPacket](
+                                    errorCode ec, std::size_t secondRead) {
+                                if (ec)
+                                    self->fail(ec, "error in lambda readMore");
+                                if(secondRead != remainingPacket){
+                                    self->fail(ec, "error in lambda readmore. handler called with not the required "
+                                                   "bytes Read");
+                                }
+                                self->sessionStreamBuffInput.commit(remainingPacket);
+                                self->allPacketsReceived = true;
+                                self->manager.packetReceivedFromNetwork(
+                                        self->in, secondRead + waitingForServiceBody, self->id);
+                                self->sessionStreamBuffInput.consume(firstRead + secondRead);
+                            });
             break;
         }
         else {
             allPacketsReceived = false;
-            manager.packetReceivedFromNetwork(in, packetSize);
+            manager.packetReceivedFromNetwork(in, packetSize, id);
             waitingForService -= (packetSize + 4);
         }
     }
 }
 
-template<typename T, typename... U>
-void clientSession<T, U...>::run() {
-    manager.run();
-}
-
-template<typename T> clientSession(T, asio::io_context, std::string) -> clientSession<T, asio::io_context&, std::string>;
-#endif //GETAWAY_CLIENTSESSION_H
+#endif //GETAWAY_SERVERSESSION_HPP

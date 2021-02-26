@@ -3,7 +3,7 @@
 #include "serverLobby.hpp"
 
 serverChat::serverChat(
-        const std::map<int, std::tuple<std::string, std::unique_ptr<session<serverLobby, true>>>> &players_):
+        const std::map<int, std::tuple<std::string, std::unique_ptr<serverSession<serverLobby>>>> &players_):
         players{players_}{
 
 }

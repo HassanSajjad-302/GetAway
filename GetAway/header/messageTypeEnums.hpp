@@ -19,12 +19,23 @@ enum class mtl{
     PLAYERLEFTDURINGGAME = 24,
 };
 
-//message type game
-enum class mtg{
+//message type game getaway
+enum class mtgg{
     GAMEFIRSTTURNSERVER = 31,
     GAMETURNCLIENT  = 32,
     GAMETURNSERVER  = 33,
 };
+
+//message type game bluff
+enum class mtgb{
+    SERVER_CLIENTTURNNORMAL,
+    SERVER_CLIENTTURNPASS,
+    SERVER_CLIENTTURNCHECK,
+    CLIENT_TURNPASS,
+    CLIENT_TURNNORMAL,
+    CLIENT_TURNCHECK
+};
+
 
 enum class messageType{
     CHATMESSAGE  = 41,

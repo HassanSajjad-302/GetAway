@@ -6,9 +6,10 @@
 #include <memory>
 #include "asio/io_context.hpp"
 #include "asio/ip/tcp.hpp"
-#include "session.hpp"
+#include "serverSession.hpp"
 #include "terminalInputBase.hpp"
 #include "serverGetAway.hpp"
+#include "serverBluff.hpp"
 #include "serverChat.hpp"
 class serverListener;
 class serverLobby: terminalInputBase{
@@ -18,8 +19,8 @@ class serverLobby: terminalInputBase{
         static void setGameMain();
 
     };
-    std::map<int, std::tuple<std::string, std::unique_ptr<session<serverLobby, true>>>> players;
-    std::map<int, std::unique_ptr<session<serverLobby, true>>> yetToBePromotedSession;
+    std::map<int, std::tuple<std::string, std::unique_ptr<serverSession<serverLobby>>>> players;
+    std::map<int, std::unique_ptr<serverSession<serverLobby>>> yetToBePromotedSession;
     int maxID = 0;
 
     std::string joinedPlayerName;
@@ -27,17 +28,21 @@ class serverLobby: terminalInputBase{
     asio::io_context& io;
 
     std::unique_ptr<serverChat> chatManagerPtr;
+
     std::unique_ptr<serverGetAway> serverGetAwayPtr;
+    std::unique_ptr<serverBluff> serverBluffPtr;
 
     inputType inputTypeExpected;
     bool serverOnly = true;
+    constants::gamesEnum gameSelected;
 public:
     bool gameStarted = false;
-    serverLobby(serverListener& serverlistener_, asio::io_context& io_, bool serverOnly_);
+    serverLobby(serverListener& serverlistener_, asio::io_context& io_, bool serverOnly_,
+                constants::gamesEnum gameSelected);
     void shutDown();
 
     void newConnectionReceived(asio::ip::tcp::socket sock);
-   // int join(std::shared_ptr<session<serverLobby, true>> lobbySession);
+   // int join(std::shared_ptr<serverSession<serverLobby, true>> lobbySession);
 
     void managementJoin(int excitedSessionId, const std::string &playerNameFinal);
 

@@ -156,25 +156,47 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                 }
             }
         }else if(inputReceivedType == inputType::HOMESTARTSERVER){
-            PF::setInputStatementClientName();
-            setInputType(inputType::HOMECLIENTNAMESTARTINGSERVER);
             if(!inputString.empty()){
                 serverName = inputString;
             }else{
                 serverName = "Server";
             }
+            PF::setInputStatementClientName();
+            setInputType(inputType::HOMECLIENTNAMESTARTINGSERVER);
         }else if(inputReceivedType == inputType::HOMECLIENTNAMESTARTINGSERVER){
             if(!inputString.empty()){
                 myName = inputString;
+            }else{
+                myName = "Player";
             }
-            std::make_shared<serverListener>(
-                    io,
-                    tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                    serverName, myName)->run();
-            guard.reset();
-            ref.reset();
-        }
-        else if(inputReceivedType == inputType::HOMEIPADDRESS){
+            PF::setInputStatementSELECTGAME();
+            setInputType(inputType::HOMESELECTGAMESTARTINGSERVER);
+        }else if(inputReceivedType == inputType::HOMESELECTGAMESTARTINGSERVER){
+            if(!inputString.empty()){
+                int input;
+                if(constants::inputHelper(inputString, 1, constants::NUMBER_OF_GAMES, inputType::HOMESELECTGAMESTARTINGSERVER,
+                                          inputType::HOMESELECTGAMESTARTINGSERVER, input)){
+                    --input;
+                    gameSelected = (constants::gamesEnum) input;
+                    if(gameSelected == constants::gamesEnum::GETAWAY){
+                        std::make_shared<serverListener>(
+                                io,
+                                tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                                serverName, myName, gameSelected)->run();
+                    }else if(gameSelected == constants::gamesEnum::BLUFF){
+                        std::make_shared<serverListener>(
+                                io,
+                                tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
+                                serverName, myName, gameSelected)->run();
+                    }
+                    guard.reset();
+                    ref.reset();
+                }
+            }else{
+                PF::setInputStatementMAIN();
+                setInputType(inputType::HOMEMAIN);
+            }
+        }else if(inputReceivedType == inputType::HOMEIPADDRESS){
             if(inputString.empty()){
                 PF::setInputStatementMAIN();
                 setInputType(inputType::HOMEMAIN);
@@ -277,8 +299,8 @@ void home::setInputType(inputType type) {
 }
 
 void home::promote() {
-    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>>(
-            std::move(tcpSock), io, std::move(myName), nullptr, true)->run();
+    std::make_shared<clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>>(
+            std::move(tcpSock), io, std::move(myName), nullptr, true, gameSelected)->run();
     guard.reset();
     ref.reset();
 }

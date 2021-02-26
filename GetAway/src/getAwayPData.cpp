@@ -1,18 +1,15 @@
-//
-// Created by hassan on 11/13/20.
-//
 
 #include <cassert>
-#include "playerData.hpp"
+#include "getAwayPData.hpp"
 
-playerData::playerData(int id_): id{id_} {
+getAwayPData::getAwayPData(int id_): id{id_} {
     std::set<int> s;
     for(int i=0; i<4; ++i){
         cards.emplace(static_cast<deckSuit>(i), s);
     }
 }
 
-void playerData::insertCard(Card card) {
+void getAwayPData::insertCard(Card card) {
     assert((card.cardNumber >= 0 && card.cardNumber < constants::DECKSIZE ) && "CardNumber Is Out Of Range");
 
 #ifndef NDEBUG

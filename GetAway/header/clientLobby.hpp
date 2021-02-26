@@ -10,6 +10,7 @@
 #include "asio/io_context.hpp"
 #include "clientSession.hpp"
 #include "clientGetAway.hpp"
+#include "clientBluff.hpp"
 #include "serverListener.hpp"
 
 class clientLobby: public terminalInputBase {
@@ -28,19 +29,23 @@ class clientLobby: public terminalInputBase {
     std::string myName;
     std::map<int, std::string> players;
 
-    inputType inputTypeExpected;
     bool clientOnly = true;
     serverListener* listener;
+    constants::gamesEnum gameSelected;
 public:
     int myId;
-    clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>& clientLobbySession;
+    clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>& clientLobbySession;
     std::unique_ptr<clientChat> clientChatPtr;
+    //todo
+    //make these pointers private
     std::unique_ptr<clientGetAway> clientGetAwayPtr;
+    std::unique_ptr<Bluff::clientBluff> clientBluffPtr;
     bool gameStarted = false;
     void gameFinished();
 
-    explicit clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>& clientLobbySession_,
-                         asio::io_context& io_, std::string playerName, serverListener* listener_, bool isItClientOnly_);
+    explicit clientLobby(clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool,
+                         constants::gamesEnum>& clientLobbySession_, asio::io_context& io_, std::string playerName,
+                         serverListener* listener_, bool isItClientOnly_, constants::gamesEnum gameSelected_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 

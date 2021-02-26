@@ -1,6 +1,3 @@
-//
-// Created by hassan on 11/11/20.
-//
 
 #include <iostream>
 #include "replacementStreamBuff.hpp"

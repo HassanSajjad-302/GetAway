@@ -27,6 +27,7 @@ void home::PF::setInputStatementIPADDRESS() {
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 
+
 void home::PF::setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string>>& servers) {
     assert(!servers.empty() && "Number Of Registered Server Should Not Be Zero");
     sati::getInstance()->nonMessageBuffer += "Please select one of the following\r\n";
@@ -51,6 +52,16 @@ void home::PF::setInputStatementHome7R3(const std::vector<std::tuple<std::string
 
 void home::PF::setInputStatementClientName() {
     sati::getInstance()->nonMessageBuffer = "Please Enter Your Name. Press Enter To Use Default.\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
+}
+
+void home::PF::setInputStatementSELECTGAME() {
+    sati::getInstance()->nonMessageBuffer = "Pleas Enter Corresponding Number To Select The Game.\r\n";
+    for(int i=0; i<constants::NUMBER_OF_GAMES; ++i){
+        sati::getInstance()->nonMessageBuffer += std::to_string(i+1) + ") " + constants::gamesNames[i] + "\t";
+    }
+    sati::getInstance()->nonMessageBuffer += "\r\n";
+    sati::getInstance()->accumulateBuffersAndPrint();
     sati::getInstance()->accumulateBuffersAndPrint();
 }
 

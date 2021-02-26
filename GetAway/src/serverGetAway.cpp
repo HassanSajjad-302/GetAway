@@ -6,10 +6,11 @@
 #include "resourceStrings.hpp"
 #include "serverLobby.hpp"
 #include "sati.hpp"
+#include "clientBluff.hpp"
 
 serverGetAway::
 serverGetAway(const std::map<int, std::tuple<std::string,
-        std::unique_ptr<session<serverLobby, true>>>>& gameData_, serverLobby& lobbyManager_):
+        std::unique_ptr<serverSession<serverLobby>>>>& gameData_, serverLobby& lobbyManager_):
         players{gameData_}, lobbyManager{lobbyManager_}{
     initializeGame();
     doFirstTurnOfFirstRound();
@@ -17,10 +18,10 @@ serverGetAway(const std::map<int, std::tuple<std::string,
 }
 
 void serverGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
-    mtg messageTypeReceived;
+    mtgg messageTypeReceived;
     //STEP 1;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageTypeReceived));
-    if(messageTypeReceived == mtg::GAMETURNCLIENT){
+    if(messageTypeReceived == mtgg::GAMETURNCLIENT){
         constants::Log("GAMETURNCLIENT received");
         int index;
         if(indexGamePlayerDataFromId(sessionId, index)){
@@ -35,7 +36,7 @@ void serverGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
                 constants::Log("Turn Not Expected From This Client");
             }
         }else{
-            resourceStrings::print("playerData with this id could not be found in the gamePlayersData. "
+            resourceStrings::print("getAwayPData with this id could not be found in the gamePlayersData. "
                                    "Most likely it was removed because it's game ended. But still receieved"
                                    "a GAMETURNCLIENT message from it\r\n");
         }
@@ -56,7 +57,7 @@ void serverGetAway::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
 
             //STEP 1;
             out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
-            mtg t = mtg::GAMETURNSERVER;
+            mtgg t = mtgg::GAMETURNSERVER;
             out.write(reinterpret_cast<char*>(&t), sizeof(t));
             //STEP 2;
             out.write(reinterpret_cast<char *>(&sessionId), sizeof(sessionId));
@@ -101,7 +102,7 @@ void serverGetAway::initializeGame(){
 
     int cardsCount = 0;
     for(u_int i=0; i<playersIdList.size(); ++i){
-        auto p = playerData(playersIdList[i]);
+        auto p = getAwayPData(playersIdList[i]);
         if(std::find(playerWithExtraCardIdsList.begin(), playerWithExtraCardIdsList.end(), players.find(i)->first) !=
            playerWithExtraCardIdsList.end()){
             for(int j=0; j<normalNumberOfCards+1; ++j){
@@ -219,7 +220,7 @@ void serverGetAway::managementGAMETURNCLIENTReceived(int sessionId, Card cardRec
                  deckSuitValue::displayCards[cardReceived.cardNumber]);
     //iterating over gamePlayerData
     auto turnReceivedPlayer = std::find_if(gamePlayersData.begin(), gamePlayersData.end(),
-                                               [sessionId](playerData& p){
+                                               [sessionId](getAwayPData& p){
         return p.id == sessionId;
     });//Be Careful Of turnReceivedPlayer Invalidation during the function
     assert(turnReceivedPlayer != gamePlayersData.end() && "no gamePlayerData id matches with sessionId");
@@ -254,7 +255,7 @@ void serverGetAway::managementGAMETURNCLIENTReceived(int sessionId, Card cardRec
 
 void
 serverGetAway::doTurnReceivedOfFirstRound(
-        std::vector<playerData>::iterator turnReceivedPlayer, Card cardReceived) {
+        std::vector<getAwayPData>::iterator turnReceivedPlayer, Card cardReceived) {
     turnCardNumberOfGamePlayerIterator(turnReceivedPlayer, cardReceived);
     roundTurns.emplace_back(turnReceivedPlayer->id, cardReceived);
     if(roundTurns.size() != gamePlayersData.size()) {
@@ -279,12 +280,12 @@ serverGetAway::doTurnReceivedOfFirstRound(
     }
 }
 
-void serverGetAway::newRoundTurn(std::vector<playerData>::iterator currentGamePlayer){
+void serverGetAway::newRoundTurn(std::vector<getAwayPData>::iterator currentGamePlayer){
         currentGamePlayer->turnTypeExpected = turnType::ROUNDFIRSTTURN;
         currentGamePlayer->turnExpected = true;
 }
 
-void serverGetAway::Turn(std::vector<playerData>::iterator currentTurnPlayer, Card card){
+void serverGetAway::Turn(std::vector<getAwayPData>::iterator currentTurnPlayer, Card card){
     if(currentTurnPlayer->turnTypeExpected == turnType::ROUNDFIRSTTURN){ //First Turn Of Round Was Expected
         performFirstOrMiddleTurn(currentTurnPlayer, card, true);
     }else if (currentTurnPlayer->turnTypeExpected == turnType::ROUNDMIDDLETURN){
@@ -297,7 +298,7 @@ void serverGetAway::Turn(std::vector<playerData>::iterator currentTurnPlayer, Ca
 }
 
 void serverGetAway::performFirstOrMiddleTurn(
-        std::vector<playerData>::iterator currentTurnPlayer, Card card, bool firstTurn){
+        std::vector<getAwayPData>::iterator currentTurnPlayer, Card card, bool firstTurn){
 
     constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(firstTurn));
 
@@ -319,7 +320,7 @@ void serverGetAway::performFirstOrMiddleTurn(
     roundTurns.emplace_back(currentTurnPlayer->id, card);
     currentTurnPlayer->cards.find(card.suit)->second.erase(card.cardNumber);
 
-    std::vector<playerData>::iterator nextGamePlayerIterator;
+    std::vector<getAwayPData>::iterator nextGamePlayerIterator;
     nextGamePlayerIterator = std::next(currentTurnPlayer);
     if(nextGamePlayerIterator == gamePlayersData.end()){
         nextGamePlayerIterator = gamePlayersData.begin();
@@ -346,9 +347,9 @@ void serverGetAway::performFirstOrMiddleTurn(
 }
 
 void serverGetAway::performLastOrThullaTurn(
-        std::vector<playerData>::iterator currentTurnPlayer, Card card, bool lastTurn){
+        std::vector<getAwayPData>::iterator currentTurnPlayer, Card card, bool lastTurn){
     constants::Log("Perform First Or Middle Turn Called. firstTurn bool value is {}", std::to_string(lastTurn));
-    std::vector<playerData>::iterator roundKing;
+    std::vector<getAwayPData>::iterator roundKing;
     if(lastTurn){
         if(card.suit != suitOfTheRound){
             resourceStrings::print("A Turn Received But Not Acted Upon"
@@ -370,7 +371,7 @@ void serverGetAway::performLastOrThullaTurn(
     turnCardNumberOfGamePlayerIterator(currentTurnPlayer, card);
 
     gamePlayersData.erase(std::remove_if(gamePlayersData.begin(), gamePlayersData.end(),
-                                         [](playerData& s){
+                                         [](getAwayPData& s){
                                              return constants::cardsCount(s.cards) == 0;
                                          }), gamePlayersData.end());
 
@@ -389,7 +390,7 @@ void serverGetAway::performLastOrThullaTurn(
     CHECKCARDCOUNT
 }
 
-void serverGetAway::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::iterator turnReceivedPlayer,
+void serverGetAway::turnCardNumberOfGamePlayerIterator(std::vector<getAwayPData>::iterator turnReceivedPlayer,
                                                        Card card){
 
     sendGAMETURNSERVERTOAllExceptOne(turnReceivedPlayer->id, card);
@@ -397,7 +398,7 @@ void serverGetAway::turnCardNumberOfGamePlayerIterator(std::vector<playerData>::
     turnReceivedPlayer->turnExpected = false;
 }
 
-std::vector<playerData>::iterator serverGetAway::roundKingGamePlayerDataIterator(){
+std::vector<getAwayPData>::iterator serverGetAway::roundKingGamePlayerDataIterator(){
     int highestCardHolderId = std::get<0>(*roundTurns.begin());
     int highestCardNumber = std::get<1>(*roundTurns.begin()).cardNumber;
     for(auto turns: roundTurns){

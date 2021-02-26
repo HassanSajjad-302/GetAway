@@ -1,6 +1,3 @@
-//
-// Created by hassan on 11/11/20.
-//
 
 #ifndef GETAWAY_REPLACEMENTSTREAMBUFF_HPP
 #define GETAWAY_REPLACEMENTSTREAMBUFF_HPP

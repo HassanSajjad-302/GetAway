@@ -9,7 +9,7 @@
 #include "terminalInputBase.hpp"
 #include "serverLobby.hpp"
 #include "clientLobby.hpp"
-
+#include "constants.h"
 using namespace asio::ip;
 using errorCode = asio::error_code;
 
@@ -22,6 +22,7 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
     };
     asio::io_context& io;
     tcp::acceptor acceptor;
+    constants::gamesEnum gameSelected;
     serverLobby nextManager;
     std::string serverName;
 
@@ -36,23 +37,22 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
 
     void input(std::string inputString, inputType inputReceivedType) override;
     std::shared_ptr<serverListener> ptr;
-private:
+
     tcp::socket tcpSockAcceptor;
     tcp::socket tcpSockClient;
     bool serverOnly = true;
     std::string clientName = "Player";
-    clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>* clientPtr;
+    clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>* clientPtr;
 public:
-    serverListener(
-            asio::io_context& io_,
-            const tcp::endpoint& endpoint,
-            std::string  serverName_);
+    serverListener(asio::io_context& io_, const tcp::endpoint& endpoint, std::string  serverName_,
+                   constants::gamesEnum gameSelected_);
 
     serverListener(
             asio::io_context& io_,
             const tcp::endpoint& endpoint,
             std::string  serverName_,
-            std::string clientName);
+            std::string clientName,
+            constants::gamesEnum gameSelected_);
     // Start accepting incoming connections
     void run();
     void runAgain();

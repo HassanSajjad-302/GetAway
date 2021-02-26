@@ -2,13 +2,13 @@
 
 #ifndef ANDROID
 
-#define TESTING 1
+//#define TESTING 1
 
 #include "sati.hpp"
 #include <fstream>
 #include <memory>
 #ifdef TESTING
-#include <serverListener.hpp>
+#include "clientLobby.hpp"
 #endif
 #include "constants.h"
 #include "home.hpp"
@@ -25,11 +25,13 @@ int main(){
 
     std::mutex mu;
     std::thread inputThread{[s = std::ref(sati::getInstanceFirstTime(io, mu))](){s.get().operator()();}};
+
+    tcp::endpoint endpoint(tcp::v4(),3000);
+    tcp::socket sock(io);
+    sock.connect(endpoint);
 #ifdef TESTING
-    std::make_shared<serverListener>(
-                                io,
-                                tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                                "Server", "Hassan", constants::gamesEnum::BLUFF)->run();
+    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>>(
+            std::move(sock), io, "Hassan42", nullptr, true, constants::gamesEnum::BLUFF)->run();
 #else
     std::make_shared<home>(home(io))->run();
 #endif

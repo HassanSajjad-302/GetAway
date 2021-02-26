@@ -4,11 +4,13 @@
 #include "messageTypeEnums.hpp"
 #include "home.hpp"
 #include "clientGetAway.hpp"
+#include "clientBluff.hpp"
 
-clientLobby::clientLobby(clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool>&
-        clientLobbySession_, asio::io_context& io_, std::string playerName, serverListener* serverlistener_,
-        bool isItClientOnly): clientLobbySession{clientLobbySession_}, io{io_}, myName(std::move(playerName)),
-        listener(serverlistener_), clientOnly(isItClientOnly){
+clientLobby::clientLobby(clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool,
+                         constants::gamesEnum>& clientLobbySession_, asio::io_context& io_, std::string playerName,
+                         serverListener* serverlistener_, bool isItClientOnly, constants::gamesEnum gameSelected_):
+                         clientLobbySession{clientLobbySession_}, io{io_}, myName(std::move(playerName)),
+                         listener(serverlistener_), clientOnly(isItClientOnly), gameSelected(gameSelected_){
 }
 
 void clientLobby::run() {
@@ -26,10 +28,18 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     if(messageTypeReceived == mtc::GAME){
         if(!gameStarted){
-            clientGetAwayPtr = std::make_unique<clientGetAway>(*this, myName, players, in, myId, clientOnly);
+            if(gameSelected == constants::gamesEnum::GETAWAY){
+                clientGetAwayPtr = std::make_unique<clientGetAway>(*this, myName, players, in, myId, clientOnly);
+            }else if(gameSelected == constants::gamesEnum::BLUFF){
+                clientBluffPtr = std::make_unique<Bluff::clientBluff>(*this, myName, players, in, myId, clientOnly);
+            }
             gameStarted = true;
         }else{
-            clientGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize);
+            if(gameSelected == constants::gamesEnum::GETAWAY){
+                clientGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize);
+            }else if(gameSelected == constants::gamesEnum::BLUFF){
+                clientBluffPtr->packetReceivedFromNetwork(in, receivedPacketSize);
+            }
         }
     }else if(messageTypeReceived == mtc::MESSAGE){
         clientChatPtr->packetReceivedFromNetwork(in, receivedPacketSize);
@@ -39,6 +49,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         switch (innerMessageType) {
             //STEP 1;
             case mtl::SELFANDSTATE: {
+                in.read(reinterpret_cast<char *>(&gameSelected), sizeof(gameSelected));
                 //STEP 2
                 in.read(reinterpret_cast<char *>(&myId), sizeof(myId));
                 //TODO
@@ -112,7 +123,7 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
             case mtl::PLAYERLEFTDURINGGAME:{
                 int playerLeftId;
                 in.read(reinterpret_cast<char *>(&playerLeftId), sizeof(playerLeftId));
-                gameStarted = false;
+
                 players.erase(playerLeftId);
                 if(players.size() == 1){
                     if(clientOnly){
@@ -121,13 +132,9 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                         PF::inputStatement = "3)Close Server 4)Exit\r\n";
                     }
                 }
-                sati::getInstance()->setBase(this, appState::LOBBY);
 
-                PF::addOrRemovePlayerAccumulate(players);
-                setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
-                clientGetAwayPtr.reset();
+                gameFinished();
                 resourceStrings::print("Player Left During Game. Game Ended.\r\n");
-                //players.erase(playerLeftId);
                 break;
             }
             default: {
@@ -203,10 +210,14 @@ void clientLobby::input(std::string inputString, inputType inputReceivedType) {
 void clientLobby::gameFinished(){
     gameStarted = false;
     sati::getInstance()->setBase(this, appState::LOBBY);
-
     PF::addOrRemovePlayerAccumulate(players);
     setInputType(inputType::OPTIONSELECTIONINPUTLOBBY);
-    clientGetAwayPtr.reset();
+    if(gameSelected == constants::gamesEnum::GETAWAY){
+        clientGetAwayPtr.reset();
+
+    }else if(gameSelected == constants::gamesEnum::BLUFF){
+        clientBluffPtr.reset();
+    }
 }
 
 void clientLobby::exitApplication(bool backToHome){
@@ -220,7 +231,6 @@ void clientLobby::exitApplication(bool backToHome){
 }
 
 void clientLobby::setInputType(inputType inputType) {
-    inputTypeExpected = inputType;
     sati::getInstance()->setInputType(inputType);
 }
 

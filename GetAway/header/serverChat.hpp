@@ -5,16 +5,16 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "session.hpp"
+#include "serverSession.hpp"
 
 class serverLobby;
 class serverChat {
 
     const std::map<int, std::tuple<std::string,
-            std::unique_ptr<session<serverLobby, true>>>>& players;
+            std::unique_ptr<serverSession<serverLobby>>>>& players;
 public:
     explicit serverChat(const std::map<int, std::tuple<std::string,
-            std::unique_ptr<session<serverLobby, true>>>>& players_);
+            std::unique_ptr<serverSession<serverLobby>>>>& players_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId);
 

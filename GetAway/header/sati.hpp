@@ -10,8 +10,6 @@
 #include "messageTypeEnums.hpp"
 #include "deckSuit.hpp"
 #include "appState.hpp"
-#include "clientGetAwayPF.hpp"
-#include "clientGetAwayPF.hpp"
 #include "asio/io_context.hpp"
 #include "inputType.h"
 #include "terminalInputBase.hpp"
@@ -31,10 +29,6 @@ private:
 public:
     std::string messageBuffer; //messages
     std::string nonMessageBuffer;
-
-#ifdef SERVERMACRO
-    std::string playerJoined;
-#endif
 
     bool handlerAssigned = false;
     terminalInputBase* base = nullptr;

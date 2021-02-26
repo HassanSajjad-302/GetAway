@@ -1,6 +1,3 @@
-//
-// Created by hassan on 12/7/20.
-//
 
 #include "constants.h"
 #include "clientGetAway.hpp"

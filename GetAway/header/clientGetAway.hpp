@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <chrono>
-#include "session.hpp"
+#include "serverSession.hpp"
 #include "messageTypeEnums.hpp"
 #include "terminalInputBase.hpp"
 #include "inputType.h"
@@ -18,7 +18,6 @@ class clientLobby;
 enum whoTurned{
     CLIENT,
     RECEIVED,
-    AUTO
 };
 // Represents the shared server state
 class clientGetAway : terminalInputBase {
@@ -57,7 +56,7 @@ class clientGetAway : terminalInputBase {
     const std::string& playerName;
     const std::map<int, std::string>& players;
     int myId = 0;
-    //std::shared_ptr<session<clientLobbyManager>> clientLobbySession;
+    //std::shared_ptr<serverSession<clientLobbyManager>> clientLobbySession;
     inputType inputTypeExpected;
 
     void input(std::string inputString, inputType inputReceivedType) override;

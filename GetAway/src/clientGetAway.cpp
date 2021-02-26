@@ -21,13 +21,9 @@ clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& play
             handSize >= ((constants::DECKSIZE / players.size()) - 1)) &&
            "Unexpected Number Of Cards Received");
     for(int i=0; i < handSize; ++i){
-        deckSuit suit;
-        int cardNumber;
-        //STEP 3;
-        in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
-        //STEP 4;
-        in.read(reinterpret_cast<char*>(&cardNumber), sizeof(cardNumber));
-        myCards.find(suit)->second.emplace(cardNumber);
+        Card card;
+        in.read(reinterpret_cast<char *>(&card), sizeof(card));
+        myCards.find(card.suit)->second.emplace(card.cardNumber);
     }
 
     //STAGE 2;
@@ -90,11 +86,11 @@ clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& play
 
 void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize) {
 
-    mtg messageTypeReceived;
+    mtgg messageTypeReceived;
     in.read(reinterpret_cast<char*>(&messageTypeReceived), sizeof(messageType));
     switch(messageTypeReceived){
         //STEP 1;
-        case mtg::GAMETURNSERVER:{
+        case mtgg::GAMETURNSERVER:{
             int senderId;
             deckSuit suit;
             int cardNumber;
@@ -112,7 +108,7 @@ void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
         }
         default:{
             resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager "
-                                   "message type not in enum mtg\r\n");
+                                   "message type not in enum mtgg\r\n");
             break;
         }
     }
@@ -124,7 +120,7 @@ void clientGetAway::sendGAMETURNCLIENT(Card card){
     std::ostream& out = lobbyManager.clientLobbySession.out;
     //STEP 1;
     out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
-    mtg t = mtg::GAMETURNCLIENT;
+    mtgg t = mtgg::GAMETURNCLIENT;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
     //TODO
     //Check if I can send and receive card in one go.
@@ -407,7 +403,7 @@ int clientGetAway::nextInTurnSequence(int currentSessionId){
             break;
         }
     }
-    assert(it != turnSequence.end() && "Id of current session is not present in turnSequence");
+    assert(it != turnSequence.end() && "Id of current serverSession is not present in turnSequence");
     auto next = ++it;
     if(next != turnSequence.end()){
         return *next;

@@ -13,12 +13,13 @@ set(srcFiles "GetAway/main.cpp" "GetAway/src/androidClientMain.cpp" "GetAway/src
         "GetAway/src/clientChat.cpp" "GetAway/src/androidServerMain.cpp" "GetAway/src/deckSuit.cpp"
         "GetAway/src/serverChat.cpp" "GetAway/src/serverGetAway.cpp"
         "GetAway/src/sati.cpp" "GetAway/src/serverLobby.cpp" "GetAway/src/serverListener.cpp"
-        "GetAway/src/clientLobbyPF.cpp" "GetAway/src/satiAndroid.cpp" "GetAway/src/messageTypeEnums.cpp"
+        "GetAway/src/clientLobbyPF.cpp" "GetAway/src/satiAndroid.cpp"
         "GetAway/src/clientGetAwayPF.cpp" "GetAway/src/home.cpp" "GetAway/src/homePF.cpp"
-        "GetAway/src/serverLobbyPF.cpp" "GetAway/src/playerData.cpp" "GetAway/src/clientChatPF.cpp"
+        "GetAway/src/serverLobbyPF.cpp" "GetAway/src/getAwayPData.cpp" "GetAway/src/clientChatPF.cpp"
         "GetAway/src/replacementStreamBuff.cpp" "GetAway/src/clientLobby.cpp"
         "GetAway/src/serverListenerPF.cpp" "GetAway/src/clientGetAway.cpp"
-        "GetAway/src/constants.cpp")
+        "GetAway/src/constants.cpp" "GetAway/src/serverBluff.cpp" "GetAway/src/clientBluff.cpp"
+        "GetAway/src/clientBluffPF.cpp" "GetAway/src/bluffPData.cpp")
 
 if(NOT ANDROID)
     add_executable(GetAway "${srcFiles}")
@@ -50,4 +51,4 @@ else ()
 endif()
 
 get_directory_property(hasParent PARENT_DIRECTORY)
-
+add_subdirectory(ClientTest)

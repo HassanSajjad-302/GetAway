@@ -1,6 +1,3 @@
-//
-// Created by hassan on 12/8/20.
-//
 
 #ifndef GETAWAY_HOME_HPP
 #define GETAWAY_HOME_HPP
@@ -32,6 +29,7 @@ class home : terminalInputBase, public std::enable_shared_from_this<home>{
         static void setInputStatementHome7R3(const std::vector<std::tuple<std::string, std::string>>& probeReply);
 
         static void setInputStatementClientName();
+        static void setInputStatementSELECTGAME();
         static void setInputStatementHomeGameRules();
         static void setInputStatementHomeAbout();
 
@@ -65,6 +63,7 @@ class home : terminalInputBase, public std::enable_shared_from_this<home>{
     char receiveBuffer[512];
 
     std::shared_ptr<home> ref;
+    constants::gamesEnum gameSelected;
 public:
     explicit home(asio::io_context& io_);
     void run();

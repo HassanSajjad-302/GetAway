@@ -5,8 +5,9 @@
 #include "serverListener.hpp"
 #include "serverChat.hpp"
 
-serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_, bool serverOnly_):
-        serverlistener(serverlistener_), io{io_}, serverOnly(serverOnly_) {
+serverLobby::serverLobby(serverListener& serverlistener_, asio::io_context &io_, bool serverOnly_,
+                         constants::gamesEnum gameSelected_):serverlistener(serverlistener_), io{io_},
+                         gameSelected(gameSelected_), serverOnly(serverOnly_) {
     chatManagerPtr = std::make_unique<serverChat>(players);
 }
 
@@ -19,7 +20,7 @@ void serverLobby::shutDown() {
 }
 
 void serverLobby::newConnectionReceived(asio::ip::tcp::socket sock) {
-    auto lobbySession = std::make_unique<session<serverLobby, true>>(std::move(sock), *this, maxID);
+    auto lobbySession = std::make_unique<serverSession<serverLobby>>(std::move(sock), *this, maxID);
     lobbySession->receiveMessage();
     yetToBePromotedSession.emplace(maxID, std::move(lobbySession));
     ++maxID;
@@ -78,13 +79,17 @@ void serverLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         }
     }
     else if(messageTypeReceived == mtc::GAME){
-        serverGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+        if(gameSelected == constants::gamesEnum::GETAWAY){
+            serverGetAwayPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+        }else if(gameSelected == constants::gamesEnum::BLUFF){
+            serverBluffPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
+        }
     }else if(messageTypeReceived == mtc::MESSAGE){
         chatManagerPtr->packetReceivedFromNetwork(in, receivedPacketSize, sessionId);
     }
     else{
         resourceStrings::print("Unexpected Packet Type Received in class serverLobby\r\n");
-        //Only one packet is allowed from yetToBePromotedSession. if it is not name then remove the session.
+        //Only one packet is allowed from yetToBePromotedSession. if it is not name then remove the serverSession.
         if(yetToBePromotedSession.find(sessionId) != yetToBePromotedSession.end()){
             yetToBePromotedSession.erase(yetToBePromotedSession.find(sessionId));
             return;
@@ -103,6 +108,8 @@ void serverLobby::managementJoin(int excitedSessionId, const std::string& player
     out.write(reinterpret_cast<const char*>(&constants::mtcLobby), sizeof(constants::mtcLobby));
     mtl t = mtl::SELFANDSTATE;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
+    out.write(reinterpret_cast<char *>(&gameSelected), sizeof(gameSelected));
+
     //STEP 2;
     out.write(reinterpret_cast<char *>(&excitedSessionId), sizeof(excitedSessionId));
     //STEP 3;
@@ -223,7 +230,11 @@ void serverLobby::gameExitFinished(){
     gameStarted = false;
     serverlistener.runAgain();
 
-    serverGetAwayPtr.reset();
+    if(gameSelected == constants::gamesEnum::GETAWAY){
+        serverGetAwayPtr.reset();
+    }else if(gameSelected == constants::gamesEnum::BLUFF){
+        serverBluffPtr.reset();
+    }
     if(players.size() == 1){
         serverlistener.registerForInputReceival();
         return;
@@ -239,7 +250,11 @@ void serverLobby::gameExitFinished(){
 void serverLobby::startTheGame(){
     //Start The Game
     serverlistener.shutdownAcceptorAndProbe();
-    serverGetAwayPtr = std::make_unique<serverGetAway>(players, *this);
+    if(gameSelected == constants::gamesEnum::GETAWAY){
+        serverGetAwayPtr = std::make_unique<serverGetAway>(players, *this);
+    }else if(gameSelected == constants::gamesEnum::BLUFF){
+        serverBluffPtr = std::make_unique<serverBluff>(players, *this);
+    }
     gameStarted = true;
     if(serverOnly){
         setInputType(inputType::OPTIONSELECTIONINPUTGAME);

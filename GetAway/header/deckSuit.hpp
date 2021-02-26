@@ -20,5 +20,6 @@ struct Card{
     deckSuit suit;
     int cardNumber;
     Card(deckSuit suit_, int cardNumber_);
+    Card() = default;
 };
 #endif //GETAWAY_DECKSUIT_HPP

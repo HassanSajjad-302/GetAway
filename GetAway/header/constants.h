@@ -20,7 +20,9 @@ namespace constants{
     constexpr int PORT_PROBE_LISTENER = 3000;
     constexpr int PORT_PROBE_REPLY_LISTENER = 3001;
     constexpr int TCP_PACKET_MTU = 1500;
-
+    constexpr int NUMBER_OF_GAMES = 2;
+    enum class gamesEnum{GETAWAY, BLUFF };
+    std::string const gamesNames[NUMBER_OF_GAMES] = {"GetAway", "Bluff"};
 
     const std::string gameRules = R"foo(
 GAME RULES:
