@@ -27,11 +27,9 @@ void serverGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
         if(indexGamePlayerDataFromId(sessionId, index)){
             if(gamePlayersData[index].turnExpected) {
                 constants::Log("Turn Expected from this GameTurnClient");
-                deckSuit suit;
-                int receivedCardNumber;
-                in.read(reinterpret_cast<char *>(&suit), sizeof(suit));
-                in.read(reinterpret_cast<char *>(&receivedCardNumber), sizeof(receivedCardNumber));
-                managementGAMETURNCLIENTReceived(sessionId, Card(suit, receivedCardNumber));
+                Card card;
+                in.read(reinterpret_cast<char *>(&card), sizeof(card));
+                managementGAMETURNCLIENTReceived(sessionId, card);
             }else{
                 constants::Log("Turn Not Expected From This Client");
             }
@@ -73,9 +71,7 @@ void serverGetAway::sendGAMETURNSERVERTOAllExceptOne(int sessionId, Card card) {
 
 void serverGetAway::initializeGame(){
     std::random_device rd{};
-    //todo
-    //providing a same value to random engine for testing
-    auto rng = std::default_random_engine { rd() };
+    auto rng = std::default_random_engine { rd()};
 
     int numberOfPlayersWithExtraCards = constants::DECKSIZE % players.size();
 
@@ -369,6 +365,7 @@ void serverGetAway::performLastOrThullaTurn(
         }
     }
     turnCardNumberOfGamePlayerIterator(currentTurnPlayer, card);
+    newRoundTurn(roundKing);
 
     gamePlayersData.erase(std::remove_if(gamePlayersData.begin(), gamePlayersData.end(),
                                          [](getAwayPData& s){
@@ -386,7 +383,6 @@ void serverGetAway::performLastOrThullaTurn(
         lobbyManager.gameExitFinished();
         return;
     }
-    newRoundTurn(roundKing);
     CHECKCARDCOUNT
 }
 

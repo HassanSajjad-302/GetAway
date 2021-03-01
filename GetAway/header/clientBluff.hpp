@@ -39,7 +39,7 @@ namespace Bluff {
 
     class clientBluff: public terminalInputBase{
         class PF {
-            static inline std::string inputStatementBuffer;
+            //static inline std::string inputStatementBuffer;
             static inline std::string turnSequence;
             static inline std::string cardsString;
             static inline std::string waitingForTurn;
@@ -47,7 +47,7 @@ namespace Bluff {
             static inline void accumulateAndPrint();
         public:
             //input-statement-functions
-            static void promptSimpleNonTurnInput(bool clientOnly);
+            static void promptSimpleNonTurnInputAccumulate(bool clientOnly);
 
             static void promptFirstTurnOrNormalTurnSelectCards(const std::map<deckSuit, std::set<int>>& turnAbleCards_);
 
@@ -126,7 +126,7 @@ namespace Bluff {
 
         void performNORMALTurn();
 
-        void performCHECKTurn(Card *cardsReceived);
+        void performCHECKTurn(std::vector<Card> cardsReceived, bool didIWrongCheckedOrBluffed);
 
         void performPASSTurn();
     };

@@ -16,14 +16,15 @@ void resourceStrings::clearAndPrint(const std::string &toPrint) {
 }
 
 void resourceStrings::clearAndPrint(const std::string &messageBuffer, const std::string &nonMessageBuffer,
-                                    std::string& userIncomingInput, std::mutex& mut, bool lock){
+                                    const std::string &inputStatement, std::string& userIncomingInput,
+                                    std::mutex& mut, bool lock){
 #ifdef __linux__
     system("clear");
 #endif
 #if defined(_WIN32) || defined(_WIN64)
     system("cls");
 #endif
-    std::cout<<messageBuffer << nonMessageBuffer;
+    std::cout<<messageBuffer << nonMessageBuffer << inputStatement;
     if(lock){
         std::lock_guard lockGuard(mut);
         std::cout<<userIncomingInput;

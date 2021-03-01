@@ -132,8 +132,10 @@ template <typename T, typename ...U>
 void
 clientSession<T, U...>::
 readMore(errorCode ec, int firstRead) {
-    if(ec)
+    if(ec){
+        manager.readMoreFailInClientSession(ec);
         return fail(ec, "readMore");
+    }
 
     sessionStreamBuffInput.commit(firstRead);
     int packetSize = 0;

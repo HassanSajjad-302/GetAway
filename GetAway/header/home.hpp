@@ -76,7 +76,7 @@ public:
 
     void broadcastResponseRecieved(std::error_code ec, size_t bytes);
 
-    void startProbeBroadcast();
+    bool startProbeBroadcast();
 };
 
 

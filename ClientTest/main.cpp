@@ -2,7 +2,7 @@
 
 #ifndef ANDROID
 
-//#define TESTING 1
+#define TESTING 1
 
 #include "sati.hpp"
 #include <fstream>
@@ -30,10 +30,10 @@ int main(){
     tcp::socket sock(io);
     sock.connect(endpoint);
 #ifdef TESTING
-    std::make_shared<clientSession<clientLobby, false, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>>(
-            std::move(sock), io, "Hassan42", nullptr, true, constants::gamesEnum::BLUFF)->run();
+    std::make_shared<clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>>(
+            std::move(sock), io, "Player42", nullptr, true, constants::gamesEnum::BLUFF)->run();
 #else
-    std::make_shared<home>(home(io))->run();
+    std::make_shared<home>(io)->run();
 #endif
     io.run();
     inputThread.detach();

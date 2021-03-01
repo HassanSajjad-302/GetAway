@@ -7,16 +7,17 @@
 #include "sati.hpp"
 #include "clientLobby.hpp"
 
-using errorCode = asio::error_code;
+using errorCode = std::error_code;
 
 
 serverListener::
 serverListener(
         asio::io_context& io_,
-        const tcp::endpoint& endpoint,
+        const tcp::endpoint& acceptorEndpoint_,
         std::string  serverName_,
         constants::gamesEnum gameSelected_)
-        : acceptor(io_, endpoint)
+        : acceptorEndpoint(acceptorEndpoint_),
+        acceptor(io_, acceptorEndpoint_)
         , tcpSockAcceptor(io_)
         , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
@@ -30,11 +31,12 @@ serverListener(
 serverListener::
 serverListener(
         asio::io_context& io_,
-        const tcp::endpoint& endpoint,
+        const tcp::endpoint& acceptorEndpoint_,
         std::string  serverName_,
         std::string clientName_,
         constants::gamesEnum gameSelected_)
-        : acceptor(io_, endpoint)
+        : acceptorEndpoint(acceptorEndpoint_),
+        acceptor(io_, acceptorEndpoint_)
         , tcpSockAcceptor(io_)
         , probeListenerUdpSock(io_)
         , serverName(std::move(serverName_))
@@ -102,6 +104,10 @@ void serverListener::tcpSockClientConnectToServerFail(errorCode ec){
 }
 void serverListener::runAgain(){
     // Start accepting a connection
+    acceptor.open(acceptorEndpoint.protocol());
+    acceptor.set_option(asio::socket_base::reuse_address(true));
+    acceptor.bind(acceptorEndpoint);
+    acceptor.listen();
     acceptor.async_accept(
             tcpSockAcceptor,
             [self = shared_from_this()](errorCode ec)
@@ -162,11 +168,11 @@ void serverListener::input(std::string inputString, inputType inputReceivedType)
                                   inputType::SERVERLOBBYONEPLAYER, input)){
             if(input == 2){
                 //close server
-                shutdown();
+                closeAcceptorAndShutdown();
                 std::make_shared<home>(home(io))->run();
             }else{
                 //exit application
-                shutdown();
+                closeAcceptorAndShutdown();
             }
         }
     }
@@ -181,8 +187,12 @@ void serverListener::registerForInputReceival() {
                                                             inputType::SERVERLOBBYONEPLAYER);
 }
 
+void serverListener::closeAcceptorAndShutdown(){
+    acceptor.close();
+    shutdown();
+}
+
 void serverListener::shutdown() {
-    acceptor.cancel();
     probeListenerUdpSock.close();
     nextManager.shutDown();
     ptr.reset();
@@ -190,11 +200,11 @@ void serverListener::shutdown() {
 
 void serverListener::shutdownAcceptorAndProbe(){
     //This is assigned because otherwise this class will exit as from now on there will be no shared ptr holding it
-    //as it was before being holded in lambdas of acceptr and probeListenerUdpSock which are now canceled and closed
+    //as it was before being holded in lambdas of accept and probeListenerUdpSock which are now canceled and closed
     //Pointer will be reset in shutdown as we want to exit and in runAgain because now we again have reference pointing
     //to it
     ptr = shared_from_this();
-    acceptor.cancel();
+    acceptor.close();
     probeListenerUdpSock.close();
 }
 

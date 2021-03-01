@@ -89,7 +89,11 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                             break;
                         }
                     }
-                    gamePlayersData.erase(gamePlayersData.begin(), gamePlayersData.begin() + index);
+                    gamePlayersData.erase(gamePlayersData.begin() + index);
+                    --whoWillTurnNext_GamePlayersDataIndex;
+                    if(whoWillTurnNext_GamePlayersDataIndex == -1){
+                        whoWillTurnNext_GamePlayersDataIndex = gamePlayersData.size() - 1;
+                    }
                 }
                 if(constants::cardsCount(gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].cards) == 0){
 
@@ -129,7 +133,7 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 if(bluff) {
                     if (aPlayerIsMarkedForRemoval) {
                         aPlayerIsMarkedForRemoval = false;
-                        assert(aPlayerIsMarkedForRemoval == lastPlayerWhoTurnedId
+                        assert(markedPlayerForRemovalId == lastPlayerWhoTurnedId
                                &&
                                "If a player id is marked for removal, then it's id should be equal to the lastplayerwhoturned "
                                "id. Otherwise it suggests that aPlayerIsMarkedForRemoval was not falsed after someone else "
@@ -143,43 +147,53 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 for(auto & i : cardsOnTable){
                     gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].insertCard(i);
                 }
-                cardsOnTable.clear();
 
                 for(auto& p: players){
-                    auto& out = std::get<1>(p.second)->out;
-                    out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
-                    //STEP 1;
-                    mtgb turnType = mtgb::SERVER_CLIENTTURNCHECK;
-                    out.write(reinterpret_cast<char *>(&turnType), sizeof(turnType));
-                    for(std::size_t i=cardsOnTable.size() - numberOfCardsTurned; i<cardsOnTable.size(); ++i){
-                        out.write(reinterpret_cast<char*>(&cardsOnTable[i]), sizeof(cardsOnTable[i]));
+                    if(p.first == gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].id){
+                        auto &out = std::get<1>(p.second)->out;
+                        out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
+                        //STEP 1;
+                        mtgb turnType = mtgb::SERVER_BLUFFDETECTEDORWRONGCHECK;
+                        out.write(reinterpret_cast<char *>(&turnType), sizeof(turnType));
+                        out.write(reinterpret_cast<char *>(&cardsOnTable[0]), sizeof(Card) * cardsOnTable.size());
+                        std::get<1>(p.second)->sendMessage();
+                    }else {
+                        auto &out = std::get<1>(p.second)->out;
+                        out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
+                        //STEP 1;
+                        mtgb turnType = mtgb::SERVER_CLIENTTURNCHECK;
+                        out.write(reinterpret_cast<char *>(&turnType), sizeof(turnType));
+                        out.write(reinterpret_cast<char *>(&cardsOnTable[cardsOnTable.size() - numberOfCardsTurned]),
+                                  sizeof(Card) * numberOfCardsTurned);
+                        std::get<1>(p.second)->sendMessage();
                     }
-                    std::get<1>(p.second)->sendMessage();
                 }
+                cardsOnTable.clear();
+                break;
             }
             case mtgb::CLIENT_TURNPASS:{
+
                 ++passTurnCount;
-                if(aPlayerIsMarkedForRemoval){
-                    if(passTurnCount == gamePlayersData.size() -1){
+                if((aPlayerIsMarkedForRemoval && passTurnCount == gamePlayersData.size() -1) ||
+                passTurnCount == gamePlayersData.size()){
+                    if(aPlayerIsMarkedForRemoval && passTurnCount == gamePlayersData.size() -1){
                         aPlayerIsMarkedForRemoval = false;
-                        firstTurnOfRoundExpected = true;
-                        for(auto & i : cardsOnTable){
-                            flushedCards.find(i.suit)->second.emplace(i.cardNumber);
+                        int index =-1;
+                        bool success = indexGamePlayerDataFromId(markedPlayerForRemovalId, index);
+                        assert(success && "marked player id not found in gameplayersdata");
+                        gamePlayersData.erase(gamePlayersData.begin() + index);
+                        --whoWillTurnNext_GamePlayersDataIndex;
+                        if(whoWillTurnNext_GamePlayersDataIndex == -1){
+                            whoWillTurnNext_GamePlayersDataIndex = gamePlayersData.size() - 1;
                         }
-                        cardsOnTable.clear();
-                        incrementWhoWillTurnNext_GamePlayersDataIndex();
-                        gamePlayersData.erase(gamePlayersData.begin(),
-                                              gamePlayersData.begin() + whoWillTurnNext_GamePlayersDataIndex);
-                        incrementWhoWillTurnNext_GamePlayersDataIndex();
                     }
-                }else if(passTurnCount == gamePlayersData.size()){
                     firstTurnOfRoundExpected = true;
                     for(auto & i : cardsOnTable){
                         flushedCards.find(i.suit)->second.emplace(i.cardNumber);
                     }
                     cardsOnTable.clear();
-                    incrementWhoWillTurnNext_GamePlayersDataIndex();
                 }
+                incrementWhoWillTurnNext_GamePlayersDataIndex();
 
                 for(auto& p: players){
                     if(p.first != sessionId){
@@ -193,6 +207,9 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                 }
             }
         }
+    }
+    if(gamePlayersData.size() == 1){
+        lobbyManager.gameExitFinished();
     }
 }
 

@@ -18,7 +18,6 @@ class clientLobby: public terminalInputBase {
     class PF {
     public:
         static inline std::string playersInLobby;
-        static inline std::string inputStatement = "3)Leave 4)Exit\r\n";
         //others
         static void addOrRemovePlayerAccumulate(const std::map<int, std::string>& gamePlayer_);
 
@@ -55,9 +54,15 @@ public:
 
     void exitApplication(bool backToHome);
 
+    void setInputStatementClientLobby();
+
     void setBaseAndInputTypeFromclientChatMessage();
 
     void run();
+
+    void setBaseAndInputTypeFromclientChatMessageOfGamePtr();
+
+    void readMoreFailInClientSession(std::error_code ec);
 };
 
 

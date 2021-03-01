@@ -4,21 +4,20 @@
 
 void Bluff::clientBluff::PF::accumulateAndPrint() {
     sati::getInstance()->nonMessageBuffer = turnSequence  + "\r\n";
-    sati::getInstance()->nonMessageBuffer += turns + "\r\n" + waitingForTurn + "\r\n" + cardsString + "\r\n" +
-                                             PF::inputStatementBuffer + "\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
+    sati::getInstance()->nonMessageBuffer += turns + "\r\n" + waitingForTurn + "\r\n" + cardsString + "\r\n";
+    sati::getInstance()->accumulatePrint();
 }
 
-void Bluff::clientBluff::PF::promptSimpleNonTurnInput(bool clientOnly) {
-    clientOnly ?  inputStatementBuffer = "1)Send Message 2)Leave 3)Exit\r\n" :
-            inputStatementBuffer = "1)Send Message 2)Close Server 3)Exit\r\n";
+void Bluff::clientBluff::PF::promptSimpleNonTurnInputAccumulate(bool clientOnly) {
+    clientOnly ?  sati::getInstance()->inputStatement = "1)Send Message 2)Leave 3)Exit\r\n" :
+            sati::getInstance()->inputStatement = "1)Send Message 2)Close Server 3)Exit\r\n";
     accumulateAndPrint();
 }
 
 void Bluff::clientBluff::PF::promptFirstTurn(bool clientOnly){
-    clientOnly ? inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Play Cards\r\n" :
-            inputStatementBuffer = "1)Send Message 2)Close Server 3)Exit 4)Play Cards\r\n";
-    accumulateAndPrint();
+    clientOnly ? sati::getInstance()->inputStatement = "1)Send Message 2)Leave 3)Exit 4)Play Cards\r\n" :
+            sati::getInstance()->inputStatement = "1)Send Message 2)Close Server 3)Exit 4)Play Cards\r\n";
+    sati::getInstance()->accumulatePrint();
 }
 
 void Bluff::clientBluff::PF::promptFirstTurnAccumulate(bool clientOnly){
@@ -27,42 +26,42 @@ void Bluff::clientBluff::PF::promptFirstTurnAccumulate(bool clientOnly){
 }
 
 void Bluff::clientBluff::PF::promptFirsTurnSelectDeckSuitAccumulate(){
-    inputStatementBuffer = "Please select the suit for the round from following\r\n"
-                           "1)CLUB 2)HEART 3)SPADE 4)DIAMOND";
+    sati::getInstance()->inputStatement = "Please select the suit for the round from following\r\n"
+                           "1)CLUB 2)HEART 3)SPADE 4)DIAMOND\r\n";
     accumulateAndPrint();
 }
 
 void Bluff::clientBluff::PF::promptNormalTurnAccumulate(bool clientOnly){
-    clientOnly ? inputStatementBuffer = "1)Send Message 2)Leave 3)Exit 4)Play Cards 5)Check 6)Pass\r\n" :
-            inputStatementBuffer = "1)Send Message 2)Close Server 3)Exit 4)Play Cards 5)Check 6)Pass\r\n";
+    clientOnly ? sati::getInstance()->inputStatement = "1)Send Message 2)Leave 3)Exit 4)Play Cards 5)Check 6)Pass\r\n" :
+            sati::getInstance()->inputStatement = "1)Send Message 2)Close Server 3)Exit 4)Play Cards 5)Check 6)Pass\r\n";
     accumulateAndPrint();
 }
 
 void Bluff::clientBluff::PF::promptAndInputWaitingForCardsAccumulate(bool clientOnly) {
     promptFirstTurn(clientOnly);
-    inputStatementBuffer += "Waiting For Cards Of Last Turn\r\n";
+    sati::getInstance()->inputStatement += "Waiting For Cards Of Last Turn\r\n";
     accumulateAndPrint();
 }
 
 void Bluff::clientBluff::PF::promptFirstTurnOrNormalTurnSelectCards(const std::map<deckSuit, std::set<int>>& turnAbleCards_) {
-    inputStatementBuffer = "Please enter card numbers separated by spaces:\r\n";
+    sati::getInstance()->inputStatement = "Please enter to go back or card numbers separated by spaces:\r\n";
     int count = 1;
     for(auto& ca: turnAbleCards_){
         if(!ca.second.empty())
-            inputStatementBuffer += deckSuitValue::displaySuitType[(int)ca.first] + ": ";
+            sati::getInstance()->inputStatement += deckSuitValue::displaySuitType[(int)ca.first] + ": ";
         for(auto t: ca.second){
-            inputStatementBuffer += std::to_string(count) + ")" + deckSuitValue::displayCards[t] + " ";
+            sati::getInstance()->inputStatement += std::to_string(count) + ")" + deckSuitValue::displayCards[t] + " ";
             ++count;
         }
         if(!ca.second.empty())
-            inputStatementBuffer += "\t";
+            sati::getInstance()->inputStatement += "\t";
     }
-    inputStatementBuffer += "\r\n";
-    accumulateAndPrint();
+    sati::getInstance()->inputStatement += "\r\n";
+    sati::getInstance()->accumulatePrint();
 }
 //other
 void Bluff::clientBluff::PF::setTurnSequence(const std::map<int, std::string> &gamePlayer_, const std::vector<int>& turnSequence_) {
-    turnSequence = "Turn Sequence: ";
+    turnSequence = "Turn Sequence:\t";
     for(auto& t: turnSequence_){
         turnSequence += gamePlayer_.find(t)->second + "\t";
     }
@@ -88,9 +87,9 @@ void Bluff::clientBluff::PF::setRoundTurns(
             }
             case Bluff::turnType::CHECK:{
                 turns += "CHECK\r\n";
-                for(auto& ca: bluffT.checkTurn_LastTurnCards){
-                    turns += deckSuitValue::displaySuitType[(int) ca.suit] + " " +
-                            deckSuitValue::displayCards[ca.cardNumber] + " ";
+                for(auto checkTurn_LastTurnCard : bluffT.checkTurn_LastTurnCards){
+                    turns += deckSuitValue::displaySuitType[(int) checkTurn_LastTurnCard.suit] + " " +
+                            deckSuitValue::displayCards[checkTurn_LastTurnCard.cardNumber] + " ";
                 }
                 break;
             }

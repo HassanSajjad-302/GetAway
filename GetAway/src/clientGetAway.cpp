@@ -107,7 +107,7 @@ void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
             break;
         }
         default:{
-            resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager "
+            resourceStrings::print("Unexpected Packet Type Received in class clientGetAway "
                                    "message type not in enum mtgg\r\n");
             break;
         }
@@ -125,10 +125,7 @@ void clientGetAway::sendGAMETURNCLIENT(Card card){
     //TODO
     //Check if I can send and receive card in one go.
     //STEP 2;
-    out.write(reinterpret_cast<char *>(&card.suit), sizeof(card.suit));
-    //STEP 3;
-    out.write(reinterpret_cast<char *>(&card.cardNumber), sizeof(card.cardNumber));
-
+    out.write(reinterpret_cast<char *>(&card), sizeof(card));
     lobbyManager.clientLobbySession.sendMessage();
 }
 

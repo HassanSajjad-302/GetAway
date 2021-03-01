@@ -35,7 +35,7 @@ void clientChat::input(std::string inputString, inputType inputReceivedType_){
     if(inputReceivedType_ == inputType::MESSAGESTRING){
         if(inputString.empty()){
             if(lobbyManager.gameStarted){
-                lobbyManager.clientGetAwayPtr->setBaseAndInputTypeFromclientChatMessage();
+                lobbyManager.setBaseAndInputTypeFromclientChatMessageOfGamePtr();
             }else{
                 lobbyManager.setBaseAndInputTypeFromclientChatMessage();
             }
@@ -44,7 +44,7 @@ void clientChat::input(std::string inputString, inputType inputReceivedType_){
             chatMessageInt = myId;
             sendCHATMESSAGE();
             if(lobbyManager.gameStarted){
-                lobbyManager.clientGetAwayPtr->setBaseAndInputTypeFromclientChatMessage();
+                lobbyManager.setBaseAndInputTypeFromclientChatMessageOfGamePtr();
             }else{
                 lobbyManager.setBaseAndInputTypeFromclientChatMessage();
             }

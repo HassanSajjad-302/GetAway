@@ -23,9 +23,12 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
     asio::io_context& io;
     tcp::acceptor acceptor;
     constants::gamesEnum gameSelected;
+public:
     serverLobby nextManager;
+private:
     std::string serverName;
 
+    tcp::endpoint acceptorEndpoint;
     //Following are used for local server find handling
     udp::socket probeListenerUdpSock;
     udp::endpoint probeListenerEndpoint;
@@ -44,12 +47,12 @@ class serverListener : public std::enable_shared_from_this<serverListener>, term
     std::string clientName = "Player";
     clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>* clientPtr;
 public:
-    serverListener(asio::io_context& io_, const tcp::endpoint& endpoint, std::string  serverName_,
+    serverListener(asio::io_context& io_, const tcp::endpoint& acceptorEndpoint_, std::string  serverName_,
                    constants::gamesEnum gameSelected_);
 
     serverListener(
             asio::io_context& io_,
-            const tcp::endpoint& endpoint,
+            const tcp::endpoint& acceptorEndpoint_,
             std::string  serverName_,
             std::string clientName,
             constants::gamesEnum gameSelected_);
@@ -59,6 +62,7 @@ public:
     void probeReply(asio::error_code ec, int size);
 
     void registerForInputReceival();
+    void closeAcceptorAndShutdown();
     void shutdown();
 
     void shutdownAcceptorAndProbe();

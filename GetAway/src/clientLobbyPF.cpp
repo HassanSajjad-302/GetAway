@@ -8,11 +8,11 @@ void clientLobby::PF::addOrRemovePlayerAccumulate(const std::map<int, std::strin
         playersInLobby += player.second + "\t";
     }
     playersInLobby += "\r\n";
-    sati::getInstance()->nonMessageBuffer = playersInLobby  + "\r\n" +  inputStatement + "\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
+    sati::getInstance()->nonMessageBuffer = playersInLobby + "\r\n";
+    sati::getInstance()->accumulatePrint();
 }
 
 void clientLobby::PF::setInputStatementHomeAccumulate() {
-    sati::getInstance()->nonMessageBuffer = playersInLobby  + "\r\n" +  inputStatement + "\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
+    sati::getInstance()->nonMessageBuffer = playersInLobby  + "\r\n";
+    sati::getInstance()->accumulatePrint();
 }

@@ -140,7 +140,7 @@ void sati::accumulatePrint(){
 
 //A completely new function and refactorization of sati.cpp
 void sati::accumulateBuffersAndPrint(bool lock) {
-    resourceStrings::clearAndPrint(messageBuffer, nonMessageBuffer, userIncomingInput, m.get(), lock);
+    resourceStrings::clearAndPrint(messageBuffer, nonMessageBuffer, inputStatement, userIncomingInput, m.get(), lock);
 }
 
 #endif

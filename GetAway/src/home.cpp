@@ -19,6 +19,7 @@ home::home(asio::io_context &io_): io(io_), guard(io_.get_executor()), tcpSock(i
 void home::run() {
     sati::getInstance()->setBase(this, appState::HOME);
     setInputType(inputType::HOMEMAIN);
+    sati::getInstance()->nonMessageBuffer = "";
     PF::setInputStatementMAIN();
     ref = this->shared_from_this();
 }
@@ -118,24 +119,28 @@ void home::input(std::string inputString, inputType inputReceivedType) {
 
                     }
                     broadcastudpSock.set_option(asio::socket_base::broadcast(true));
-                    startProbeBroadcast();
-                    //udp server for response recording of the udp broadcast
-                    udp::endpoint host_endpoint{udp::v4(), constants::PORT_PROBE_REPLY_LISTENER};
-                    udpSock.open(udp::v4());
-                    udpSock.bind(host_endpoint);
-                    udpSock.async_receive_from(
-                            asio::buffer(receiveBuffer), remoteEndpoint,
-                            [self = this](std::error_code ec, std::size_t bytesReceived)
-                            {
-                                if(ec)
-                                    resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
-                                    ": " + ec.message() + "\r\n");
-                                else{
-                                    self->broadcastResponseRecieved(ec, bytesReceived);
-                                }
-                            });
-                    setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
-                    PF::setInputStatementHome7R3(broadcastServersObtained);
+                    bool success = startProbeBroadcast();
+                    if(success){
+                        //udp server for response recording of the udp broadcast
+                        udp::endpoint host_endpoint{udp::v4(), constants::PORT_PROBE_REPLY_LISTENER};
+                        udpSock.open(udp::v4());
+                        udpSock.bind(host_endpoint);
+                        udpSock.async_receive_from(
+                                asio::buffer(receiveBuffer), remoteEndpoint,
+                                [self = this](std::error_code ec, std::size_t bytesReceived)
+                                {
+                                    if(ec)
+                                        resourceStrings::print(std::string("error in lambda broadcastResponse Receival") +
+                                                               ": " + ec.message() + "\r\n");
+                                    else{
+                                        self->broadcastResponseRecieved(ec, bytesReceived);
+                                    }
+                                });
+                        setInputType(inputType::HOMECONNECTTOPROBEREPLYSERVER);
+                        PF::setInputStatementHome7R3(broadcastServersObtained);
+                    }else{
+                        broadcastudpSock.close();
+                    }
                 }else if(input == 5){
                     //Game Rules
                     PF::setInputStatementHomeGameRules();
@@ -245,6 +250,7 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                 //close probeListenerUdpSock server
                 udpSock.close();
                 broadcastServersObtained.clear();
+                broadcastTimer.cancel();
             }else{
                 int input;
                 if(constants::inputHelper(inputString, 1, broadcastServersObtained.size(),inputType::HOMECONNECTTOPROBEREPLYSERVER,
@@ -305,9 +311,19 @@ void home::promote() {
     ref.reset();
 }
 
-void home::startProbeBroadcast(){
+bool home::startProbeBroadcast(){
+    std::error_code ec;
     broadcastudpSock.send_to(asio::const_buffer(emptybroadcastMessage.c_str(),
-                                                emptybroadcastMessage.size()), senderEndpoint);
+                                                emptybroadcastMessage.size()), senderEndpoint, 0, ec);
+    if(ec){
+        setInputType(inputType::HOMEMAIN);
+        PF::setInputStatementMAIN();
+        if(ec == asio::error::network_unreachable){
+            resourceStrings::print("Network Unreachable. Maybe You Are Not Connected To Network\r\n");
+        }
+        return false;
+    }
+
     broadcastTimer.expires_from_now(std::chrono::milliseconds(500));
     broadcastTimer.async_wait([self = this](asio::error_code ec){
         if(ec == asio::error::operation_aborted){
@@ -319,6 +335,7 @@ void home::startProbeBroadcast(){
             resourceStrings::print(std::string("startProbeBroadcast") + ": " + ec.message() + "\r\n");
         }
     });
+    return true;
 }
 
 void home::broadcastResponseRecieved(errorCode ec, std::size_t bytes){

@@ -1,11 +1,15 @@
 #include <algorithm>
 #include <utility>
+#include <home.hpp>
 #include "clientBluff.hpp"
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
 #include "constants.h"
 #include "resourceStrings.hpp"
 #include "clientLobby.hpp"
+
+void readMoreFailInClientSession();
+
 Bluff::clientBluff::clientBluff(clientLobby &lobbyManager_, const std::string& playerName_,
                                 const std::map<int, std::string>& players_, std::istream& in, int myId_, bool clientOnly_):
         lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}, clientOnly(clientOnly_)
@@ -64,7 +68,7 @@ Bluff::clientBluff::clientBluff(clientLobby &lobbyManager_, const std::string& p
         PF::promptFirstTurnAccumulate(clientOnly);
         setBaseAndInputType(this,inputType::GB_FIRSTTURNOFTHEROUND);
     }else{
-        PF::promptSimpleNonTurnInput(clientOnly);
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
         setBaseAndInputType(this,inputType::GB_SIMPLENONTURNINPUT);
     }
 }
@@ -86,17 +90,26 @@ void Bluff::clientBluff::packetReceivedFromNetwork(std::istream &in, int receive
                 break;
             }
             case mtgb::SERVER_CLIENTTURNCHECK: {
-                auto cardsReceived = std::make_unique<Card[]>(numberOfCardsTurned);
-                in.read(reinterpret_cast<char *>(&cardsReceived), sizeof(cardsReceived));
-
+                std::vector<Card> cardsReceived;
+                cardsReceived.resize(numberOfCardsTurned);
+                in.read(reinterpret_cast<char *>(&cardsReceived[0]), sizeof(Card) * numberOfCardsTurned);
+                performCHECKTurn(cardsReceived, false);
+                break;
+            }
+            case mtgb::SERVER_BLUFFDETECTEDORWRONGCHECK:{
+                std::vector<Card> cardsReceived;
+                cardsReceived.resize(cardsOnTableCount);
+                in.read(reinterpret_cast<char *>(&cardsReceived[0]), sizeof(Card) * cardsOnTableCount);
+                performCHECKTurn(cardsReceived, true);
                 break;
             }
             case mtgb::SERVER_CLIENTTURNPASS:{
                 performPASSTurn();
+                break;
             }
             default: {
-                resourceStrings::print("Unexpected Packet Type Received in class clientLobbyManager "
-                                       "message type not in enum mtgg\r\n");
+                resourceStrings::print("Unexpected Packet Type Received in class clientBluff "
+                                       "message type not in enum mtgb\r\n");
                 break;
             }
         }
@@ -108,8 +121,14 @@ void Bluff::clientBluff::performFIRSTTurn(){
     firstTurnOfRoundExpected = false;
     lastPlayerWhoTurnedId = turnSequence[whoWillTurnNext_TurnSequenceIndex];
     passTurnCount = 0;
+    roundTurns.clear();
 
     numberOfCards.find(turnSequence[whoWillTurnNext_TurnSequenceIndex])->second -= numberOfCardsTurned;
+    if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
+        for(int i : selectedCardsIndicesFor_myCardsVectorLatest){
+            myCards.find(myCardsVectorLatest[i].suit)->second.erase(myCardsVectorLatest[i].cardNumber);
+        }
+    }
     if(numberOfCards.find(turnSequence[whoWillTurnNext_TurnSequenceIndex])->second == 0){
         aPlayerIsMarkedForRemoval = true;
         markedPlayerForRemovalId = turnSequence[whoWillTurnNext_TurnSequenceIndex];
@@ -118,12 +137,14 @@ void Bluff::clientBluff::performFIRSTTurn(){
                                             bluffTurn(Bluff::turnType::FIRST, suitOfTheRound, numberOfCardsTurned)));
     incrementWhoWillTurnNext_TurnSequenceIndex();
     PF::setRoundTurns(roundTurns, players);
+    PF::setWaitingForTurn(turnSequence[whoWillTurnNext_TurnSequenceIndex], players);
+    PF::setCards(myCards);
     if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
         //It should be a normal turn as it is a second turn.
         PF::promptNormalTurnAccumulate(clientOnly);
         setInputType(inputType::GB_NORMALTURNOFTHEROUND);
     }else{
-        PF::promptSimpleNonTurnInput(clientOnly);
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
         setInputType(inputType::GB_SIMPLENONTURNINPUT);
     }
 }
@@ -135,6 +156,11 @@ void Bluff::clientBluff::performNORMALTurn(){
     lastPlayerWhoTurnedId = turnSequence[whoWillTurnNext_TurnSequenceIndex];
 
     numberOfCards.find(turnSequence[whoWillTurnNext_TurnSequenceIndex])->second -= numberOfCardsTurned;
+    if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
+        for(int i : selectedCardsIndicesFor_myCardsVectorLatest){
+            myCards.find(myCardsVectorLatest[i].suit)->second.erase(myCardsVectorLatest[i].cardNumber);
+        }
+    }
     if(aPlayerIsMarkedForRemoval){
         aPlayerIsMarkedForRemoval = false;
         int index = 0;
@@ -144,7 +170,11 @@ void Bluff::clientBluff::performNORMALTurn(){
                 break;
             }
         }
-        turnSequence.erase(turnSequence.begin(), turnSequence.begin() + index);
+        turnSequence.erase(turnSequence.begin() + index);
+        --whoWillTurnNext_TurnSequenceIndex;
+        if(whoWillTurnNext_TurnSequenceIndex == -1){
+            whoWillTurnNext_TurnSequenceIndex = turnSequence.size() - 1;
+        }
     }
     if(numberOfCards.find(turnSequence[whoWillTurnNext_TurnSequenceIndex])->second == 0){
 
@@ -157,38 +187,74 @@ void Bluff::clientBluff::performNORMALTurn(){
     incrementWhoWillTurnNext_TurnSequenceIndex();
 
     PF::setRoundTurns(roundTurns, players);
+    PF::setCards(myCards);
+    PF::setWaitingForTurn(turnSequence[whoWillTurnNext_TurnSequenceIndex], players);
+
     if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
         //It should be a normal turn as it is a second turn.
         PF::promptNormalTurnAccumulate(clientOnly);
         setInputType(inputType::GB_NORMALTURNOFTHEROUND);
     }else{
-        PF::promptSimpleNonTurnInput(clientOnly);
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
         setInputType(inputType::GB_SIMPLENONTURNINPUT);
+    }
+    if(turnSequence.size() == 1){
+        lobbyManager.gameFinished();
     }
 }
 
-void Bluff::clientBluff::performCHECKTurn(Card* cardsReceived){
+void Bluff::clientBluff::performCHECKTurn(std::vector<Card> cardsReceived, bool didIWrongCheckedOrBluffed){
 
     firstTurnOfRoundExpected = true;
     passTurnCount = 0;
 
     bool bluff = false;
-    for(int i=0; i<numberOfCardsTurned; ++i){
-        if(cardsReceived[i].suit != suitOfTheRound){
-            bluff = true;
-            break;
+    if(didIWrongCheckedOrBluffed){
+        std::vector<Card> lastTurnedCards;
+        lastTurnedCards.resize(numberOfCardsTurned);
+        std::copy(cardsReceived.begin() +(cardsReceived.size() - numberOfCardsTurned), cardsReceived.end(),
+                  lastTurnedCards.begin());
+        roundTurns.emplace_back(std::make_tuple(turnSequence[whoWillTurnNext_TurnSequenceIndex],
+                                                bluffTurn(turnType::CHECK, lastTurnedCards)));
+        for(int i = (cardsOnTableCount-numberOfCardsTurned); i<cardsOnTableCount; ++i){
+            if(cardsReceived[i].suit != suitOfTheRound){
+                bluff = true;
+                break;
+            }
+        }
+        for(auto & lastTurnedCard : lastTurnedCards){
+            if(lastTurnedCard.suit != suitOfTheRound){
+                bluff = true;
+            }
+        }
+    }else{
+        roundTurns.emplace_back(std::make_tuple(turnSequence[whoWillTurnNext_TurnSequenceIndex],
+                                                bluffTurn(turnType::CHECK, cardsReceived)));
+        for(int i=0; i<numberOfCardsTurned; ++i){
+            if(cardsReceived[i].suit != suitOfTheRound){
+                bluff = true;
+                break;
+            }
         }
     }
+
 
     if(bluff){
         if(aPlayerIsMarkedForRemoval){
             aPlayerIsMarkedForRemoval = false;
-            assert(aPlayerIsMarkedForRemoval == lastPlayerWhoTurnedId
+            assert(markedPlayerForRemovalId == lastPlayerWhoTurnedId
                    && "If a player id is marked for removal, then it's id should be equal to the lastplayerwhoturned "
                       "id. Otherwise it suggests that aPlayerIsMarkedForRemoval was not falsed after someone else "
                       "played cards after setting it to true which breaks the invariant.");
         }
         numberOfCards.find(lastPlayerWhoTurnedId)->second += cardsOnTableCount;
+        if(lastPlayerWhoTurnedId == myId){
+            assert(didIWrongCheckedOrBluffed && "If I not lost, then why I received extra cards");
+            for(int i=0; i<cardsOnTableCount; ++i){
+                myCards.find(cardsReceived[i].suit)->second.emplace(cardsReceived[i].cardNumber);
+            }
+            PF::setCards(myCards);
+        }
         for(int i=0;i<turnSequence.size(); ++i){
             if(lastPlayerWhoTurnedId == turnSequence[i]){
                 whoWillTurnNext_TurnSequenceIndex = i;
@@ -197,52 +263,71 @@ void Bluff::clientBluff::performCHECKTurn(Card* cardsReceived){
         }
     }else{
         numberOfCards.find(turnSequence[whoWillTurnNext_TurnSequenceIndex])->second += cardsOnTableCount;
+        if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
+            assert(didIWrongCheckedOrBluffed && "If I not lost, then why I received extra cards");
+            for(int i=0; i<cardsOnTableCount; ++i){
+                myCards.find(cardsReceived[i].suit)->second.emplace(cardsReceived[i].cardNumber);
+            }
+            PF::setCards(myCards);
+        }
     }
+
+    PF::setRoundTurns(roundTurns, players);
+    PF::setWaitingForTurn(turnSequence[whoWillTurnNext_TurnSequenceIndex], players);
     if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
         //It is our turn and it is first turn.
         PF::promptFirstTurnAccumulate(clientOnly);
         setInputType(inputType::GB_FIRSTTURNOFTHEROUND);
+    }else{
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
+        setInputType(inputType::GB_SIMPLENONTURNINPUT);
     }
+    cardsOnTableCount = 0;
 }
 
 void Bluff::clientBluff::performPASSTurn(){
     ++passTurnCount;
-    if(aPlayerIsMarkedForRemoval){
-        if(passTurnCount == turnSequence.size() - 1){
+    roundTurns.emplace_back(std::make_tuple(turnSequence[whoWillTurnNext_TurnSequenceIndex],
+                                            bluffTurn(Bluff::turnType::PASS)));
+    if((aPlayerIsMarkedForRemoval && passTurnCount == turnSequence.size() -1) || passTurnCount == turnSequence.size()){
+        if(aPlayerIsMarkedForRemoval && passTurnCount == turnSequence.size() -1){
             aPlayerIsMarkedForRemoval = false;
-            firstTurnOfRoundExpected = true;
-            cardsOnTableCount = 0;
-            roundTurns.emplace_back(std::make_tuple(turnSequence[whoWillTurnNext_TurnSequenceIndex],
-                                                    bluffTurn(Bluff::turnType::PASS)));
-            incrementWhoWillTurnNext_TurnSequenceIndex();
-            turnSequence.erase(turnSequence.begin(),
-                               turnSequence.begin() + whoWillTurnNext_TurnSequenceIndex);
-            incrementWhoWillTurnNext_TurnSequenceIndex();
-            PF::setRoundTurns(roundTurns, players);
-            if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
-                //It should be a normal turn as it is a second turn.
-                PF::promptNormalTurnAccumulate(clientOnly);
-                setInputType(inputType::GB_NORMALTURNOFTHEROUND);
-            }else{
-                PF::promptSimpleNonTurnInput(clientOnly);
-                setInputType(inputType::GB_SIMPLENONTURNINPUT);
+            int index =-1;
+            for(int i=0;i<turnSequence.size(); ++i){
+                if(markedPlayerForRemovalId == turnSequence[i]){
+                    index = i;
+                    break;
+                }
+            }
+            assert(index != -1);
+            turnSequence.erase(turnSequence.begin() + index);
+            --whoWillTurnNext_TurnSequenceIndex;
+            if(whoWillTurnNext_TurnSequenceIndex == -1){
+                whoWillTurnNext_TurnSequenceIndex = turnSequence.size() - 1;
             }
         }
-    }else if(passTurnCount == turnSequence.size()){
         firstTurnOfRoundExpected = true;
         cardsOnTableCount = 0;
-        roundTurns.emplace_back(std::make_tuple(turnSequence[whoWillTurnNext_TurnSequenceIndex],
-                                                bluffTurn(Bluff::turnType::PASS)));
-        incrementWhoWillTurnNext_TurnSequenceIndex();
-        PF::setRoundTurns(roundTurns, players);
-        if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
-            //It should be a normal turn as it is a second turn.
-            PF::promptNormalTurnAccumulate(clientOnly);
-            setInputType(inputType::GB_NORMALTURNOFTHEROUND);
+    }
+
+    incrementWhoWillTurnNext_TurnSequenceIndex();
+    PF::setRoundTurns(roundTurns, players);
+    PF::setWaitingForTurn(turnSequence[whoWillTurnNext_TurnSequenceIndex], players);
+
+    if(turnSequence[whoWillTurnNext_TurnSequenceIndex] == myId){
+        if(firstTurnOfRoundExpected){
+            PF::promptFirstTurnAccumulate(clientOnly);
+            setBaseAndInputType(this, inputType::GB_FIRSTTURNOFTHEROUND);
         }else{
-            PF::promptSimpleNonTurnInput(clientOnly);
-            setInputType(inputType::GB_SIMPLENONTURNINPUT);
+            PF::promptNormalTurnAccumulate(clientOnly);
+            setBaseAndInputType(this, inputType::GB_NORMALTURNOFTHEROUND);
         }
+    }else{
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
+        setBaseAndInputType(this, inputType::GB_SIMPLENONTURNINPUT);
+    }
+    if(turnSequence.size() == 1){
+        lobbyManager.gameFinished();
     }
 }
 
@@ -280,10 +365,15 @@ void Bluff::clientBluff::input(std::string inputString, inputType inputReceivedT
                 } else if (input == 4) {
                     //PLAY CARDS
                     PF::promptFirstTurnOrNormalTurnSelectCards(myCards);
-                    setInputType(inputType::GB_PERFORMNORMALTURNSELECTCARDS);
+                    if(firstTurnOfRoundExpected){
+                        setInputType(inputType::GB_PERFORMFIRSTTURNSELECTCARDS);
+                    }else{
+                        setInputType(inputType::GB_PERFORMNORMALTURNSELECTCARDS);
+                    }
                 } else if (input == 5) {
                     //CHECK
                     std::ostream& out = lobbyManager.clientLobbySession.out;
+                    out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
                     mtgb turnType = mtgb::CLIENT_TURNCHECK;
                     out.write(reinterpret_cast<char*>(&turnType), sizeof(turnType));
                     lobbyManager.clientLobbySession.sendMessage();
@@ -293,17 +383,26 @@ void Bluff::clientBluff::input(std::string inputString, inputType inputReceivedT
                 } else if (input == 6) {
                     //PASS
                     std::ostream& out = lobbyManager.clientLobbySession.out;
+                    out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
                     mtgb turnType = mtgb::CLIENT_TURNPASS;
                     out.write(reinterpret_cast<char*>(&turnType), sizeof(turnType));
                     lobbyManager.clientLobbySession.sendMessage();
-                    roundTurns.emplace_back(std::make_tuple(myId, bluffTurn(Bluff::turnType::PASS)));
+
                     performPASSTurn();
                 }
             }
         }else if (inputReceivedType == inputType::GB_PERFORMFIRSTTURNSELECTCARDS) {
-            if(inputHelperInCardsSelection(inputString, inputType::GB_FIRSTTURNOFTHEROUND)){
+            if(inputString.empty()){
+                PF::promptFirstTurn(clientOnly);
+                setInputType(inputType::GB_FIRSTTURNOFTHEROUND);
+            }
+            else if(inputHelperInCardsSelection(inputString, inputType::GB_FIRSTTURNOFTHEROUND)){
                 PF::promptFirsTurnSelectDeckSuitAccumulate();
                 setInputType(inputType::GB_PERFORMFIRSTTURNSELECTDECKSUITTYPE);
+            }else{
+                PF::promptFirstTurn(clientOnly);
+                setInputType(inputType::GB_FIRSTTURNOFTHEROUND);
+                resourceStrings::print(inputString + " is an invalid input\r\n");
             }
         }else if(inputReceivedType == inputType::GB_PERFORMFIRSTTURNSELECTDECKSUITTYPE){
             int input;
@@ -317,11 +416,13 @@ void Bluff::clientBluff::input(std::string inputString, inputType inputReceivedT
 
                 //Here we have suit and cardNumbers. We have to turn these.
                 std::ostream& out = lobbyManager.clientLobbySession.out;
+                out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
                 out.write(reinterpret_cast<char*>(&suit), sizeof(suit));
                 int sz = selectedCardsIndicesFor_myCardsVectorLatest.size();
                 out.write(reinterpret_cast<char*>(&sz), sizeof(sz));
                 for(int i=0;i<selectedCardsIndicesFor_myCardsVectorLatest.size(); ++i){
-                    out.write(reinterpret_cast<char *>(&myCardsVectorLatest[i]), sizeof(myCardsVectorLatest[i]));
+                    int j = selectedCardsIndicesFor_myCardsVectorLatest[i];
+                    out.write(reinterpret_cast<char *>(&myCardsVectorLatest[j]), sizeof(myCardsVectorLatest[j]));
                 }
                 lobbyManager.clientLobbySession.sendMessage();
 
@@ -329,23 +430,36 @@ void Bluff::clientBluff::input(std::string inputString, inputType inputReceivedT
                 numberOfCardsTurned = sz;
                 performFIRSTTurn();
 
+            }else{
+                PF::promptFirstTurn(clientOnly);
+                setInputType(inputType::GB_FIRSTTURNOFTHEROUND);
             }
         }else if(inputReceivedType == inputType::GB_PERFORMNORMALTURNSELECTCARDS){
-            if(inputHelperInCardsSelection(inputString, inputType::GB_NORMALTURNOFTHEROUND)){
+            if(inputString.empty()){
+                PF::promptNormalTurnAccumulate(clientOnly);
+                setInputType(inputType::GB_NORMALTURNOFTHEROUND);
+            }
+            else if(inputHelperInCardsSelection(inputString, inputType::GB_NORMALTURNOFTHEROUND)){
                //TODO
                //Here we have card numbers and we have to perform turn.
                 std::ostream& out = lobbyManager.clientLobbySession.out;
+                out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
                 auto turnType = mtgb::CLIENT_TURNNORMAL;
                 out.write(reinterpret_cast<char*>(&turnType), sizeof(turnType));
                 int sz = selectedCardsIndicesFor_myCardsVectorLatest.size();
                 out.write(reinterpret_cast<char*>(&sz), sizeof(sz));
                 for(int i=0;i<selectedCardsIndicesFor_myCardsVectorLatest.size(); ++i){
-                    out.write(reinterpret_cast<char *>(&myCardsVectorLatest[i]), sizeof(myCardsVectorLatest[i]));
+                    int j = selectedCardsIndicesFor_myCardsVectorLatest[i];
+                    out.write(reinterpret_cast<char *>(&myCardsVectorLatest[j]), sizeof(myCardsVectorLatest[j]));
                 }
                 lobbyManager.clientLobbySession.sendMessage();
 
                 numberOfCardsTurned = sz;
                 performNORMALTurn();
+            }else{
+                PF::promptNormalTurnAccumulate(clientOnly);
+                setInputType(inputType::GB_NORMALTURNOFTHEROUND);
+                resourceStrings::print(inputString + " is an invalid input\r\n");
             }
         }
     } else {
@@ -366,16 +480,22 @@ bool Bluff::clientBluff::inputHelperInCardsSelection(const std::string &inputStr
     }
     while (ss >> buf){
         int input;
-        bool  success = constants::inputHelper(buf, 1, myCardsVectorLatest.size(),
-                                               inputType::GB_FIRSTTURNOFTHEROUND,
-                                               inputType::GB_FIRSTTURNOFTHEROUND,
-                                               input);
-        if(!success){
-            resourceStrings::print(buf + " is an invalid input");
+        bool  success = constants::inputHelper(buf, 1, myCardsVectorLatest.size(), inputtype, inputtype,
+        input);
+        if(!success || input<1 || input > myCardsVectorLatest.size()){
             return false;
         }
         --input;
+        auto it = std::find(selectedCardsIndicesFor_myCardsVectorLatest.begin(),
+                            selectedCardsIndicesFor_myCardsVectorLatest.end(), input);
+        if(it != selectedCardsIndicesFor_myCardsVectorLatest.end()){
+            //it means input is already present.
+            return false;
+        }
         selectedCardsIndicesFor_myCardsVectorLatest.emplace_back(input);
+    }
+    if(selectedCardsIndicesFor_myCardsVectorLatest.empty()){
+        return false;
     }
     return true;
 }
@@ -390,7 +510,7 @@ void Bluff::clientBluff::setBaseAndInputTypeFromclientChatMessage(){
             setBaseAndInputType(this, inputType::GB_NORMALTURNOFTHEROUND);
         }
     }else{
-        PF::promptSimpleNonTurnInput(clientOnly);
+        PF::promptSimpleNonTurnInputAccumulate(clientOnly);
         setBaseAndInputType(this, inputType::GB_SIMPLENONTURNINPUT);
     }
 }
@@ -440,7 +560,7 @@ Bluff::bluffTurn::bluffTurn(turnType normalTurn_, int normalTurnCardCount_): tur
 
 }
 
-Bluff::bluffTurn::bluffTurn(turnType checkTurn_, std::vector<Card> checkTurn_LastTurnCards_): turn(checkTurn_),
-                                                                                              checkTurn_LastTurnCards(std::move(checkTurn_LastTurnCards_)) {
+Bluff::bluffTurn::bluffTurn(turnType checkTurn_, std::vector<Card> checkTurn_LastTurnCards_):
+turn(checkTurn_), checkTurn_LastTurnCards(checkTurn_LastTurnCards_) {
 
 }

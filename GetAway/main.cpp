@@ -2,7 +2,7 @@
 
 #ifndef ANDROID
 
-#define TESTING 1
+//#define TESTING 1
 
 #include "sati.hpp"
 #include <fstream>
@@ -29,7 +29,7 @@ int main(){
     std::make_shared<serverListener>(
                                 io,
                                 tcp::endpoint{tcp::v4(), constants::PORT_SERVER_LISTENER},
-                                "Server", "Hassan", constants::gamesEnum::BLUFF)->run();
+                                "Server", "Player", constants::gamesEnum::BLUFF)->run();
 #else
     std::make_shared<home>(home(io))->run();
 #endif

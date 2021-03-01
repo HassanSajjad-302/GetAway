@@ -22,7 +22,7 @@ enum whoTurned{
 // Represents the shared server state
 class clientGetAway : terminalInputBase {
     class PF {
-        static inline std::string inputStatementBuffer;
+        //static inline std::string inputStatementBuffer;
         static inline std::string turnSequence;
         static inline std::string cardsString;
         static inline std::string waitingForTurn;

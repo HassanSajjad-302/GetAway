@@ -3,11 +3,11 @@
 #include "sati.hpp"
 
 void serverLobby::PF::setGameMain(){
-    sati::getInstance()->nonMessageBuffer = "2)Close Server 3)Exit\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
+    sati::getInstance()->inputStatement = "2)Close Server 3)Exit\r\n";
+    sati::getInstance()->accumulatePrint();
 }
 
 void serverLobby::PF::setLobbyMainTwoOrMorePlayers() {
-    sati::getInstance()->nonMessageBuffer = "1)Start Game 2)Close Server 3)Exit\r\n";
-    sati::getInstance()->accumulateBuffersAndPrint();
+    sati::getInstance()->inputStatement = "1)Start Game 2)Close Server 3)Exit\r\n";
+    sati::getInstance()->accumulatePrint();
 }

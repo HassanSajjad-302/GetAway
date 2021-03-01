@@ -25,15 +25,16 @@ private:
     //Buffers For Holding And RePrinting
     std::string userIncomingInput;
     void accumulateBuffersAndPrint(bool lock);
+    void accumulateBuffersAndPrint();
 
 public:
     std::string messageBuffer; //messages
     std::string nonMessageBuffer;
+    std::string inputStatement;
 
     bool handlerAssigned = false;
     terminalInputBase* base = nullptr;
 
-    void accumulateBuffersAndPrint();
 
     explicit sati(asio::io_context& io_, std::mutex& mut);
     static inline sati* oneInstanceOnly;
