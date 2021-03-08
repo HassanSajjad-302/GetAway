@@ -15,6 +15,7 @@ serverBluff(const std::map<int, std::tuple<std::string,
     initializeGame();
     doFirstTurnOfFirstRound();
     firstTurnOfRoundExpected = true;
+    aPlayerIsMarkedForRemoval = false;
     whoWillTurnNext_GamePlayersDataIndex = 0;
     passTurnCount = 0;
 }

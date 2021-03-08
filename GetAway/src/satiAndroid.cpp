@@ -32,6 +32,19 @@ void sati::setBase(terminalInputBase *base_, appState currentAppState_) {
     base = base_;
 }
 
+void sati::setBaseAndInputType(terminalInputBase* base_, inputType nextReceiveInputType){
+    base = base_;
+    receiveInputType = nextReceiveInputType;
+    handlerAssigned = true;
+}
+
+void sati::setBaseAndCurrentStateAndInputType(terminalInputBase* base_, appState currentAppState_, inputType nextReceivedInputType){
+    base = base_;
+    currentAppState = currentAppState_;
+    receiveInputType = nextReceivedInputType;
+    handlerAssigned = true;
+}
+
 void sati::operator()(std::string userIncomingInput) {
     asio::post(io, [handler = base, expectedInput = receiveInputType,
             emptybroadcastMessage = std::move(userIncomingInput)](){
@@ -46,35 +59,7 @@ void sati::accumulatePrint(){
 
 void sati::accumulateBuffersAndPrint() {
     std::string toPrint;
-#ifdef SERVERMACRO
-    if(currentAppState == appState::HOME){
-        toPrint = inputStatementBuffer;
-    }
-    if(currentAppState == appState::LOBBY) {
-        toPrint = inputStatementBuffer;
-    }
-    if(currentAppState == appState::GAME){
-        toPrint = inputStatementBuffer;
-    }
-#endif
-#ifdef CLIENTMACRO
-    if(currentAppState == appState::HOME){
-        toPrint += inputStatementBuffer + errorMessage;
-    }
-    if(currentAppState == appState::LOBBY) {
-        if(!messageBuffer.empty()){
-            toPrint = messageBuffer + "\r\n";
-        }
-        toPrint += playersInLobby  + "\r\n" + inputStatementBuffer + "\r\n";
-    }
-    if(currentAppState == appState::GAME){
-        if(!messageBuffer.empty()){
-            toPrint = messageBuffer + "\r\n";
-        }
-        toPrint += turnSequence  + "\r\n";
-        toPrint += turns + "\r\n" + waitingForTurn + "\r\n" + cardsString + "\r\n" + inputStatementBuffer + "\r\n";
-    }
-#endif
+    toPrint = messageBuffer + nonMessageBuffer + inputStatement + userIncomingInput;
     resourceStrings::clearAndPrint(toPrint);
 }
 
