@@ -2,7 +2,7 @@
 #include <serverGetAway.hpp>
 #include <utility>
 #include <cassert>
-#include "constants.h"
+#include "constants.hpp"
 #include "resourceStrings.hpp"
 #include "serverLobby.hpp"
 #include "sati.hpp"
@@ -11,7 +11,7 @@
 serverGetAway::
 serverGetAway(const std::map<int, std::tuple<std::string,
         std::unique_ptr<serverSession<serverLobby>>>>& gameData_, serverLobby& lobbyManager_):
-        players{gameData_}, lobbyManager{lobbyManager_}{
+        players{gameData_}, lobby{lobbyManager_}{
     initializeGame();
     doFirstTurnOfFirstRound();
     firstRound = true;
@@ -375,12 +375,12 @@ void serverGetAway::performLastOrThullaTurn(
     roundTurns.clear();
     if(gamePlayersData.empty()){
         //match drawn
-        lobbyManager.gameExitFinished();
+        lobby.gameExitFinished();
         return;
     }
     if(gamePlayersData.size() == 1){
         //That id left player has lost
-        lobbyManager.gameExitFinished();
+        lobby.gameExitFinished();
         return;
     }
     CHECKCARDCOUNT

@@ -3,7 +3,7 @@
 #include <serverBluff.hpp>
 #include <utility>
 #include <cassert>
-#include "constants.h"
+#include "constants.hpp"
 #include "resourceStrings.hpp"
 #include "serverLobby.hpp"
 #include "sati.hpp"
@@ -11,7 +11,7 @@
 serverBluff::
 serverBluff(const std::map<int, std::tuple<std::string,
         std::unique_ptr<serverSession<serverLobby>>>>& gameData_, serverLobby& lobbyManager_):
-        players{gameData_}, lobbyManager{lobbyManager_}{
+        players{gameData_}, lobby{lobbyManager_}{
     initializeGame();
     doFirstTurnOfFirstRound();
     firstTurnOfRoundExpected = true;
@@ -27,13 +27,18 @@ void serverBluff::incrementWhoWillTurnNext_GamePlayersDataIndex(){
     }
 }
 
+//Note: To send message, we will have to call the sendMessage of the serverSession of player whome we want to send
+//however after consuming packet we don't have to call read as next packet will be automatically read.
 void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
 
+    //I already know who will turn next. Note that this is only for debug configuration. But what if I receive turn
+    //from wrong/unexpected client in release configuration. I assume I won't as communication is safe.
     assert(sessionId == gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].id &&
     "Packet received from player whose id not equal to gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].id Most"
     "Probably whoWillTurnNext_GamePlayersDataIndex was not assigned right value on last turn");
     if(firstTurnOfRoundExpected){
-        in.read(reinterpret_cast<char *>(&suitOfTheRound), sizeof(suitOfTheRound));
+        in.read(reinterpret_cast<char *>(&suitOfTheRound), sizeof(suitOfTheRound)); //first turn sets the suit for
+        //the round. All later players must play that suit cards, if they are not bluffing.
         in.read(reinterpret_cast<char *>(&numberOfCardsTurned), sizeof(numberOfCardsTurned));
         cardsOnTable.clear();
         Card card;
@@ -70,6 +75,7 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         mtgb messageTypeReceived;
         in.read(reinterpret_cast<char *>(&messageTypeReceived), sizeof(messageType));
         switch (messageTypeReceived) {
+            //Note that in if clause I did not send/receive packet type because there was only one packet type.
             case mtgb::CLIENT_TURNNORMAL:{
                 in.read(reinterpret_cast<char *>(&numberOfCardsTurned), sizeof(numberOfCardsTurned));
                 Card card;
@@ -131,26 +137,35 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                     }
                 }
 
+                int whoWillReceiveBLUFFDETECTEDORWRONGCHECKTurnId;
                 if(bluff) {
-                    if (aPlayerIsMarkedForRemoval) {
+                    whoWillReceiveBLUFFDETECTEDORWRONGCHECKTurnId = lastPlayerWhoTurnedId;
+                    int index;
+                    indexGamePlayerDataFromId(lastPlayerWhoTurnedId, index);
+                    for (auto &i : cardsOnTable) {
+                        gamePlayersData[index].insertCard(i);
+                    }
+                    /*if (aPlayerIsMarkedForRemoval) {
                         aPlayerIsMarkedForRemoval = false;
                         assert(markedPlayerForRemovalId == lastPlayerWhoTurnedId
                                &&
                                "If a player id is marked for removal, then it's id should be equal to the lastplayerwhoturned "
                                "id. Otherwise it suggests that aPlayerIsMarkedForRemoval was not falsed after someone else "
                                "played cards after setting it to true which breaks the invariant.");
+                    }*/
+                }else{
+                    whoWillReceiveBLUFFDETECTEDORWRONGCHECKTurnId =
+                            gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].id;
+                    for(auto & i : cardsOnTable){
+                        gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].insertCard(i);
                     }
-
                     bool success = indexGamePlayerDataFromId(lastPlayerWhoTurnedId,
                                                              whoWillTurnNext_GamePlayersDataIndex);
                     assert(success == true && "Could not find the lastplayerturnid in gamePlayersData");
                 }
-                for(auto & i : cardsOnTable){
-                    gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].insertCard(i);
-                }
 
                 for(auto& p: players){
-                    if(p.first == gamePlayersData[whoWillTurnNext_GamePlayersDataIndex].id){
+                    if(p.first == whoWillReceiveBLUFFDETECTEDORWRONGCHECKTurnId){
                         auto &out = std::get<1>(p.second)->out;
                         out.write(reinterpret_cast<const char *>(&constants::mtcGame), sizeof(constants::mtcGame));
                         //STEP 1;
@@ -170,6 +185,20 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
                     }
                 }
                 cardsOnTable.clear();
+
+                if(aPlayerIsMarkedForRemoval){
+                    aPlayerIsMarkedForRemoval = false;
+                    if(!bluff){
+                        int index;
+                        indexGamePlayerDataFromId(markedPlayerForRemovalId, index);
+                        if(whoWillTurnNext_GamePlayersDataIndex > index){
+                            gamePlayersData.erase(gamePlayersData.begin() + index);
+                            --whoWillTurnNext_GamePlayersDataIndex;
+                        }else{
+                            gamePlayersData.erase(gamePlayersData.begin() + index);
+                        }
+                    }
+                }
                 break;
             }
             case mtgb::CLIENT_TURNPASS:{
@@ -210,15 +239,15 @@ void serverBluff::packetReceivedFromNetwork(std::istream &in, int receivedPacket
         }
     }
     if(gamePlayersData.size() == 1){
-        lobbyManager.gameExitFinished();
+        lobby.gameExitFinished();
     }
 }
 
 void serverBluff::initializeGame(){
     std::random_device rd{};
-    //todo
-    //providing a same value to random engine for testing
-    auto rng = std::default_random_engine { rd() };
+
+    //if testing, use some constant number instead of rd() so that we can reproduce bug
+    auto rng = std::default_random_engine { 1 };
 
     int numberOfPlayersWithExtraCards = constants::DECKSIZE % players.size();
 

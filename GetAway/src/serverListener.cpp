@@ -3,7 +3,7 @@
 #include <home.hpp>
 #include "serverListener.hpp"
 #include "resourceStrings.hpp"
-#include "constants.h"
+#include "constants.hpp"
 #include "sati.hpp"
 #include "clientLobby.hpp"
 

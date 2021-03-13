@@ -13,6 +13,8 @@
 #include "clientBluff.hpp"
 #include "serverListener.hpp"
 
+//For game Foo, you will define std::unique_ptr<Foo> with other pointers of the game and all if conditions in member
+//functions concerning constants::gamesEnum will be updated
 class clientLobby: public terminalInputBase {
 
     class PF {
@@ -35,10 +37,12 @@ public:
     int myId;
     clientSession<clientLobby, asio::io_context&, std::string, serverListener*, bool, constants::gamesEnum>& clientLobbySession;
     std::unique_ptr<clientChat> clientChatPtr;
-    //todo
-    //make these pointers private
+
+private:
     std::unique_ptr<clientGetAway> clientGetAwayPtr;
     std::unique_ptr<Bluff::clientBluff> clientBluffPtr;
+
+public:
     bool gameStarted = false;
     void gameFinished();
 
@@ -60,7 +64,6 @@ public:
 
     void run();
 
-    void setBaseAndInputTypeFromclientChatMessageOfGamePtr();
 
     void readMoreFailInClientSession(std::error_code ec);
 };

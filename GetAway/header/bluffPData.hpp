@@ -6,11 +6,11 @@
 #include<list>
 #include <vector>
 #include "deckSuit.hpp"
-#include "constants.h"
+#include "constants.hpp"
 
+//using this instead of map so that I can perform runtime debug checks with a clean interface.
 struct bluffPData {
     int id;
-    //std::list<int> cards;
     std::map <deckSuit, std::set<int>> cards;
 
     void insertCard(Card card);

@@ -7,7 +7,7 @@
 #include<list>
 #include <vector>
 #include "deckSuit.hpp"
-#include "constants.h"
+#include "constants.hpp"
 #include "clientBluff.hpp"
 
 enum class turnType;

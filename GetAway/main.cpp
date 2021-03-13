@@ -1,7 +1,9 @@
 //Server
 
 #ifndef ANDROID
-
+//To test uncomment following line. And compile other cmake target clientTest.
+//This target will directly start server while clientTest will bind with that local server. Thus saving us
+//some steps and bringing us quickly to the debugging core game.
 //#define TESTING 1
 
 #include "sati.hpp"
@@ -10,7 +12,7 @@
 #ifdef TESTING
 #include <serverListener.hpp>
 #endif
-#include "constants.h"
+#include "constants.hpp"
 #include "home.hpp"
 int main(){
 #ifndef NDEBUG

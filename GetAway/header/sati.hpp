@@ -11,7 +11,7 @@
 #include "deckSuit.hpp"
 #include "appState.hpp"
 #include "asio/io_context.hpp"
-#include "inputType.h"
+#include "inputType.hpp"
 #include "terminalInputBase.hpp"
 
 //singleton for asynchronous terminal input

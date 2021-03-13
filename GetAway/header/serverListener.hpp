@@ -9,7 +9,7 @@
 #include "terminalInputBase.hpp"
 #include "serverLobby.hpp"
 #include "clientLobby.hpp"
-#include "constants.h"
+#include "constants.hpp"
 using namespace asio::ip;
 using errorCode = asio::error_code;
 

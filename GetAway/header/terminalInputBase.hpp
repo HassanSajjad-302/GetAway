@@ -2,7 +2,7 @@
 #ifndef GETAWAY_TERMINALINPUTBASE_HPP
 #define GETAWAY_TERMINALINPUTBASE_HPP
 
-#include "inputType.h"
+#include "inputType.hpp"
 #include <string>
 class terminalInputBase{
 public:

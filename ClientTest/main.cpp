@@ -10,7 +10,7 @@
 #ifdef TESTING
 #include "clientLobby.hpp"
 #endif
-#include "constants.h"
+#include "constants.hpp"
 #include "home.hpp"
 int main(){
 #ifndef NDEBUG

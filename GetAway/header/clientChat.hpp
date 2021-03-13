@@ -14,7 +14,7 @@ class clientChat: public terminalInputBase {
         static void addAccumulate(const std::string& playerName, const std::string& message);
 
     };
-    clientLobby& lobbyManager;
+    clientLobby& lobby;
     int myId;
     const std::string& playerName;
     const std::map<int, std::string>& players;
@@ -22,7 +22,7 @@ class clientChat: public terminalInputBase {
     int chatMessageInt;
 
 public:
-    clientChat(clientLobby& lobbyManager_, const std::map<int, std::string> &players_, const std::string &playerName_, int myId_);
+    clientChat(clientLobby& lobby_, const std::map<int, std::string> &players_, const std::string &playerName_, int myId_);
 
     void packetReceivedFromNetwork(std::istream &in, int receivedPacketSize);
 

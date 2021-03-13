@@ -151,7 +151,6 @@ void clientLobby::packetReceivedFromNetwork(std::istream &in, int receivedPacket
     clientLobbySession.receiveMessage();
 }
 
-//Before refactor, lines of this function = 123;
 void clientLobby::input(std::string inputString, inputType inputReceivedType) {
     int input;
     if(clientOnly){
@@ -256,17 +255,17 @@ void clientLobby::setInputStatementClientLobby(){
 }
 
 void clientLobby::setBaseAndInputTypeFromclientChatMessage() {
-    setInputStatementClientLobby();
-    PF::setInputStatementHomeAccumulate();
-    sati::getInstance()->setBaseAndInputType(this,
-                                             inputType::OPTIONSELECTIONINPUTLOBBY);
-}
-
-void clientLobby::setBaseAndInputTypeFromclientChatMessageOfGamePtr(){
-    if(gameSelected == constants::gamesEnum::GETAWAY){
-        clientGetAwayPtr->setBaseAndInputTypeFromclientChatMessage();
-    }else if(gameSelected == constants::gamesEnum::BLUFF){
-        clientBluffPtr->setBaseAndInputTypeFromclientChatMessage();
+    if(gameStarted){
+        if(gameSelected == constants::gamesEnum::GETAWAY){
+            clientGetAwayPtr->setBaseAndInputTypeFromclientLobby();
+        }else if(gameSelected == constants::gamesEnum::BLUFF){
+            clientBluffPtr->setBaseAndInputTypeFromClientLobby();
+        }
+    }else{
+        setInputStatementClientLobby();
+        PF::setInputStatementHomeAccumulate();
+        sati::getInstance()->setBaseAndInputType(this,
+                                                 inputType::OPTIONSELECTIONINPUTLOBBY);
     }
 }
 

@@ -26,7 +26,7 @@ enum class turnType{
 
 class serverGetAway
 {
-    serverLobby& lobbyManager;
+    serverLobby& lobby;
     const std::map<int, std::tuple<std::string,
     std::unique_ptr<serverSession<serverLobby>>>>& players;
 

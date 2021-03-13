@@ -10,7 +10,7 @@
 #include "serverSession.hpp"
 #include "messageTypeEnums.hpp"
 #include "terminalInputBase.hpp"
-#include "inputType.h"
+#include "inputType.hpp"
 #include "deckSuit.hpp"
 #include "asio/io_context.hpp"
 
@@ -51,7 +51,7 @@ class clientGetAway : terminalInputBase {
         static void setCards(const std::map<deckSuit, std::set<int>>& cardsMap);
     };
 
-    clientLobby& lobbyManager;
+    clientLobby& lobby;
     //asio::io_context& io;
     const std::string& playerName;
     const std::map<int, std::string>& players;
@@ -109,7 +109,7 @@ public:
 
     void firstRoundTurnHelper(int playerId, Card card, whoTurned who);
 
-    void setBaseAndInputTypeFromclientChatMessage();
+    void setBaseAndInputTypeFromclientLobby();
 };
 
 #endif //GETAWAY_CLIENTGETAWAY_HPP

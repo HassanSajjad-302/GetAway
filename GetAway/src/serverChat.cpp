@@ -9,12 +9,7 @@ serverChat::serverChat(
 }
 
 void serverChat::packetReceivedFromNetwork(std::istream &in, int receivedPacketSize, int sessionId){
-    int senderId;
-    //TODO
-    //This is an extra read, delete it.
-    //STEP 2;
-    in.read(reinterpret_cast<char*>(&senderId), sizeof(senderId));
-    assert(senderId == sessionId);
+
 #if defined(_WIN32) || defined(_WIN64)
     char* arr = new char[receivedPacketSize - 4];
 #endif

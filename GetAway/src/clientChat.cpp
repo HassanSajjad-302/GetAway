@@ -5,8 +5,8 @@
 #include "clientGetAway.hpp"
 #include "sati.hpp"
 
-clientChat::clientChat(clientLobby& lobbyManager_, const std::map<int, std::string>& players_, const std::string& playerName_, int myId_):
-        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}
+clientChat::clientChat(clientLobby& lobby_, const std::map<int, std::string>& players_, const std::string& playerName_, int myId_):
+        lobby{lobby_}, playerName{playerName_}, players{players_}, myId{myId_}
 {
 }
 
@@ -33,22 +33,12 @@ void clientChat::packetReceivedFromNetwork(std::istream &in, int receivedPacketS
 
 void clientChat::input(std::string inputString, inputType inputReceivedType_){
     if(inputReceivedType_ == inputType::MESSAGESTRING){
-        if(inputString.empty()){
-            if(lobbyManager.gameStarted){
-                lobbyManager.setBaseAndInputTypeFromclientChatMessageOfGamePtr();
-            }else{
-                lobbyManager.setBaseAndInputTypeFromclientChatMessage();
-            }
-        }else{
+        if(!inputString.empty()){
             chatMessageString = std::move(inputString);
             chatMessageInt = myId;
             sendCHATMESSAGE();
-            if(lobbyManager.gameStarted){
-                lobbyManager.setBaseAndInputTypeFromclientChatMessageOfGamePtr();
-            }else{
-                lobbyManager.setBaseAndInputTypeFromclientChatMessage();
-            }
         }
+        lobby.setBaseAndInputTypeFromclientChatMessage();
     }
 }
 void clientChat::sendCHATMESSAGEHandler(){
@@ -63,16 +53,14 @@ namespace clientChatManagerSendCHATMESSAGE{
 }
 
 void clientChat::sendCHATMESSAGE(){
-    std::ostream& out = lobbyManager.clientLobbySession.out;
+    std::ostream& out = lobby.clientLobbySession.out;
     //STEP 1;
     out.write(reinterpret_cast<const char*>(&constants::mtcMessage), sizeof(constants::mtcMessage));
     //STEP 2;
-    out.write(reinterpret_cast<char *>(&myId), sizeof(myId));
-    //STEP 3;
     out << chatMessageString << std::endl;
 
     clientChatManagerSendCHATMESSAGE::chatManager = this;
-    lobbyManager.clientLobbySession.sendMessage(clientChatManagerSendCHATMESSAGE::func);
+    lobby.clientLobbySession.sendMessage(clientChatManagerSendCHATMESSAGE::func);
 }
 
 void clientChat::setBaseAndInputTypeForMESSAGESTRING(){
