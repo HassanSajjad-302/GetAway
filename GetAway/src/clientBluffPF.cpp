@@ -1,4 +1,4 @@
-#include "constants.h"
+#include "constants.hpp"
 #include "clientBluff.hpp"
 #include "sati.hpp"
 
@@ -108,10 +108,10 @@ void Bluff::clientBluff::PF::setRoundTurnsAccumulate(
     accumulateAndPrint();
 }
 
-void Bluff::clientBluff::PF::setWaitingForTurn(int waitingplayerId,
+void Bluff::clientBluff::PF::setWaitingForTurn(int waitingPlayerId,
                                                const std::map<int, std::string> &gamePlayers) {
     waitingForTurn = "Waiting For Turn:\r\n";
-    waitingForTurn += gamePlayers.find(waitingplayerId)->second + "\r\n";
+    waitingForTurn += gamePlayers.find(waitingPlayerId)->second + "\r\n";
 }
 
 void Bluff::clientBluff::PF::setCards(const std::map<deckSuit, std::set<int>> &cards) {

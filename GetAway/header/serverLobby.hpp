@@ -12,6 +12,9 @@
 #include "serverBluff.hpp"
 #include "serverChat.hpp"
 class serverListener;
+
+//For game Foo, you will define std::unique_ptr<Foo> with other pointers of the game and all if conditions in member
+//functions concerning constants::gamesEnum will be updated
 class serverLobby: terminalInputBase{
     class PF {
     public:

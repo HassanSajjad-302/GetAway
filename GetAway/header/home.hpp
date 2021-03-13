@@ -5,9 +5,9 @@
 #include "asio/ip/tcp.hpp"
 #include "asio/ip/udp.hpp"
 #include "asio/steady_timer.hpp"
-#include "inputType.h"
+#include "inputType.hpp"
 #include "terminalInputBase.hpp"
-#include "constants.h"
+#include "constants.hpp"
 
 using namespace asio::ip;
 

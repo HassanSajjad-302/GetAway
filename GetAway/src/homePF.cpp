@@ -1,6 +1,6 @@
 
 #include "sati.hpp"
-#include "constants.h"
+#include "constants.hpp"
 #include "home.hpp"
 
 void home::PF::setInputStatementHome7() {
@@ -30,7 +30,7 @@ void home::PF::setInputStatementIPADDRESS() {
 
 void home::PF::setInputStatementHome7R2(const std::vector<std::tuple<std::string, std::string>>& servers) {
     assert(!servers.empty() && "Number Of Registered Server Should Not Be Zero");
-    sati::getInstance()->inputStatement += "Please select one of the following\r\n";
+    sati::getInstance()->inputStatement += "Please select one of the following. Press Enter To Go Back\r\n";
     for(int i=0; i<servers.size(); ++i){
         sati::getInstance()->inputStatement += std::to_string(i+1) + ")\r\n";
         sati::getInstance()->inputStatement += "Server Name: " + std::get<0>(servers[i]) + "\r\n";
@@ -56,7 +56,7 @@ void home::PF::setInputStatementClientName() {
 }
 
 void home::PF::setInputStatementSELECTGAME() {
-    sati::getInstance()->inputStatement = "Pleas Enter Corresponding Number To Select The Game.\r\n";
+    sati::getInstance()->inputStatement = "Please Enter Corresponding Number To Select The Game.\r\n";
     for(int i=0; i<constants::NUMBER_OF_GAMES; ++i){
         sati::getInstance()->inputStatement += std::to_string(i+1) + ") " + constants::gamesNames[i] + "\t";
     }

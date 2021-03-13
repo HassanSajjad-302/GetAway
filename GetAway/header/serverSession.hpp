@@ -12,7 +12,7 @@
 #include "asio/write.hpp"
 #include "asio/read.hpp"
 #include "resourceStrings.hpp"
-#include "constants.h"
+#include "constants.hpp"
 
 using namespace asio::ip;
 using errorCode = asio::error_code;

@@ -1,6 +1,6 @@
 
 #include "home.hpp"
-#include "constants.h"
+#include "constants.hpp"
 #include "clientLobby.hpp"
 #include "serverListener.hpp"
 #include <memory>
@@ -225,14 +225,19 @@ void home::input(std::string inputString, inputType inputReceivedType) {
                 setInputType(inputType::HOMEMAIN);
             }
         }else if(inputReceivedType == inputType::HOMEJOINSERVER){
-            int input;
-            assert(!addedServers.empty());
-            if(constants::inputHelper(inputString, 1, addedServers.size(), inputType::HOMEJOINSERVER,
-                                      inputType::HOMEJOINSERVER, input)){
-                --input;
-                PF::setInputStatementClientName();
-                setInputType(inputType::HOMECLIENTNAMEJOININGSERVER);
-                connectWithServer = addedServers[input];
+            if(inputString.empty()){
+                PF::setInputStatementMAIN();
+                setInputType(inputType::HOMEMAIN);
+            }else{
+                int input;
+                assert(!addedServers.empty());
+                if(constants::inputHelper(inputString, 1, addedServers.size(), inputType::HOMEJOINSERVER,
+                                          inputType::HOMEJOINSERVER, input)){
+                    --input;
+                    PF::setInputStatementClientName();
+                    setInputType(inputType::HOMECLIENTNAMEJOININGSERVER);
+                    connectWithServer = addedServers[input];
+                }
             }
         }else if(inputReceivedType == inputType::HOMECONNECTTINGTOSERVER){
             int input;

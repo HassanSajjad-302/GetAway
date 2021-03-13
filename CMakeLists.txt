@@ -7,7 +7,7 @@ endif()
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-set(srcFiles "GetAway/src/resourceStrings.cpp"
+set(srcFiles "GetAway/src/resourceStrings.cpp" "GetAway/src/androidMain.cpp"
         "GetAway/src/clientChat.cpp"  "GetAway/src/deckSuit.cpp" "GetAway/src/serverChat.cpp"
         "GetAway/src/serverGetAway.cpp"
         "GetAway/src/sati.cpp" "GetAway/src/serverLobby.cpp" "GetAway/src/serverListener.cpp"

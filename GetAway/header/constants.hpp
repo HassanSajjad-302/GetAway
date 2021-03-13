@@ -1,17 +1,18 @@
 
-#ifndef GETAWAY_CONSTANTS_H
-#define GETAWAY_CONSTANTS_H
+#ifndef GETAWAY_CONSTANTS_HPP
+#define GETAWAY_CONSTANTS_HPP
 
 #include <map>
 #include <set>
 #include "deckSuit.hpp"
-#include "inputType.h"
+#include "inputType.hpp"
 #include "messageTypeEnums.hpp"
 
 #if !defined(NDEBUG) && !defined(ANDROID)
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 #endif
+//For your game Foo, increase the value of constants::NUMBER_OF_GAMES and define another value FOO in gamesEnum
 namespace constants{
     constexpr int SUITSIZE = 13;
     constexpr int DECKSIZE = SUITSIZE * 4;

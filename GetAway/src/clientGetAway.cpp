@@ -3,12 +3,12 @@
 #include "clientGetAway.hpp"
 #include "messageTypeEnums.hpp"
 #include "sati.hpp"
-#include "constants.h"
+#include "constants.hpp"
 #include "resourceStrings.hpp"
 #include "clientLobby.hpp"
 clientGetAway::clientGetAway(clientLobby &lobbyManager_, const std::string& playerName_,
                              const std::map<int, std::string>& players_, std::istream& in, int myId_, bool clientOnly_):
-        lobbyManager{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}, clientOnly(clientOnly_)
+        lobby{lobbyManager_}, playerName{playerName_}, players{players_}, myId{myId_}, clientOnly(clientOnly_)
 {
     constants::initializeCards(myCards);
     constants::initializeCards(flushedCards);
@@ -117,16 +117,14 @@ void clientGetAway::packetReceivedFromNetwork(std::istream &in, int receivedPack
 void clientGetAway::sendGAMETURNCLIENT(Card card){
     constants::Log("Seding Card Message To Server. Suit {} {}",
                    deckSuitValue::displaySuitType[(int)card.suit], deckSuitValue::displayCards[card.cardNumber]);
-    std::ostream& out = lobbyManager.clientLobbySession.out;
+    std::ostream& out = lobby.clientLobbySession.out;
     //STEP 1;
     out.write(reinterpret_cast<const char*>(&constants::mtcGame), sizeof(constants::mtcGame));
     mtgg t = mtgg::GAMETURNCLIENT;
     out.write(reinterpret_cast<char*>(&t), sizeof(t));
-    //TODO
-    //Check if I can send and receive card in one go.
     //STEP 2;
     out.write(reinterpret_cast<char *>(&card), sizeof(card));
-    lobbyManager.clientLobbySession.sendMessage();
+    lobby.clientLobbySession.sendMessage();
 }
 
 void clientGetAway::input(std::string inputString, inputType inputReceivedType) {
@@ -157,11 +155,11 @@ void clientGetAway::input(std::string inputString, inputType inputReceivedType) 
                 }
                 if(success){
                     if(input == 1){
-                        lobbyManager.clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
+                        lobby.clientChatPtr->setBaseAndInputTypeForMESSAGESTRING();
                     }else if(input == 2){
-                        lobbyManager.exitApplication(true);
+                        lobby.exitApplication(true);
                     }else if(input == 3){
-                        lobbyManager.exitApplication(false);
+                        lobby.exitApplication(false);
                     }else{
                         //perform turn
                         PF::setInputStatementHome3R3Accumulate(turnAbleCards);
@@ -193,7 +191,7 @@ void clientGetAway::input(std::string inputString, inputType inputReceivedType) 
     }
 }
 
-void clientGetAway::setBaseAndInputTypeFromclientChatMessage(){
+void clientGetAway::setBaseAndInputTypeFromclientLobby(){
     setInputTypeGameInt();
     setBaseAndInputType(this, inputType::OPTIONSELECTIONINPUTGAME);
 }
@@ -268,7 +266,7 @@ void clientGetAway::Turn(int playerId, Card card, whoTurned who) {
             helperFirstTurnAndMiddleTurn(playerId, card, false, who);
         }
         if(gameFinished){
-            lobbyManager.gameFinished();
+            lobby.gameFinished();
         }else{
             waitingForTurn.emplace_back(turnPlayerIdExpected);
             PF::setWaitingForTurn(waitingForTurn, players);

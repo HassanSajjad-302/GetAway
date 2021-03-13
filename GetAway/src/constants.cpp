@@ -1,4 +1,4 @@
-#include "constants.h"
+#include "constants.hpp"
 #include "sati.hpp"
 #include "resourceStrings.hpp"
 #include <cassert>
